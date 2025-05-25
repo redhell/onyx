@@ -30,7 +30,7 @@ const TabsField: FC<TabsFieldProps> = ({
   connector,
   currentCredential,
 }) => {
-  const { setFieldValue } = useFormikContext<any>();  // Initialize the tab value if not set
+  const { setFieldValue } = useFormikContext<any>(); // Initialize the tab value if not set
   useEffect(() => {
     if (!values[tabField.name] && tabField.tabs.length > 0) {
       setFieldValue(
@@ -70,16 +70,19 @@ const TabsField: FC<TabsFieldProps> = ({
         <div className="text-sm text-muted-foreground">No tabs to display.</div>
       ) : (
         <Tabs
-          defaultValue={tabField.tabs[0]?.value} // Optional chaining for safety, though the length check above handles it
+          value={values[tabField.name] || tabField.tabs[0]?.value} // Use current form value or default
           className="w-full"
           onValueChange={(newTab) => {
+            // Update the tab field value
+            setFieldValue(tabField.name, newTab);
+
             // Clear values from other tabs but preserve defaults
             tabField.tabs.forEach((tab) => {
               if (tab.value !== newTab) {
                 tab.fields.forEach((field) => {
                   // Only clear if not default value
                   if (values[field.name] !== field.default) {
-                    values[field.name] = field.default;
+                    setFieldValue(field.name, field.default);
                   }
                 });
               }
