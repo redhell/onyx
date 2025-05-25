@@ -1410,7 +1410,7 @@ export function createConnectorInitialValues(
           }
         } else if (field.type === "tab") {
           // For tab fields, set the initial value to the first tab's value
-          acc[field.name] = field.defaultTab || field.tabs[0].value;
+          acc[field.name] = field.defaultTab || (field.tabs.length > 0 ? field.tabs[0]?.value : undefined);
         } else if (field.default !== undefined) {
           acc[field.name] = field.default;
         }

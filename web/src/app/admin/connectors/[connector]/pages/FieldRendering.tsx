@@ -30,14 +30,12 @@ const TabsField: FC<TabsFieldProps> = ({
   connector,
   currentCredential,
 }) => {
-  const { setFieldValue } = useFormikContext<any>();
-
-  // Initialize the tab value if not set
+  const { setFieldValue } = useFormikContext<any>();  // Initialize the tab value if not set
   useEffect(() => {
-    if (!values[tabField.name]) {
+    if (!values[tabField.name] && tabField.tabs.length > 0) {
       setFieldValue(
         tabField.name,
-        tabField.defaultTab || tabField.tabs[0].value
+        tabField.defaultTab || tabField.tabs[0]?.value
       );
     }
   }, [
