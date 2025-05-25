@@ -37,7 +37,7 @@ import { buildImgUrl } from "../files/images/utils";
 import { useUser } from "@/components/user/UserProvider";
 import { AgenticToggle } from "./AgenticToggle";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
-import { getProviderIcon } from "@/app/admin/configuration/llm/interfaces";
+import { getProviderIcon } from "@/app/admin/configuration/llm/utils";
 import { useDocumentsContext } from "../my-documents/DocumentsContext";
 import { UploadIntent } from "../ChatPage";
 
@@ -188,7 +188,7 @@ interface ChatInputBarProps {
   setAlternativeAssistant: (alternativeAssistant: Persona | null) => void;
   toggleDocumentSidebar: () => void;
   setFiles: (files: FileDescriptor[]) => void;
-  handleFileUpload: (files: File[], intent: UploadIntent) => void;
+  handleFileUpload: (files: File[]) => void;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
   filterManager: FilterManager;
   availableSources: SourceMetadata[];
@@ -262,14 +262,15 @@ export function ChatInputBar({
     if (items) {
       const pastedFiles = [];
       for (let i = 0; i < items.length; i++) {
-        if (items[i].kind === "file") {
-          const file = items[i].getAsFile();
+        const item = items[i];
+        if (item && item.kind === "file") {
+          const file = item.getAsFile();
           if (file) pastedFiles.push(file);
         }
       }
       if (pastedFiles.length > 0) {
         event.preventDefault();
-        handleFileUpload(pastedFiles, UploadIntent.ATTACH_TO_MESSAGE);
+        handleFileUpload(pastedFiles);
       }
     }
   };
@@ -360,26 +361,35 @@ export function ChatInputBar({
     handlePromptInput(text);
   };
 
+  let startFilterAt = "";
+  if (message !== undefined) {
+    const message_segments = message
+      .slice(message.lastIndexOf("@") + 1)
+      .split(/\s/);
+    if (message_segments[0]) {
+      startFilterAt = message_segments[0].toLowerCase();
+    }
+  }
+
   const assistantTagOptions = assistantOptions.filter((assistant) =>
-    assistant.name.toLowerCase().startsWith(
-      message
-        .slice(message.lastIndexOf("@") + 1)
-        .split(/\s/)[0]
-        .toLowerCase()
-    )
+    assistant.name.toLowerCase().startsWith(startFilterAt)
   );
+
+  let startFilterSlash = "";
+  if (message !== undefined) {
+    const message_segments = message
+      .slice(message.lastIndexOf("/") + 1)
+      .split(/\s/);
+    if (message_segments[0]) {
+      startFilterSlash = message_segments[0].toLowerCase();
+    }
+  }
 
   const [tabbingIconIndex, setTabbingIconIndex] = useState(0);
 
   const filteredPrompts = inputPrompts.filter(
     (prompt) =>
-      prompt.active &&
-      prompt.prompt.toLowerCase().startsWith(
-        message
-          .slice(message.lastIndexOf("/") + 1)
-          .split(/\s/)[0]
-          .toLowerCase()
-      )
+      prompt.active && prompt.prompt.toLowerCase().startsWith(startFilterSlash)
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -402,11 +412,15 @@ export function ChatInputBar({
         if (showPrompts) {
           const selectedPrompt =
             filteredPrompts[tabbingIconIndex >= 0 ? tabbingIconIndex : 0];
-          updateInputPrompt(selectedPrompt);
+          if (selectedPrompt) {
+            updateInputPrompt(selectedPrompt);
+          }
         } else {
           const option =
             assistantTagOptions[tabbingIconIndex >= 0 ? tabbingIconIndex : 0];
-          updatedTaggedAssistant(option);
+          if (option) {
+            updatedTaggedAssistant(option);
+          }
         }
       }
     }
@@ -429,6 +443,45 @@ export function ChatInputBar({
       );
     }
   };
+
+  // Combine selectedFiles and currentMessageFiles for unified rendering
+  const allFiles = useMemo(() => {
+    const combined: Array<{
+      id: string;
+      name: string;
+      chatFileType: ChatFileType;
+      isUploading?: boolean;
+      source: "selected" | "current";
+      originalFile: any;
+    }> = [];
+
+    // Add selected files (excluding those already in currentMessageFiles)
+    selectedFiles.forEach((file) => {
+      if (!currentMessageFileIds.has(String(file.file_id || file.id))) {
+        combined.push({
+          id: String(file.file_id || file.id),
+          name: file.name,
+          chatFileType: file.chat_file_type,
+          source: "selected",
+          originalFile: file,
+        });
+      }
+    });
+
+    // Add current message files
+    currentMessageFiles.forEach((file, index) => {
+      combined.push({
+        id: file.id,
+        name: file.name || `File${file.id}`,
+        chatFileType: file.type,
+        isUploading: file.isUploading,
+        source: "current",
+        originalFile: file,
+      });
+    });
+
+    return combined;
+  }, [selectedFiles, currentMessageFiles, currentMessageFileIds]);
 
   return (
     <div id="onyx-chat-input">
@@ -655,20 +708,60 @@ export function ChatInputBar({
                       />
                     ))}
 
-                  {/* This is excluding image types because they get rendered differently via currentMessageFiles.map
-                  Seems quite hacky ... all rendering should probably be done in one place? */}
-                  {selectedFiles.map(
-                    (file) =>
-                      !currentMessageFileIds.has(
-                        String(file.file_id || file.id)
-                      ) && (
-                        <SourceChip
-                          key={file.id}
-                          icon={<FileIcon size={16} />}
-                          title={file.name}
-                          onRemove={() => removeSelectedFile(file)}
-                        />
-                      )
+                  {/* Unified file rendering section for both selected and current message files */}
+                  {allFiles.map((file, index) =>
+                    file.chatFileType === ChatFileType.IMAGE ? (
+                      <SourceChip
+                        key={`${file.source}-${file.id}-${index}`}
+                        icon={
+                          file.isUploading ? (
+                            <FiLoader className="animate-spin" />
+                          ) : (
+                            <img
+                              className="h-full py-.5 object-cover rounded-lg bg-background cursor-pointer"
+                              src={buildImgUrl(file.id)}
+                              alt={file.name || "File image"}
+                            />
+                          )
+                        }
+                        title={file.name}
+                        onRemove={() => {
+                          if (file.source === "selected") {
+                            removeSelectedFile(file.originalFile);
+                          } else {
+                            setCurrentMessageFiles(
+                              currentMessageFiles.filter(
+                                (fileInFilter) => fileInFilter.id !== file.id
+                              )
+                            );
+                          }
+                        }}
+                      />
+                    ) : (
+                      <SourceChip
+                        key={`${file.source}-${file.id}-${index}`}
+                        icon={
+                          <FileIcon
+                            className={
+                              file.source === "current" ? "text-red-500" : ""
+                            }
+                            size={16}
+                          />
+                        }
+                        title={file.name}
+                        onRemove={() => {
+                          if (file.source === "selected") {
+                            removeSelectedFile(file.originalFile);
+                          } else {
+                            setCurrentMessageFiles(
+                              currentMessageFiles.filter(
+                                (fileInFilter) => fileInFilter.id !== file.id
+                              )
+                            );
+                          }
+                        }}
+                      />
+                    )
                   )}
                   {selectedFolders.map((folder) => (
                     <SourceChip
@@ -737,45 +830,6 @@ export function ChatInputBar({
                       title={`${selectedDocuments.length} selected`}
                       onRemove={removeDocs}
                     />
-                  )}
-                  {currentMessageFiles.map((file, index) =>
-                    file.type === ChatFileType.IMAGE ? (
-                      <SourceChip
-                        key={`file-${index}`}
-                        icon={
-                          file.isUploading ? (
-                            <FiLoader className="animate-spin" />
-                          ) : (
-                            <img
-                              className="h-full py-.5 object-cover rounded-lg bg-background cursor-pointer"
-                              src={buildImgUrl(file.id)}
-                              alt={file.name || "Uploaded image"}
-                            />
-                          )
-                        }
-                        title={file.name || "File" + file.id}
-                        onRemove={() => {
-                          setCurrentMessageFiles(
-                            currentMessageFiles.filter(
-                              (fileInFilter) => fileInFilter.id !== file.id
-                            )
-                          );
-                        }}
-                      />
-                    ) : (
-                      <SourceChip
-                        key={`file-${index}`}
-                        icon={<FileIcon className="text-red-500" size={16} />}
-                        title={file.name || "File"}
-                        onRemove={() => {
-                          setCurrentMessageFiles(
-                            currentMessageFiles.filter(
-                              (fileInFilter) => fileInFilter.id !== file.id
-                            )
-                          );
-                        }}
-                      />
-                    )
                   )}
                 </div>
               </div>

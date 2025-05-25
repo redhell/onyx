@@ -284,13 +284,15 @@ class HubPeriodicTask(bootsteps.StartStopStep):
 
 celery_app.steps["worker"].add(HubPeriodicTask)
 
+base_bootsteps = app_base.get_bootsteps()
+for bootstep in base_bootsteps:
+    celery_app.steps["worker"].add(bootstep)
+
 celery_app.autodiscover_tasks(
     [
         "onyx.background.celery.tasks.connector_deletion",
         "onyx.background.celery.tasks.indexing",
         "onyx.background.celery.tasks.periodic",
-        "onyx.background.celery.tasks.doc_permission_syncing",
-        "onyx.background.celery.tasks.external_group_syncing",
         "onyx.background.celery.tasks.pruning",
         "onyx.background.celery.tasks.shared",
         "onyx.background.celery.tasks.vespa",

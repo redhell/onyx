@@ -182,6 +182,7 @@ export function ChatPage({
     addSelectedFile,
     addSelectedFolder,
     clearSelectedItems,
+    setSelectedFiles,
     folders: userFolders,
     files: allUserFiles,
     uploadFile,
@@ -544,6 +545,7 @@ export function ChatPage({
       // if this is a seeded chat, then kick off the AI message generation
       if (
         newMessageHistory.length === 1 &&
+        newMessageHistory[0] !== undefined &&
         !submitOnLoadPerformed.current &&
         searchParams?.get(SEARCH_PARAM_NAMES.SEEDED) === "true"
       ) {
@@ -649,7 +651,7 @@ export function ChatPage({
       completeMessageMapOverride || currentMessageMap(completeMessageDetail);
     const newCompleteMessageMap = structuredClone(frozenCompleteMessageMap);
 
-    if (newCompleteMessageMap.size === 0) {
+    if (messages[0] !== undefined && newCompleteMessageMap.size === 0) {
       const systemMessageId = messages[0].parentMessageId || SYSTEM_MESSAGE_ID;
       const firstMessageId = messages[0].messageId;
       const dummySystemMessage: Message = {
@@ -690,7 +692,7 @@ export function ChatPage({
         frozenCompleteMessageMap
       );
       const latestMessage = currentMessageChain[currentMessageChain.length - 1];
-      if (latestMessage) {
+      if (messages[0] !== undefined && latestMessage) {
         newCompleteMessageMap.get(
           latestMessage.messageId
         )!.latestChildMessageId = messages[0].messageId;
@@ -1109,6 +1111,14 @@ export function ChatPage({
   const resetInputBar = () => {
     setMessage("");
     setCurrentMessageFiles([]);
+
+    // Reset selectedFiles if they're under the context limit, but preserve selectedFolders.
+    // If under the context limit, the files will be included in the chat history
+    // so we don't need to keep them around.
+    if (selectedDocumentTokens < maxTokens) {
+      setSelectedFiles([]);
+    }
+
     if (endPaddingRef.current) {
       endPaddingRef.current.style.height = `95px`;
     }
@@ -1379,7 +1389,11 @@ export function ChatPage({
     } else if (alternativeAssistant) {
       currentAssistantId = alternativeAssistant.id;
     } else {
-      currentAssistantId = liveAssistant.id;
+      if (liveAssistant) {
+        currentAssistantId = liveAssistant.id;
+      } else {
+        currentAssistantId = 0; // Fallback if no assistant is live
+      }
     }
 
     resetInputBar();
@@ -1438,8 +1452,8 @@ export function ChatPage({
           filterManager.selectedDocumentSets,
           filterManager.timeRange,
           filterManager.selectedTags,
-          selectedFiles.map((file) => file.id),
-          selectedFolders.map((folder) => folder.id)
+          selectedFiles.map((file) => file.id)
+          // selectedFolders.map((folder) => folder.id)
         ),
         selectedDocumentIds: selectedDocuments
           .filter(
@@ -1951,13 +1965,10 @@ export function ChatPage({
     }
   };
 
-  const handleImageUpload = async (
-    acceptedFiles: File[],
-    intent: UploadIntent
-  ) => {
+  const handleMessageSpecificFileUpload = async (acceptedFiles: File[]) => {
     const [_, llmModel] = getFinalLLM(
       llmProviders,
-      liveAssistant,
+      liveAssistant ?? null,
       llmManager.currentLlm
     );
     const llmAcceptsImages = modelSupportsImageInput(llmProviders, llmModel);
@@ -1977,34 +1988,28 @@ export function ChatPage({
 
     updateChatState("uploading", currentSessionId());
 
-    const newlyUploadedFileDescriptors: FileDescriptor[] = [];
-
     for (let file of acceptedFiles) {
       const formData = new FormData();
       formData.append("files", file);
       const response: FileResponse[] = await uploadFile(formData, null);
 
-      if (response.length > 0) {
+      if (response.length > 0 && response[0] !== undefined) {
         const uploadedFile = response[0];
 
-        if (intent == UploadIntent.ADD_TO_DOCUMENTS) {
-          addSelectedFile(uploadedFile);
-        } else {
-          const newFileDescriptor: FileDescriptor = {
-            // Use file_id (storage ID) if available, otherwise fallback to DB id
-            // Ensure it's a string as FileDescriptor expects
-            id: uploadedFile.file_id
-              ? String(uploadedFile.file_id)
-              : String(uploadedFile.id),
-            type: uploadedFile.chat_file_type
-              ? uploadedFile.chat_file_type
-              : ChatFileType.PLAIN_TEXT,
-            name: uploadedFile.name,
-            isUploading: false, // Mark as successfully uploaded
-          };
+        const newFileDescriptor: FileDescriptor = {
+          // Use file_id (storage ID) if available, otherwise fallback to DB id
+          // Ensure it's a string as FileDescriptor expects
+          id: uploadedFile.file_id
+            ? String(uploadedFile.file_id)
+            : String(uploadedFile.id),
+          type: uploadedFile.chat_file_type
+            ? uploadedFile.chat_file_type
+            : ChatFileType.PLAIN_TEXT,
+          name: uploadedFile.name,
+          isUploading: false, // Mark as successfully uploaded
+        };
 
-          setCurrentMessageFiles((prev) => [...prev, newFileDescriptor]);
-        }
+        setCurrentMessageFiles((prev) => [...prev, newFileDescriptor]);
       } else {
         setPopup({
           type: "error",
@@ -2392,14 +2397,14 @@ export function ChatPage({
                   ? true
                   : false
               }
-              humanMessage={humanMessage}
+              humanMessage={humanMessage ?? null}
               setPresentingDocument={setPresentingDocument}
               modal={true}
               ref={innerSidebarElementRef}
               closeSidebar={() => {
                 setDocumentSidebarVisible(false);
               }}
-              selectedMessage={aiMessage}
+              selectedMessage={aiMessage ?? null}
               selectedDocuments={selectedDocuments}
               toggleDocumentSelection={toggleDocumentSelection}
               clearSelectedDocuments={clearSelectedDocuments}
@@ -2548,7 +2553,7 @@ export function ChatPage({
             `}
           >
             <DocumentResults
-              humanMessage={humanMessage}
+              humanMessage={humanMessage ?? null}
               agenticMessage={
                 aiMessage?.sub_questions?.length! > 0 ||
                 messageHistory.find(
@@ -2563,7 +2568,7 @@ export function ChatPage({
               closeSidebar={() =>
                 setTimeout(() => setDocumentSidebarVisible(false), 300)
               }
-              selectedMessage={aiMessage}
+              selectedMessage={aiMessage ?? null}
               selectedDocuments={selectedDocuments}
               toggleDocumentSelection={toggleDocumentSelection}
               clearSelectedDocuments={clearSelectedDocuments}
@@ -2611,10 +2616,7 @@ export function ChatPage({
                 <Dropzone
                   key={currentSessionId()}
                   onDrop={(acceptedFiles) =>
-                    handleImageUpload(
-                      acceptedFiles,
-                      UploadIntent.ATTACH_TO_MESSAGE
-                    )
+                    handleMessageSpecificFileUpload(acceptedFiles)
                   }
                   noClick
                 >
@@ -2675,14 +2677,16 @@ export function ChatPage({
                               <div className="h-full  w-[95%] mx-auto flex flex-col justify-center items-center">
                                 <ChatIntro selectedPersona={liveAssistant} />
 
-                                <StarterMessages
-                                  currentPersona={currentPersona}
-                                  onSubmit={(messageOverride) =>
-                                    onSubmit({
-                                      messageOverride,
-                                    })
-                                  }
-                                />
+                                {currentPersona && (
+                                  <StarterMessages
+                                    currentPersona={currentPersona}
+                                    onSubmit={(messageOverride) =>
+                                      onSubmit({
+                                        messageOverride,
+                                      })
+                                    }
+                                  />
+                                )}
                               </div>
                             )}
                           <div
@@ -3347,7 +3351,7 @@ export function ChatPage({
                               }
                               setAlternativeAssistant={setAlternativeAssistant}
                               setFiles={setCurrentMessageFiles}
-                              handleFileUpload={handleImageUpload}
+                              handleFileUpload={handleMessageSpecificFileUpload}
                               textAreaRef={textAreaRef}
                             />
                             {enterpriseSettings &&
