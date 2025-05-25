@@ -233,6 +233,10 @@ export interface HighspotCredentialJson {
   highspot_secret: string;
 }
 
+export interface DrupalWikiCredentialJson {
+  api_token: string;
+}
+
 export const credentialTemplates: Record<ValidSources, any> = {
   github: { github_access_token: "" } as GithubCredentialJson,
   gitlab: {
@@ -365,6 +369,9 @@ export const credentialTemplates: Record<ValidSources, any> = {
     highspot_key: "",
     highspot_secret: "",
   } as HighspotCredentialJson,
+  drupal_wiki: {
+    api_token: "",
+  } as DrupalWikiCredentialJson,
 };
 
 export const credentialDisplayNames: Record<string, string> = {
@@ -505,6 +512,9 @@ export const credentialDisplayNames: Record<string, string> = {
   highspot_url: "Highspot URL",
   highspot_key: "Highspot Key",
   highspot_secret: "Highspot Secret",
+
+  // Drupal Wiki
+  api_token: "Drupal Wiki Personal Access Token",
 };
 
 export function getDisplayNameForCredentialKey(key: string): string {
