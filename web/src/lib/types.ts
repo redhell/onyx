@@ -163,7 +163,7 @@ export interface ConnectorStatus<ConnectorConfigType, ConnectorCredentialType> {
 
 export interface ConnectorIndexingStatus<
   ConnectorConfigType,
-  ConnectorCredentialType,
+  ConnectorCredentialType
 > extends ConnectorStatus<ConnectorConfigType, ConnectorCredentialType> {
   // Inlcude data only necessary for indexing statuses in admin page
   last_success: string | null;

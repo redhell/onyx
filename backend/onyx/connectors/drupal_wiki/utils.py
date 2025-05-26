@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone
 
 from bs4 import BeautifulSoup
 
@@ -22,14 +23,11 @@ def extract_text_from_html(html_content: str) -> str:
 
     soup = BeautifulSoup(html_content, "html.parser")
 
-    # Remove script and style elements
     for script in soup(["script", "style"]):
         script.extract()
 
-    # Get text
     text = soup.get_text(separator="\n", strip=True)
 
-    # Remove extra whitespace
     lines = (line.strip() for line in text.splitlines())
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     text = "\n".join(chunk for chunk in chunks if chunk)
@@ -39,6 +37,5 @@ def extract_text_from_html(html_content: str) -> str:
 
 def datetime_from_timestamp(timestamp: int) -> datetime:
     """Convert a Unix timestamp to a datetime object in UTC"""
-    from datetime import timezone
 
     return datetime.fromtimestamp(timestamp, tz=timezone.utc)

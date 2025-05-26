@@ -1,9 +1,20 @@
+from enum import Enum
+from typing import Generic
 from typing import List
 from typing import Optional
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 from onyx.connectors.interfaces import ConnectorCheckpoint
+
+
+class SpaceAccessStatus(str, Enum):
+    """Enum for Drupal Wiki space access status"""
+
+    PRIVATE = "PRIVATE"
+    ANONYMOUS = "ANONYMOUS"
+    AUTHENTICATED = "AUTHENTICATED"
 
 
 class DrupalWikiSpace(BaseModel):
@@ -13,7 +24,7 @@ class DrupalWikiSpace(BaseModel):
     name: str
     type: str
     description: Optional[str] = None
-    accessStatus: Optional[str] = None
+    accessStatus: Optional[SpaceAccessStatus] = None
     color: Optional[str] = None
 
 
@@ -38,32 +49,33 @@ class DrupalWikiPageContent(BaseModel):
     type: str
 
 
-class DrupalWikiSpaceResponse(BaseModel):
+T = TypeVar("T")
+
+
+class DrupalWikiBaseResponse(BaseModel, Generic[T]):
+    """Base model for Drupal Wiki API responses"""
+
+    totalPages: int
+    totalElements: int
+    size: int
+    content: List[T]
+    number: int
+    first: bool
+    last: bool
+    numberOfElements: int
+    empty: bool
+
+
+class DrupalWikiSpaceResponse(DrupalWikiBaseResponse[DrupalWikiSpace]):
     """Model for the response from the Drupal Wiki spaces API"""
 
-    totalPages: int
-    totalElements: int
-    size: int
-    content: List[DrupalWikiSpace]
-    number: int
-    first: bool
-    last: bool
-    numberOfElements: int
-    empty: bool
+    pass
 
 
-class DrupalWikiPageResponse(BaseModel):
+class DrupalWikiPageResponse(DrupalWikiBaseResponse[DrupalWikiPage]):
     """Model for the response from the Drupal Wiki pages API"""
 
-    totalPages: int
-    totalElements: int
-    size: int
-    content: List[DrupalWikiPage]
-    number: int
-    first: bool
-    last: bool
-    numberOfElements: int
-    empty: bool
+    pass
 
 
 class DrupalWikiCheckpoint(ConnectorCheckpoint):

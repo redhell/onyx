@@ -183,7 +183,10 @@ class DrupalWikiConnector(
         url = f"{self.base_url}/api/rest/scope/api/attachment/{attachment_id}/download"
         logger.info(f"Downloading attachment {attachment_id} from {url}")
 
-        response = self._rate_limited_get(url, headers=self.headers)
+        # Use headers without Accept for binary downloads
+        download_headers = {"Authorization": self.headers["Authorization"]}
+
+        response = self._rate_limited_get(url, headers=download_headers)
         response.raise_for_status()
 
         return response.content
@@ -437,14 +440,14 @@ class DrupalWikiConnector(
         Returns:
             None
         """
-        if "api_token" not in credentials:
+        if "drupal_wiki_api_token" not in credentials:
             raise ConnectorValidationError(
                 "API token is required for Drupal Wiki connector"
             )
 
-        self._api_token = credentials["api_token"]
+        self._api_token = credentials["drupal_wiki_api_token"]
         self.headers = {
-            "Accept": "*/*, application/json",
+            "Accept": "application/json",
             "Authorization": f"Bearer {self._api_token}",
         }
 
@@ -514,7 +517,14 @@ class DrupalWikiConnector(
             logger.info(
                 f"Fetched {len(page_response.content)} pages in space {space_id} (page={page})"
             )
-            all_pages.extend(page_response.content)
+            # Ensure the content items are properly parsed as DrupalWikiPage objects
+            for page_item in page_response.content:
+                if isinstance(page_item, dict):
+                    # Convert dict to DrupalWikiPage if needed
+                    all_pages.append(DrupalWikiPage.model_validate(page_item))
+                else:
+                    # Already a DrupalWikiPage object
+                    all_pages.append(page_item)
             if total_elements is None:
                 total_elements = resp_json.get("totalElements", None)
             if total_elements is not None and len(all_pages) >= total_elements:

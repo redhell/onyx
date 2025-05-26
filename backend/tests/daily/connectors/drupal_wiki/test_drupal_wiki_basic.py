@@ -28,7 +28,7 @@ def drupal_wiki_connector() -> DrupalWikiConnector:
     )
     connector.load_credentials(
         {
-            "api_token": "pat:test12345",
+            "drupal_wiki_api_token": "pat:test12345",
         }
     )
     return connector

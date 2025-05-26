@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/fully_wrapped_tabs";
 import { useFormikContext } from "formik";
 
+// Define a general type for form values
+type FormValues = Record<string, any>;
+
 interface TabsFieldProps {
   tabField: TabOption;
   values: any;
@@ -30,7 +33,7 @@ const TabsField: FC<TabsFieldProps> = ({
   connector,
   currentCredential,
 }) => {
-  const { setFieldValue } = useFormikContext<any>(); // Initialize the tab value if not set
+  const { setFieldValue } = useFormikContext<FormValues>(); // Initialize the tab value if not set
   useEffect(() => {
     if (!values[tabField.name] && tabField.tabs.length > 0) {
       setFieldValue(
@@ -147,7 +150,7 @@ export const RenderField: FC<RenderFieldProps> = ({
   connector,
   currentCredential,
 }) => {
-  const { setFieldValue } = useFormikContext<any>(); // Get Formik's context functions
+  const { setFieldValue } = useFormikContext<FormValues>(); // Get Formik's context functions
 
   const label =
     typeof field.label === "function"
@@ -160,11 +163,11 @@ export const RenderField: FC<RenderFieldProps> = ({
   const disabled =
     typeof field.disabled === "function"
       ? field.disabled(currentCredential)
-      : (field.disabled ?? false);
+      : field.disabled ?? false;
   const initialValue =
     typeof field.initial === "function"
       ? field.initial(currentCredential)
-      : (field.initial ?? "");
+      : field.initial ?? "";
 
   // if initialValue exists, prepopulate the field with it
   useEffect(() => {

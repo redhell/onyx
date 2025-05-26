@@ -234,7 +234,7 @@ export interface HighspotCredentialJson {
 }
 
 export interface DrupalWikiCredentialJson {
-  api_token: string;
+  drupal_wiki_api_token: string;
 }
 
 export const credentialTemplates: Record<ValidSources, any> = {
@@ -348,6 +348,9 @@ export const credentialTemplates: Record<ValidSources, any> = {
   airtable: {
     airtable_access_token: "",
   } as AirtableCredentialJson,
+  drupal_wiki: {
+    drupal_wiki_api_token: "",
+  } as DrupalWikiCredentialJson,
   xenforo: null,
   google_sites: null,
   file: null,
@@ -369,9 +372,6 @@ export const credentialTemplates: Record<ValidSources, any> = {
     highspot_key: "",
     highspot_secret: "",
   } as HighspotCredentialJson,
-  drupal_wiki: {
-    api_token: "",
-  } as DrupalWikiCredentialJson,
 };
 
 export const credentialDisplayNames: Record<string, string> = {
@@ -514,7 +514,7 @@ export const credentialDisplayNames: Record<string, string> = {
   highspot_secret: "Highspot Secret",
 
   // Drupal Wiki
-  api_token: "Drupal Wiki Personal Access Token",
+  drupal_wiki_api_token: "Drupal Wiki Personal Access Token",
 };
 
 export function getDisplayNameForCredentialKey(key: string): string {
