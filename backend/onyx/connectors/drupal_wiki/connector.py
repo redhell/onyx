@@ -404,7 +404,7 @@ class DrupalWikiConnector(
                 break_on_unprocessable=False,
             )
 
-            if not extracted_text or len(extracted_text) == 0:
+            if not extracted_text:
                 result["error"] = (
                     f"No text extracted for {attachment.get('fileName', 'unknown')}"
                 )
