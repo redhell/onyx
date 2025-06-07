@@ -278,8 +278,8 @@ export const AgenticMessage = ({
               ? docs
               : agenticDocs
             : agenticDocs && agenticDocs.length > 0
-            ? agenticDocs
-            : docs
+              ? agenticDocs
+              : docs
         }
         subQuestions={[
           ...(subQuestions || []),
@@ -445,8 +445,8 @@ export const AgenticMessage = ({
                         !allowDocuments
                           ? []
                           : isViewingInitialAnswer
-                          ? docs!
-                          : agenticDocs!
+                            ? docs!
+                            : agenticDocs!
                       }
                       toggleDocumentSelection={() => {
                         toggleDocumentSelection!(!isViewingInitialAnswer);

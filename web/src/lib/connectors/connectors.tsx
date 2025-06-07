@@ -1391,32 +1391,35 @@ export function createConnectorInitialValues(
     name: "",
     groups: [],
     access_type: "public",
-    ...configuration.values.reduce((acc, field) => {
-      if (field.type === "select") {
-        acc[field.name] = null;
-      } else if (field.type === "list") {
-        acc[field.name] = field.default || [];
-      } else if (field.type === "checkbox") {
-        // Special case for include_files_shared_with_me when using service account
-        if (
-          field.name === "include_files_shared_with_me" &&
-          currentCredential &&
-          !currentCredential.credential_json?.google_tokens
-        ) {
-          acc[field.name] = true;
-        } else {
-          acc[field.name] = field.default || false;
+    ...configuration.values.reduce(
+      (acc, field) => {
+        if (field.type === "select") {
+          acc[field.name] = null;
+        } else if (field.type === "list") {
+          acc[field.name] = field.default || [];
+        } else if (field.type === "checkbox") {
+          // Special case for include_files_shared_with_me when using service account
+          if (
+            field.name === "include_files_shared_with_me" &&
+            currentCredential &&
+            !currentCredential.credential_json?.google_tokens
+          ) {
+            acc[field.name] = true;
+          } else {
+            acc[field.name] = field.default || false;
+          }
+        } else if (field.type === "tab") {
+          // For tab fields, set the initial value to the first tab's value
+          acc[field.name] =
+            field.defaultTab ||
+            (field.tabs.length > 0 ? field.tabs[0]?.value : undefined);
+        } else if (field.default !== undefined) {
+          acc[field.name] = field.default;
         }
-      } else if (field.type === "tab") {
-        // For tab fields, set the initial value to the first tab's value
-        acc[field.name] =
-          field.defaultTab ||
-          (field.tabs.length > 0 ? field.tabs[0]?.value : undefined);
-      } else if (field.default !== undefined) {
-        acc[field.name] = field.default;
-      }
-      return acc;
-    }, {} as { [record: string]: any }),
+        return acc;
+      },
+      {} as { [record: string]: any }
+    ),
   };
 }
 
@@ -1434,12 +1437,12 @@ export function createConnectorValidationSchema(
           field.type === "select"
             ? Yup.string()
             : field.type === "list"
-            ? Yup.array().of(Yup.string())
-            : field.type === "checkbox"
-            ? Yup.boolean()
-            : field.type === "file"
-            ? Yup.mixed()
-            : Yup.string();
+              ? Yup.array().of(Yup.string())
+              : field.type === "checkbox"
+                ? Yup.boolean()
+                : field.type === "file"
+                  ? Yup.mixed()
+                  : Yup.string();
 
         if (!field.optional) {
           schema = schema.required(`${field.label} is required`);

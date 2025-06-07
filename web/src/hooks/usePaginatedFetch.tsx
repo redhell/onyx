@@ -101,9 +101,8 @@ function usePaginatedFetch<T extends PaginatedType>({
         }
 
         const url = `${endpoint}?${params.toString()}`;
-        const responseData = await errorHandlingFetcher<
-          PaginatedApiResponse<T>
-        >(url);
+        const responseData =
+          await errorHandlingFetcher<PaginatedApiResponse<T>>(url);
 
         // Validate response data structure
         if (

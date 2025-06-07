@@ -69,13 +69,9 @@ class DrupalWikiBaseResponse(BaseModel, Generic[T]):
 class DrupalWikiSpaceResponse(DrupalWikiBaseResponse[DrupalWikiSpace]):
     """Model for the response from the Drupal Wiki spaces API"""
 
-    pass
-
 
 class DrupalWikiPageResponse(DrupalWikiBaseResponse[DrupalWikiPage]):
     """Model for the response from the Drupal Wiki pages API"""
-
-    pass
 
 
 class DrupalWikiCheckpoint(ConnectorCheckpoint):
