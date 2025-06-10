@@ -866,10 +866,6 @@ class DrupalWikiConnector(
                     slim_docs.append(
                         SlimDocument(
                             id=page_url,
-                            perm_sync_data={
-                                "space_id": page_content.homeSpace,
-                                "page_id": page_content.id,
-                            },
                         )
                     )
                     logger.info(f"Added slim document for page {page_content.id}")
@@ -882,11 +878,6 @@ class DrupalWikiConnector(
                             slim_docs.append(
                                 SlimDocument(
                                     id=attachment_url,
-                                    perm_sync_data={
-                                        "space_id": page_content.homeSpace,
-                                        "page_id": page_content.id,
-                                        "attachment_id": attachment["id"],
-                                    },
                                 )
                             )
                             logger.info(
@@ -954,7 +945,6 @@ class DrupalWikiConnector(
                     slim_docs.append(
                         SlimDocument(
                             id=page_url,
-                            perm_sync_data={"space_id": space_id, "page_id": page.id},
                         )
                     )
                     logger.info(f"Added slim document for page {page.id}")
@@ -967,11 +957,6 @@ class DrupalWikiConnector(
                             slim_docs.append(
                                 SlimDocument(
                                     id=attachment_url,
-                                    perm_sync_data={
-                                        "space_id": space_id,
-                                        "page_id": page.id,
-                                        "attachment_id": attachment["id"],
-                                    },
                                 )
                             )
                             logger.info(
