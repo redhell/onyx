@@ -4,6 +4,7 @@ from typing import cast
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
+from pydantic import ValidationError
 
 from onyx.agents.agent_search.kb_search.graph_utils import get_near_empty_step_results
 from onyx.agents.agent_search.kb_search.graph_utils import stream_close_step_answer
@@ -79,13 +80,14 @@ def extract_ert(
     stream_write_step_activities(writer, _KG_STEP_NR)
 
     # Create temporary views. TODO: move into parallel step, if ultimately materialized
-    allowed_docs_view_name, kg_relationships_view_name = get_user_view_names(user_email)
+    kg_views = get_user_view_names(user_email)
     with get_session_with_current_tenant() as db_session:
         create_views(
             db_session,
             user_email=user_email,
-            allowed_docs_view_name=allowed_docs_view_name,
-            kg_relationships_view_name=kg_relationships_view_name,
+            allowed_docs_view_name=kg_views.allowed_docs_view_name,
+            kg_relationships_view_name=kg_views.kg_relationships_view_name,
+            kg_entity_view_name=kg_views.kg_entity_view_name,
         )
 
     ### get the entities, terms, and filters
@@ -135,21 +137,15 @@ def extract_ert(
             entity_extraction_result = (
                 KGQuestionEntityExtractionResult.model_validate_json(cleaned_response)
             )
-        except ValueError:
-            logger.error(
-                "Failed to parse LLM response as JSON in Entity-Term Extraction"
-            )
+        except ValidationError:
+            logger.error("Failed to parse LLM response as JSON in Entity Extraction")
             entity_extraction_result = KGQuestionEntityExtractionResult(
-                entities=[],
-                terms=[],
-                time_filter="",
+                entities=[], time_filter=""
             )
     except Exception as e:
         logger.error(f"Error in extract_ert: {e}")
         entity_extraction_result = KGQuestionEntityExtractionResult(
-            entities=[],
-            terms=[],
-            time_filter="",
+            entities=[], time_filter=""
         )
 
     # remove the attribute filters from the entities to for the purpose of the relationship
@@ -216,9 +212,9 @@ def extract_ert(
                     cleaned_response
                 )
             )
-        except ValueError:
+        except ValidationError:
             logger.error(
-                "Failed to parse LLM response as JSON in Entity-Term Extraction"
+                "Failed to parse LLM response as JSON in Relationship Extraction"
             )
             relationship_extraction_result = KGQuestionRelationshipExtractionResult(
                 relationships=[],
@@ -253,10 +249,10 @@ Entities: {extracted_entity_string} - \n Relationships: {extracted_relationship_
         extracted_entities_w_attributes=entity_extraction_result.entities,
         extracted_entities_no_attributes=entities_no_attributes,
         extracted_relationships=relationship_extraction_result.relationships,
-        extracted_terms=entity_extraction_result.terms,
         time_filter=entity_extraction_result.time_filter,
-        kg_doc_temp_view_name=allowed_docs_view_name,
-        kg_rel_temp_view_name=kg_relationships_view_name,
+        kg_doc_temp_view_name=kg_views.allowed_docs_view_name,
+        kg_rel_temp_view_name=kg_views.kg_relationships_view_name,
+        kg_entity_temp_view_name=kg_views.kg_entity_view_name,
         log_messages=[
             get_langgraph_node_log_string(
                 graph_component="main",

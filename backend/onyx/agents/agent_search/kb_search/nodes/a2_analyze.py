@@ -18,6 +18,7 @@ from onyx.agents.agent_search.kb_search.models import KGAnswerApproach
 from onyx.agents.agent_search.kb_search.states import AnalysisUpdate
 from onyx.agents.agent_search.kb_search.states import KGAnswerFormat
 from onyx.agents.agent_search.kb_search.states import KGAnswerStrategy
+from onyx.agents.agent_search.kb_search.states import KGRelationshipDetection
 from onyx.agents.agent_search.kb_search.states import KGSearchType
 from onyx.agents.agent_search.kb_search.states import MainState
 from onyx.agents.agent_search.kb_search.states import YesNoEnum
@@ -29,9 +30,7 @@ from onyx.configs.kg_configs import KG_STRATEGY_GENERATION_TIMEOUT
 from onyx.db.engine import get_session_with_current_tenant
 from onyx.db.entities import get_document_id_for_entity
 from onyx.kg.clustering.normalizations import normalize_entities
-from onyx.kg.clustering.normalizations import normalize_entities_w_attributes_from_map
 from onyx.kg.clustering.normalizations import normalize_relationships
-from onyx.kg.clustering.normalizations import normalize_terms
 from onyx.kg.utils.formatting_utils import split_relationship_id
 from onyx.prompts.kg_prompts import STRATEGY_GENERATION_PROMPT
 from onyx.utils.logger import setup_logger
@@ -147,7 +146,6 @@ def analyze(
         state.extracted_entities_no_attributes
     )  # attribute knowledge is not required for this step
     relationships = state.extracted_relationships
-    terms = state.extracted_terms
     time_filter = state.time_filter
 
     ## STEP 2 - stream out goals
@@ -157,18 +155,14 @@ def analyze(
     # Continue with node
 
     normalized_entities = normalize_entities(
-        entities, allowed_docs_temp_view_name=state.kg_doc_temp_view_name
-    )
-
-    query_graph_entities_w_attributes = normalize_entities_w_attributes_from_map(
+        entities,
         state.extracted_entities_w_attributes,
-        normalized_entities.entity_normalization_map,
+        allowed_docs_temp_view_name=state.kg_doc_temp_view_name,
     )
 
     normalized_relationships = normalize_relationships(
         relationships, normalized_entities.entity_normalization_map
     )
-    normalized_terms = normalize_terms(terms)
     normalized_time_filter = time_filter
 
     # If single-doc inquiry, send to single-doc processing directly
@@ -237,6 +231,9 @@ def analyze(
             )
             search_type = approach_extraction_result.search_type
             search_strategy = approach_extraction_result.search_strategy
+            relationship_detection = (
+                approach_extraction_result.relationship_detection.value
+            )
             output_format = approach_extraction_result.format
             broken_down_question = approach_extraction_result.broken_down_question
             divide_and_conquer = approach_extraction_result.divide_and_conquer
@@ -246,6 +243,7 @@ def analyze(
             )
             search_type = KGSearchType.SEARCH
             search_strategy = KGAnswerStrategy.DEEP
+            relationship_detection = KGRelationshipDetection.RELATIONSHIPS.value
             output_format = KGAnswerFormat.TEXT
             broken_down_question = None
             divide_and_conquer = YesNoEnum.NO
@@ -266,6 +264,22 @@ def analyze(
     step_answer = f"Strategy and format have been extracted from query. Strategy: {search_strategy.value}, \
 Format: {output_format.value}, Broken down question: {broken_down_question}"
 
+    extraction_detected_relationships = len(query_graph_relationships) > 0
+    if (
+        extraction_detected_relationships
+        or relationship_detection == KGRelationshipDetection.RELATIONSHIPS.value
+    ):
+        query_type = KGRelationshipDetection.RELATIONSHIPS.value
+
+        if extraction_detected_relationships:
+            logger.warning(
+                "Fyi - Extraction detected relationships: "
+                f"{extraction_detected_relationships}, "
+                f"but relationship detection: {relationship_detection}"
+            )
+    else:
+        query_type = KGRelationshipDetection.NO_RELATIONSHIPS.value
+
     stream_write_step_answer_explicit(writer, step_nr=_KG_STEP_NR, answer=step_answer)
 
     stream_close_step_answer(writer, _KG_STEP_NR)
@@ -278,9 +292,9 @@ Format: {output_format.value}, Broken down question: {broken_down_question}"
         entity_normalization_map=normalized_entities.entity_normalization_map,
         relationship_normalization_map=normalized_relationships.relationship_normalization_map,
         query_graph_entities_no_attributes=query_graph_entities,
-        query_graph_entities_w_attributes=query_graph_entities_w_attributes,
+        query_graph_entities_w_attributes=normalized_entities.entities_w_attributes,
         query_graph_relationships=query_graph_relationships,
-        normalized_terms=normalized_terms.terms,
+        normalized_terms=[],  # TODO: remove fully later
         normalized_time_filter=normalized_time_filter,
         strategy=search_strategy,
         broken_down_question=broken_down_question,
@@ -288,6 +302,7 @@ Format: {output_format.value}, Broken down question: {broken_down_question}"
         divide_and_conquer=divide_and_conquer,
         single_doc_id=single_doc_id,
         search_type=search_type,
+        query_type=query_type,
         log_messages=[
             get_langgraph_node_log_string(
                 graph_component="main",

@@ -217,31 +217,6 @@ def stream_write_close_steps(writer: StreamWriter, level: int = 0) -> None:
     write_custom_event("stream_finished", stop_event, writer)
 
 
-def stream_write_close_main_answer(writer: StreamWriter, level: int = 0) -> None:
-    stop_event = StreamStopInfo(
-        stop_reason=StreamStopReason.FINISHED,
-        stream_type=StreamType.MAIN_ANSWER,
-        level=level,
-        level_question_num=0,
-    )
-    write_custom_event("stream_finished", stop_event, writer)
-
-
-def stream_write_main_answer_token(
-    writer: StreamWriter, token: str, level: int = 0, level_question_num: int = 0
-) -> None:
-    write_custom_event(
-        "initial_agent_answer",
-        AgentAnswerPiece(
-            answer_piece=token,  # No need to add space as tokenizer handles this
-            level=level,
-            level_question_num=level_question_num,
-            answer_type="agent_level_answer",
-        ),
-        writer,
-    )
-
-
 def get_doc_information_for_entity(entity_id_name: str) -> KGEntityDocInfo:
     """
     Get document information for an entity, including its semantic name and document details.
@@ -292,11 +267,9 @@ def rename_entities_in_answer(answer: str) -> str:
 
     # Clean up any spaces around ::
     answer = re.sub(r"::\s+", "::", answer)
-    logger.debug(f"After cleaning spaces: {answer}")
 
     # Pattern to match entity_type::entity_name, with optional quotes
     pattern = r"(?:')?([a-zA-Z0-9-]+)::([a-zA-Z0-9]+)(?:')?"
-    logger.debug(f"Using pattern: {pattern}")
 
     matches = list(re.finditer(pattern, answer))
     logger.debug(f"Found {len(matches)} matches")
@@ -315,10 +288,8 @@ def rename_entities_in_answer(answer: str) -> str:
         entity_type = match.group(1).upper().strip()
         entity_name = match.group(2).strip()
         potential_entity_id_name = make_entity_id(entity_type, entity_name)
-        logger.debug(f"Processing entity: {potential_entity_id_name}")
 
         if entity_type not in active_entity_types:
-            logger.debug(f"Entity type {entity_type} not in active types")
             continue
 
         replacement_candidate = get_doc_information_for_entity(potential_entity_id_name)
@@ -328,14 +299,8 @@ def rename_entities_in_answer(answer: str) -> str:
             processed_refs[match.group(0)] = (
                 replacement_candidate.semantic_linked_entity_name
             )
-            logger.debug(
-                f"Added replacement: {match.group(0)} -> {replacement_candidate.semantic_linked_entity_name}"
-            )
         else:
             processed_refs[match.group(0)] = replacement_candidate.semantic_entity_name
-            logger.debug(
-                f"Added replacement: {match.group(0)} -> {replacement_candidate.semantic_entity_name}"
-            )
 
     # Replace all references in the answer
     for ref, replacement in processed_refs.items():

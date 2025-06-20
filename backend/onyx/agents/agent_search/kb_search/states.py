@@ -53,6 +53,16 @@ class KGAnswerStrategy(Enum):
     SIMPLE = "SIMPLE"
 
 
+class KGSourceDivisionType(Enum):
+    SOURCE = "SOURCE"
+    ENTITY = "ENTITY"
+
+
+class KGRelationshipDetection(Enum):
+    RELATIONSHIPS = "RELATIONSHIPS"
+    NO_RELATIONSHIPS = "NO_RELATIONSHIPS"
+
+
 class KGAnswerFormat(Enum):
     LIST = "LIST"
     TEXT = "TEXT"
@@ -79,6 +89,7 @@ class AnalysisUpdate(LoggerUpdate):
     divide_and_conquer: YesNoEnum | None = None
     single_doc_id: str | None = None
     search_type: KGSearchType | None = None
+    query_type: str | None = None
 
 
 class SQLSimpleGenerationUpdate(LoggerUpdate):
@@ -115,10 +126,10 @@ class ERTExtractionUpdate(LoggerUpdate):
     extracted_entities_w_attributes: list[str] = []
     extracted_entities_no_attributes: list[str] = []
     extracted_relationships: list[str] = []
-    extracted_terms: list[str] = []
     time_filter: str | None = None
     kg_doc_temp_view_name: str | None = None
     kg_rel_temp_view_name: str | None = None
+    kg_entity_temp_view_name: str | None = None
 
 
 class ResultsDataUpdate(LoggerUpdate):
@@ -167,3 +178,4 @@ class ResearchObjectInput(LoggerUpdate):
     vespa_filter_results: KGFilterConstructionResults
     source_division: bool | None
     source_entity_filters: list[str] | None
+    segment_type: str

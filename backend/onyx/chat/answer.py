@@ -123,7 +123,7 @@ class Answer:
             allow_refinement=AGENT_ALLOW_REFINEMENT,
             allow_agent_reranking=allow_agent_reranking,
             perform_initial_search_decomposition=INITIAL_SEARCH_DECOMPOSITION_ENABLED,
-            kg_config_settings=get_kg_config_settings(db_session),
+            kg_config_settings=get_kg_config_settings(),
         )
         self.graph_config = GraphConfig(
             inputs=self.graph_inputs,
@@ -141,7 +141,7 @@ class Answer:
         if self.graph_config.behavior.use_agentic_search and (
             self.graph_config.inputs.persona
             and self.graph_config.behavior.kg_config_settings.KG_ENABLED
-            and self.graph_config.inputs.persona.name.startswith("KG Dev")
+            and self.graph_config.inputs.persona.name.startswith("KG Beta")
         ):
             run_langgraph = run_kb_graph
         elif self.graph_config.behavior.use_agentic_search:

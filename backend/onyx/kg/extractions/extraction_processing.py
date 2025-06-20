@@ -1,12 +1,15 @@
 import json
+import time
 from collections import defaultdict
 from collections.abc import Callable
 from typing import Any
 from typing import cast
-from typing import Dict
 
 from langchain_core.messages import HumanMessage
+from redis.lock import Lock as RedisLock
 
+from onyx.background.celery.tasks.kg_processing.utils import extend_lock
+from onyx.configs.constants import CELERY_GENERIC_BEAT_LOCK_TIMEOUT
 from onyx.db.connector import get_kg_enabled_connectors
 from onyx.db.document import get_document_updated_at
 from onyx.db.document import get_skipped_kg_documents
@@ -19,6 +22,7 @@ from onyx.db.entities import upsert_staging_entity
 from onyx.db.entity_type import get_entity_types
 from onyx.db.kg_config import get_kg_config_settings
 from onyx.db.kg_config import KGConfigSettings
+from onyx.db.kg_config import validate_kg_settings
 from onyx.db.models import Document
 from onyx.db.models import KGRelationshipType
 from onyx.db.models import KGRelationshipTypeExtractionStaging
@@ -27,7 +31,6 @@ from onyx.db.relationships import delete_from_kg_relationships__no_commit
 from onyx.db.relationships import upsert_staging_relationship
 from onyx.db.relationships import upsert_staging_relationship_type
 from onyx.document_index.vespa.index import KGUChunkUpdateRequest
-from onyx.kg.configuration import validate_kg_settings
 from onyx.kg.models import ConnectorExtractionStats
 from onyx.kg.models import KGAggregatedExtractions
 from onyx.kg.models import KGBatchExtractionStats
@@ -49,6 +52,7 @@ from onyx.kg.utils.extraction_utils import (
 from onyx.kg.utils.extraction_utils import kg_process_person
 from onyx.kg.utils.extraction_utils import prepare_llm_content_extraction
 from onyx.kg.utils.extraction_utils import prepare_llm_document_content
+from onyx.kg.utils.extraction_utils import trackinfo_to_str
 from onyx.kg.utils.formatting_utils import aggregate_kg_extractions
 from onyx.kg.utils.formatting_utils import extract_relationship_type_id
 from onyx.kg.utils.formatting_utils import generalize_entities
@@ -73,13 +77,13 @@ logger = setup_logger()
 
 
 def _get_classification_extraction_instructions() -> (
-    Dict[str, Dict[str, KGEntityTypeInstructions]]
+    dict[str, dict[str, KGEntityTypeInstructions]]
 ):
     """
     Prepare the classification instructions for the given source.
     """
 
-    classification_instructions_dict: Dict[str, Dict[str, KGEntityTypeInstructions]] = (
+    classification_instructions_dict: dict[str, dict[str, KGEntityTypeInstructions]] = (
         {}
     )
 
@@ -87,7 +91,6 @@ def _get_classification_extraction_instructions() -> (
         entity_types = get_entity_types(db_session, active=True)
 
     for entity_type in entity_types:
-        assert isinstance(entity_type.attributes, dict)
         grounded_source_name = entity_type.grounded_source_name
 
         if grounded_source_name not in classification_instructions_dict:
@@ -95,23 +98,17 @@ def _get_classification_extraction_instructions() -> (
 
         if grounded_source_name is None:
             continue
-        classification_attributes = entity_type.attributes.get(
-            "classification_attributes", {}
-        )
 
+        attributes = entity_type.parsed_attributes
+        classification_attributes = attributes.classification_attributes
         classification_options = ", ".join(classification_attributes.keys())
-
         classification_enabled = (
             len(classification_options) > 0 and len(classification_attributes) > 0
         )
 
-        filter_instructions = cast(
-            dict[str, Any] | None,
-            entity_type.attributes.get("entity_filter_attributes", {}),
-        )
-
         classification_instructions_dict[grounded_source_name][entity_type.id_name] = (
             KGEntityTypeInstructions(
+                metadata_attribute_conversion=attributes.metadata_attributes,
                 classification_instructions=KGClassificationInstructions(
                     classification_enabled=classification_enabled,
                     classification_options=classification_options,
@@ -121,7 +118,7 @@ def _get_classification_extraction_instructions() -> (
                     deep_extraction=entity_type.deep_extraction,
                     active=entity_type.active,
                 ),
-                filter_instructions=filter_instructions,
+                filter_instructions=attributes.entity_filter_attributes,
             )
         )
 
@@ -150,33 +147,24 @@ def get_entity_types_str(active: bool | None = None) -> str:
             else:
                 allowed_values = ""
 
+            attributes = entity_type.parsed_attributes
+
             entity_type_attribute_list: list[str] = []
-            assert isinstance(entity_type.attributes, dict)
-            if entity_type.attributes.get("metadata_attributes"):
-
-                for attribute, values in entity_type.attributes.get(
-                    "metadata_attributes", {}
-                ).items():
-                    if values:
-                        entity_type_attribute_list.append(f"{attribute}: {values}")
-                    else:
-                        entity_type_attribute_list.append(
-                            f"{attribute}: any suitable value"
-                        )
-
-            if entity_type.attributes.get("classification_attributes"):
+            for attribute, values in attributes.attribute_values.items():
                 entity_type_attribute_list.append(
-                    "object_type: "
-                    + ", ".join(
-                        entity_type.attributes.get(
-                            "classification_attributes", {}
-                        ).keys()
-                    )
+                    f"{attribute}: {trackinfo_to_str(values)}"
+                )
+
+            if attributes.classification_attributes:
+                entity_type_attribute_list.append(
+                    # TODO: restructure classification attribute to be a dict of attribute name to classification info
+                    # e.g., {scope: {internal: prompt, external: prompt}, sentiment: {positive: prompt, negative: prompt}}
+                    "classification: one of: "
+                    + ", ".join(attributes.classification_attributes.keys())
                 )
             if entity_type_attribute_list:
-                entity_attributes = (
-                    "\n  - Attributes:\n         - "
-                    + "\n         - ".join(entity_type_attribute_list)
+                entity_attributes = "\n  - Attributes:\n    - " + "\n    - ".join(
+                    entity_type_attribute_list
                 )
             else:
                 entity_attributes = ""
@@ -288,9 +276,6 @@ def _get_batch_metadata(
                 continue
 
             chunk_attributes = first_chunk.source_metadata
-            kg_document_meta_data_dict[document_id].document_attributes = (
-                chunk_attributes
-            )
 
             if batch_entity:
                 doc_entity = batch_entity
@@ -329,6 +314,9 @@ def _get_batch_metadata(
                     source_type_classification_extraction_instructions[doc_entity]
                 )
 
+                kg_document_meta_data_dict[document_id].document_attributes = (
+                    chunk_attributes
+                )
                 kg_document_meta_data_dict[document_id].classification_enabled = (
                     entity_instructions.classification_instructions.classification_enabled
                 )
@@ -344,7 +332,10 @@ def _get_batch_metadata(
 
 
 def kg_extraction(
-    tenant_id: str, index_name: str, processing_chunk_batch_size: int = 8
+    tenant_id: str,
+    index_name: str,
+    lock: RedisLock,
+    processing_chunk_batch_size: int = 8,
 ) -> list[ConnectorExtractionStats]:
     """
     This extraction will try to extract from all chunks that have not been kg-processed yet.
@@ -363,9 +354,7 @@ def kg_extraction(
 
     logger.info(f"Starting kg extraction for tenant {tenant_id}")
 
-    with get_session_with_current_tenant() as db_session:
-        kg_config_settings = get_kg_config_settings(db_session)
-
+    kg_config_settings = get_kg_config_settings()
     validate_kg_settings(kg_config_settings)
 
     # get connector ids that are enabled for KG extraction
@@ -387,6 +376,8 @@ def kg_extraction(
     # Track which metadata attributes are possible for each entity type
     metadata_tracker = EntityTypeMetadataTracker()
     metadata_tracker.import_typeinfo()
+
+    last_lock_time = time.monotonic()
 
     # Iterate over connectors that are enabled for KG extraction
 
@@ -421,7 +412,7 @@ def kg_extraction(
                     get_unprocessed_kg_document_batch_for_connector(
                         db_session,
                         connector_id,
-                        kg_coverage_start=kg_config_settings.KG_COVERAGE_START,
+                        kg_coverage_start=kg_config_settings.KG_COVERAGE_START_DATE,
                         kg_max_coverage_days=connector_coverage_days
                         or kg_config_settings.KG_MAX_COVERAGE_DAYS,
                         batch_size=8,
@@ -435,6 +426,9 @@ def kg_extraction(
                 break
 
             document_batch_counter += 1
+            last_lock_time = extend_lock(
+                lock, CELERY_GENERIC_BEAT_LOCK_TIMEOUT, last_lock_time
+            )
 
             connector_extraction_stats = []
             connector_aggregated_kg_extractions_list = []
@@ -453,13 +447,15 @@ def kg_extraction(
             logger.info(f"Processing document batch {document_batch_counter}")
 
             # First, identify which entity we are processing for each document
-
+            entity_type_instructions = (
+                document_classification_extraction_instructions.get(
+                    connector_source, {}
+                )
+            )
             batch_metadata: dict[str, KGEnhancedDocumentMetadata] = _get_batch_metadata(
                 unprocessed_document_batch,
                 connector_source,
-                document_classification_extraction_instructions.get(
-                    connector_source, {}
-                ),
+                entity_type_instructions,
                 index_name,
                 kg_config_settings,
                 processing_chunk_batch_size,
@@ -692,7 +688,7 @@ def kg_extraction(
                         ] = defaultdict(int)
                     connector_aggregated_kg_extractions.relationships[relationship][
                         source_document_id
-                    ] += count
+                    ] += extraction_count
 
             for (
                 document_id,
@@ -817,6 +813,15 @@ def kg_extraction(
                                             if value
                                         }
                                     )
+                            # only keep selected attributes (and translate the attribute names)
+                            attribute_conversions = entity_type_instructions[
+                                entity_type
+                            ].metadata_attribute_conversion
+                            keep_attributes = {
+                                attribute_conversions[attr_name]: attr_val
+                                for attr_name, attr_val in entity_attributes.items()
+                                if attr_name in attribute_conversions
+                            }
 
                             upserted_entity = upsert_staging_entity(
                                 db_session=db_session,
@@ -824,7 +829,7 @@ def kg_extraction(
                                 entity_type=entity_type,
                                 document_id=document_id,
                                 occurrences=extraction_count,
-                                attributes=entity_attributes,
+                                attributes=keep_attributes,
                                 event_time=event_time,
                             )
                             metadata_tracker.track_metadata(
@@ -1354,14 +1359,9 @@ def _kg_document_classification(
                 classification_class
                 in document_classification_extraction_instructions.classification_class_definitions
             ):
-                extraction_decision = cast(
-                    bool,
-                    document_classification_extraction_instructions.classification_class_definitions[
-                        classification_class
-                    ][
-                        "extraction"
-                    ],
-                )
+                extraction_decision = document_classification_extraction_instructions.classification_class_definitions[
+                    classification_class
+                ].extraction
             else:
                 extraction_decision = False
 

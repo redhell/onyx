@@ -1,3 +1,4 @@
+from redis.lock import Lock as RedisLock
 from sqlalchemy import or_
 
 from onyx.configs.constants import DocumentSource
@@ -13,17 +14,24 @@ from onyx.db.models import KGRelationshipExtractionStaging
 from onyx.db.models import KGRelationshipType
 from onyx.db.models import KGRelationshipTypeExtractionStaging
 from onyx.db.models import KGStage
+from onyx.kg.resets.reset_index import reset_full_kg_index__commit
 from onyx.kg.resets.reset_vespa import reset_vespa_kg_index
 
 
-def reset_source_kg_index(source_name: str, tenant_id: str, index_name: str) -> None:
+def reset_source_kg_index(
+    source_name: str | None, tenant_id: str, index_name: str, lock: RedisLock
+) -> None:
     """
     Resets the knowledge graph index and vespa for a source.
     """
     # reset vespa for the source
-    reset_vespa_kg_index(tenant_id, index_name, source_name)
+    reset_vespa_kg_index(tenant_id, index_name, lock, source_name)
 
     with get_session_with_current_tenant() as db_session:
+        if source_name is None:
+            reset_full_kg_index__commit(db_session)
+            return
+
         # get all the entity types for the given source
         entity_types = [
             et.id_name

@@ -16,10 +16,18 @@ from onyx.document_index.vespa_constants import SOURCE_TYPE
 from onyx.document_index.vespa_constants import TENANT_ID
 from onyx.document_index.vespa_constants import USER_FILE
 from onyx.document_index.vespa_constants import USER_FOLDER
+from onyx.kg.utils.formatting_utils import split_relationship_id
 from onyx.utils.logger import setup_logger
 from shared_configs.configs import MULTI_TENANT
 
 logger = setup_logger()
+
+
+def build_tenant_id_filter(tenant_id: str, include_trailing_and: bool = False) -> str:
+    filter_str = f'({TENANT_ID} contains "{tenant_id}")'
+    if include_trailing_and:
+        filter_str += " and "
+    return filter_str
 
 
 def build_vespa_filters(
@@ -62,20 +70,42 @@ def build_vespa_filters(
         if not kg_entities and not kg_relationships and not kg_terms:
             return ""
 
-        filter_parts = []
+        combined_filter_parts = []
 
-        # Process each filter type using the same pattern
-        for filter_type, values in [
-            ("kg_entities", kg_entities),
-            ("kg_relationships", kg_relationships),
-            ("kg_terms", kg_terms),
-        ]:
-            if values:
+        def _build_kge(entity: str) -> str:
+            # TYPE-SUBTYPE::ID -> "TYPE-SUBTYPE::ID"
+            # TYPE-SUBTYPE::*  -> ({prefix: true}"TYPE-SUBTYPE")
+            # TYPE::*          -> ({prefix: true}"TYPE")
+            GENERAL = "::*"
+            if entity.endswith(GENERAL):
+                return f'({{prefix: true}}"{entity.split(GENERAL, 1)[0]}")'
+            else:
+                return f'"{entity}"'
+
+        # OR the entities (give new design)
+        if kg_entities:
+            filter_parts = []
+            for kg_entity in kg_entities:
+                filter_parts.append(f"(kg_entities contains {_build_kge(kg_entity)})")
+            combined_filter_parts.append(f"({' or '.join(filter_parts)})")
+
+        # TODO: handle complex nested relationship logic (e.g., A participated, and B or C participated)
+        if kg_relationships:
+            filter_parts = []
+            for kg_relationship in kg_relationships:
+                source, rel_type, target = split_relationship_id(kg_relationship)
                 filter_parts.append(
-                    " and ".join(f'({filter_type} contains "{val}") ' for val in values)
+                    "(kg_relationships contains sameElement("
+                    f"source contains {_build_kge(source)},"
+                    f'rel_type contains "{rel_type}",'
+                    f"target contains {_build_kge(target)}))"
                 )
+            combined_filter_parts.append(f"{' and '.join(filter_parts)}")
 
-        return f"({' and '.join(filter_parts)}) and "
+        # TODO: remove kg terms entirely from prompts and codebase
+
+        # AND the combined filter parts
+        return f"({' and '.join(combined_filter_parts)}) and "
 
     def _build_kg_source_filters(
         kg_sources: list[str] | None,
@@ -114,7 +144,9 @@ def build_vespa_filters(
     # TODO: add error condition if MULTI_TENANT and no tenant_id filter is set
     # If running in multi-tenant mode
     if filters.tenant_id and MULTI_TENANT:
-        filter_str += f'({TENANT_ID} contains "{filters.tenant_id}") and '
+        filter_str += build_tenant_id_filter(
+            filters.tenant_id, include_trailing_and=True
+        )
 
     # ACL filters
     if filters.access_control_list is not None:

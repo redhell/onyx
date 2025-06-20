@@ -672,6 +672,8 @@ class GoogleDriveConnector(
             if stage_completion.stage != DriveRetrievalStage.DONE
         ]
 
+        logger.debug(f"Non-completed users remaining: {len(non_completed_org_emails)}")
+
         # don't process too many emails before returning a checkpoint. This is
         # to resolve the case where there are a ton of emails that don't have access
         # to the drive APIs. Without this, we could loop through these emails for
@@ -1129,12 +1131,19 @@ class GoogleDriveConnector(
                     list[Document | ConnectorFailure | None],
                     run_functions_tuples_in_parallel(func_with_args, max_workers=8),
                 )
+                logger.debug(
+                    f"finished processing batch {batches_complete} with {len(results)} results"
+                )
 
                 docs_and_failures = [result for result in results if result is not None]
+                logger.debug(
+                    f"batch {batches_complete} has {len(docs_and_failures)} docs or failures"
+                )
 
                 if docs_and_failures:
                     yield from docs_and_failures
                     batches_complete += 1
+                logger.debug(f"finished yielding batch {batches_complete}")
 
             for retrieved_file in self._fetch_drive_items(
                 field_type=field_type,
