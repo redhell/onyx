@@ -114,8 +114,6 @@ class KGUChunkUpdateRequest(BaseModel):
     entities: set[str] | None = None
     relationships: set[str] | None = None
     terms: set[str] | None = None
-    converted_attributes: set[str] | None = None
-    attributes: dict[str, str | list[str]] | None = None
 
 
 class KGUDocumentUpdateRequest(BaseModel):
@@ -569,12 +567,10 @@ class VespaIndex(DocumentIndex):
     ) -> None:
         """Runs a batch of updates in parallel via the ThreadPoolExecutor."""
 
+        @retry(tries=3, delay=1, backoff=2, jitter=(0.0, 1.0))
         def _kg_update_chunk(
             update: KGVespaChunkUpdateRequest, http_client: httpx.Client
         ) -> httpx.Response:
-            # logger.debug(
-            #     f"Updating KG with request to {update.url} with body {update.update_request}"
-            # )
             return http_client.put(
                 update.url,
                 headers={"Content-Type": "application/json"},
@@ -584,16 +580,13 @@ class VespaIndex(DocumentIndex):
         # NOTE: using `httpx` here since `requests` doesn't support HTTP2. This is beneficient for
         # indexing / updates / deletes since we have to make a large volume of requests.
 
-        with (
-            concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor,
-            httpx_client as http_client,
-        ):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
             for update_batch in batch_generator(updates, batch_size):
                 future_to_document_id = {
                     executor.submit(
                         _kg_update_chunk,
                         update,
-                        http_client,
+                        httpx_client,
                     ): update.document_id
                     for update in update_batch
                 }
@@ -602,7 +595,10 @@ class VespaIndex(DocumentIndex):
                     try:
                         res.raise_for_status()
                     except requests.HTTPError as e:
-                        failure_msg = f"Failed to update document: {future_to_document_id[future]}"
+                        failure_msg = (
+                            f"Failed to update document {future_to_document_id[future]}\n"
+                            f"Response: {res.text}"
+                        )
                         raise requests.HTTPError(failure_msg) from e
 
     def update(self, update_requests: list[UpdateRequest], *, tenant_id: str) -> None:

@@ -3,9 +3,12 @@ from datetime import datetime
 from datetime import timezone
 from typing import List
 
+from sqlalchemy import func
+from sqlalchemy import literal
 from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 import onyx.db.document as dbdocument
@@ -129,7 +132,11 @@ def transfer_entity(
             index_elements=["name", "entity_type_id_name", "document_id"],
             set_=dict(
                 occurrences=KGEntity.occurrences + entity.occurrences,
-                attributes=entity.attributes,  # attribute can get updated after re-indexing
+                attributes=KGEntity.attributes.op("||")(
+                    literal(entity.attributes, JSONB)
+                ),
+                entity_key=func.coalesce(KGEntity.entity_key, entity.entity_key),
+                parent_key=func.coalesce(KGEntity.parent_key, entity.parent_key),
                 event_time=entity.event_time,
                 time_updated=datetime.now(),
             ),
@@ -196,6 +203,9 @@ def merge_entities(
             document_id=document_id,
             alternative_names=list(alternative_names),
             occurrences=parent.occurrences + child.occurrences,
+            attributes=parent.attributes | child.attributes,
+            entity_key=parent.entity_key or child.entity_key,
+            parent_key=parent.parent_key or child.parent_key,
         )
         .returning(KGEntity)
     )

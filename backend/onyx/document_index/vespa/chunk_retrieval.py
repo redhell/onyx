@@ -11,6 +11,7 @@ import httpx
 from retry import retry
 
 from onyx.configs.app_configs import LOG_VESPA_TIMING_INFORMATION
+from onyx.configs.app_configs import VESPA_LANGUAGE_OVERRIDE
 from onyx.context.search.models import IndexFilters
 from onyx.context.search.models import InferenceChunkUncleaned
 from onyx.document_index.interfaces import VespaChunkRequest
@@ -136,7 +137,8 @@ def _vespa_hit_to_inference_chunk(
         section_continuation=fields[SECTION_CONTINUATION],
         document_id=fields[DOCUMENT_ID],
         source_type=fields[SOURCE_TYPE],
-        image_file_name=fields.get(IMAGE_FILE_NAME),
+        # still called `image_file_name` in Vespa for backwards compatibility
+        image_file_id=fields.get(IMAGE_FILE_NAME),
         title=fields.get(TITLE),
         semantic_identifier=fields[SEMANTIC_IDENTIFIER],
         boost=fields.get(BOOST, 1),
@@ -336,6 +338,9 @@ def query_vespa(
             else {}
         ),
     )
+
+    if VESPA_LANGUAGE_OVERRIDE:
+        params["language"] = VESPA_LANGUAGE_OVERRIDE
 
     try:
         with get_vespa_http_client() as http_client:

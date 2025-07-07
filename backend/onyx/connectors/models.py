@@ -34,7 +34,7 @@ class Section(BaseModel):
 
     link: str | None = None
     text: str | None = None
-    image_file_name: str | None = None
+    image_file_id: str | None = None
 
 
 class TextSection(Section):
@@ -49,10 +49,10 @@ class TextSection(Section):
 class ImageSection(Section):
     """Section containing an image reference"""
 
-    image_file_name: str
+    image_file_id: str
 
     def __sizeof__(self) -> int:
-        return sys.getsizeof(self.image_file_name) + sys.getsizeof(self.link)
+        return sys.getsizeof(self.image_file_id) + sys.getsizeof(self.link)
 
 
 class BasicExpertInfo(BaseModel):
@@ -364,8 +364,12 @@ class ConnectorFailure(BaseModel):
 
 
 class OnyxMetadata(BaseModel):
+    # Note that doc_id cannot be overriden here as it may cause issues
+    # with the display functionalities in the UI. Ask @chris if clarification is needed.
+    source_type: DocumentSource | None = None
     link: str | None = None
     file_display_name: str | None = None
     primary_owners: list[BasicExpertInfo] | None = None
     secondary_owners: list[BasicExpertInfo] | None = None
     doc_updated_at: datetime | None = None
+    title: str | None = None

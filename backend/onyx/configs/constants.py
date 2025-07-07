@@ -150,8 +150,8 @@ class DocumentSource(str, Enum):
     GURU = "guru"
     BOOKSTACK = "bookstack"
     CONFLUENCE = "confluence"
-    SLAB = "slab"
     JIRA = "jira"
+    SLAB = "slab"
     PRODUCTBOARD = "productboard"
     FILE = "file"
     NOTION = "notion"
@@ -490,5 +490,5 @@ else:
 
 
 class OnyxCallTypes(str, Enum):
-    FIREFLIES = "fireflies"
-    GONG = "gong"
+    FIREFLIES = "FIREFLIES"
+    GONG = "GONG"

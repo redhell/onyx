@@ -28,7 +28,7 @@ from onyx.configs.constants import DocumentSource
 from onyx.configs.kg_configs import KG_SIMPLE_ANSWER_MAX_DISPLAYED_SOURCES
 from onyx.db.chunk import delete_chunk_stats_by_connector_credential_pair__no_commit
 from onyx.db.connector_credential_pair import get_connector_credential_pair_from_id
-from onyx.db.engine import get_session_context_manager
+from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.db.entities import delete_from_kg_entities__no_commit
 from onyx.db.entities import delete_from_kg_entities_extraction_staging__no_commit
 from onyx.db.enums import AccessType
@@ -51,7 +51,6 @@ from onyx.db.tag import delete_document_tags_for_documents__no_commit
 from onyx.db.utils import model_to_dict
 from onyx.document_index.interfaces import DocumentMetadata
 from onyx.kg.models import KGStage
-from onyx.kg.utils.formatting_utils import split_entity_id
 from onyx.server.documents.models import ConnectorCredentialPairIdentifier
 from onyx.utils.logger import setup_logger
 
@@ -299,7 +298,7 @@ def get_document_counts_for_cc_pairs(
 def get_document_counts_for_cc_pairs_parallel(
     cc_pairs: list[ConnectorCredentialPairIdentifier],
 ) -> Sequence[tuple[int, int, int]]:
-    with get_session_context_manager() as db_session:
+    with get_session_with_current_tenant() as db_session:
         return get_document_counts_for_cc_pairs(db_session, cc_pairs)
 
 
@@ -937,9 +936,11 @@ def get_unprocessed_kg_document_batch_for_connector(
         .where(
             and_(
                 DocumentByConnectorCredentialPair.connector_id == connector_id,
-                DbDocument.doc_updated_at >= kg_coverage_start,
                 DbDocument.doc_updated_at
-                >= datetime.now() - timedelta(days=kg_max_coverage_days),
+                >= max(
+                    kg_coverage_start,
+                    datetime.now() - timedelta(days=kg_max_coverage_days),
+                ),
                 or_(
                     DbDocument.kg_stage.is_(None),
                     DbDocument.kg_stage == KGStage.NOT_STARTED,
@@ -948,7 +949,6 @@ def get_unprocessed_kg_document_batch_for_connector(
             )
         )
         .distinct()
-        .order_by(DbDocument.doc_updated_at.desc())
         .limit(batch_size)
     )
 
@@ -1055,11 +1055,6 @@ def get_document_updated_at(
     Returns:
         Optional[datetime]: The doc_updated_at timestamp if found, None if document doesn't exist
     """
-    parts = split_entity_id(document_id)
-    if len(parts) == 2:
-        document_id = parts[1]
-    elif len(parts) > 2:
-        raise ValueError(f"Invalid document ID: {document_id}")
 
     stmt = select(DbDocument.doc_updated_at).where(DbDocument.id == document_id)
     return db_session.execute(stmt).scalar_one_or_none()
@@ -1185,14 +1180,14 @@ def check_for_documents_needing_kg_processing(
         .where(
             and_(
                 Connector.kg_processing_enabled.is_(True),
-                DbDocument.doc_updated_at >= kg_coverage_start,
                 DbDocument.doc_updated_at
-                >= datetime.now() - timedelta(days=kg_max_coverage_days),
+                >= max(
+                    kg_coverage_start,
+                    datetime.now() - timedelta(days=kg_max_coverage_days),
+                ),
                 or_(
-                    or_(
-                        DbDocument.kg_stage.is_(None),
-                        DbDocument.kg_stage == KGStage.NOT_STARTED,
-                    ),
+                    DbDocument.kg_stage.is_(None),
+                    DbDocument.kg_stage == KGStage.NOT_STARTED,
                     DbDocument.doc_updated_at > DbDocument.kg_processing_time,
                 ),
             )

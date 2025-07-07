@@ -41,8 +41,9 @@ QUERY_ENTITY_EXTRACTION_FORMATTING_PROMPT = r"""
 {{"entities": [<a list of entities of the prescribed entity types that you can reliably identify in the text, \
 formatted as '<ENTITY_TYPE_NAME>::<entity_name>' (please use that capitalization)>. Each entity \
 also should be followed by a list of comma-separated attribute filters for the entity, if referred to in the \
-question for that entity. Example: 'ACCOUNT::* -- [account_type: customer, status: active]' should the question be \
-'list all customer accounts', and ACCOUNT was an entity type with this attribute key/value allowed.] \
+question for that entity. CRITICAL: you can only use attributes that are mentioned above for the \
+entity type in question. Example: 'ACCOUNT::* -- [account_type: customer, status: active]' if the question is \
+'list all customer accounts', and ACCOUNT was an entity type with these attribute key/values allowed.] \
 "time_filter": <if needed, a SQL-like filter for a field called 'event_date'. Do not select anything here \
 unless you are sure that the question asks for that filter. Only apply a time_filter if the question explicitly \
 mentions a specific date, time period, or event that can be directly translated into a date filter. Do not assume \
@@ -267,12 +268,14 @@ Here is the text you are asked to extract knowledge from, if needed with additio
 QUERY_ENTITY_EXTRACTION_PROMPT = f"""
 You are an expert in the area of knowledge extraction and using knowledge graphs. You are given a question \
 and asked to extract entities (with attributes if applicable) that you can reliably identify, which will then
-be matched with a known entity in the knowledge graph. You are also asked to extract time filters SHOULD \
-there be an explicit mention of a date or time frame in the QUESTION (note: last, first, etc.. DO NOT \
+be matched with a known entity in the knowledge graph. You are also asked to extract time constraints information \
+from the QUESTION. Some time constraints will be captured by entity attributes if \
+the entity type has a fitting attribute (example: 'created_at' could be a candidate for that), other times
+we will extract an explicit time filter if no attribute fits. (Note regarding 'last', 'first', etc.: DO NOT \
 imply the need for a time filter just because the question asks for something that is not the current date. \
-They will relate to ordering that we will handle separately).
+They will relate to ordering that we will handle separately later).
 
-Today is ---today_date--- and the user asking is ---user_name---, which may or may not be relevant.
+In case useful, today is ---today_date--- and the user asking is ---user_name---, which may or may not be relevant.
 Here are the entity types that are available for extraction. Some of them may have \
 a description, others should be obvious. Also, notice that some may have attributes associated with them, which will \
 be important later.
@@ -337,6 +340,13 @@ and the value would need to be taken from the specification, as the question may
 actual attribute may be implied.
    - don't just look at the entities that are mentioned in the question but also those that the question \
 may be about.
+  - be very careful that you only extract attributes that are listed above for the entity type in question! Do \
+not make up attributes even if they are implied! Particularly if there is a relationship type that would \
+actually represent that information, you MUST not extract the information as an attribute. We \
+will extract the relationship type later.
+  - For the values of attributes, look at the possible values above! For example 'open' may refer to \
+'backlog', 'todo', 'in progress', etc. In cases like that construct a ';'-separated list of values that you think may fit \
+what is implied in the question (in the exanple: 'open; backlog; todo; in progress').
 
 Also, if you think the name or the title of an entity is given but name or title are not mentioned \
 explicitly as an attribute, then you should indeed extract the name/title as the entity name.
@@ -374,7 +384,9 @@ Here are the entities you have identified earlier:
 
 Note that the notation for the entities is <ENTITY_TYPE>::<ENTITY_NAME>.
 
-Here are the options for the relationship types(!) between the entities you have identified earlier:
+Here are the options for the relationship types(!) between the entities you have identified earlier \
+as well as relationship types between the identified entities and other entities \
+not explicitly mentioned:
 {SEPARATOR_LINE}
 ---relationship_type_options---
 {SEPARATOR_LINE}
@@ -432,6 +444,13 @@ relationships.
    - if in doubt and there are multiple relationships between the same two entities, you can extract \
 all of those that may fit with the question.
    - be really thinking through the question which type of relationships should be extracted and which should not.
+
+Other important notes:
+ - For questions that really try to explore in general what a certain entity was involved in like 'what did Paul Smith do \
+in the last 3 months?', and Paul Smith has been extracted i.e. as an entity of type 'EMPLOYEE', then you need to extract \
+all of the possible relationships an empoyee Paul Smith could have.
+ - You are not forced to use all or any of the relationship types listed above. Really look at the question to \
+ determine which relationships are explicitly or implicitly referred to in the question.
 
 {SEPARATOR_LINE}
 
@@ -583,7 +602,11 @@ If a SQL search is chosen, i.e., documents have to be identified first, there ar
 1. SIMPLE: You think you can answer the question using a database that is aware of the entities, relationships \
 above, and is generally suitable if it is enough to either list or count entities, return dates, etc. Usually, \
 'SIMPLE' is chosen for questions of the form 'how many...' (always), or 'list the...' (often), 'when was...', \
-'what did (someone) work on...'etc.
+'what did (someone) work on...'etc. Often it is also used in cases like 'what did John work on since April?'. Here, \
+the user would expect to just see the list. So chose 'SIMPLE' here unless there are REALLY CLEAR \
+follow-up instructions for each item (like 'summarize...' , 'analyze...', 'what are the main points of...'.) If \
+it is a 'what did...'-type question, choose 'SIMPLE'!
+
 2. DEEP: You think you really should ALSO leverage the actual text of sources to answer the question, which sits \
 in a vector database. Examples are 'what is discussed in...', 'summarize', 'what is the discussion about...',\
 'how does... relate to...', 'are there any mentions of... in..', 'what are the main points in...', \
@@ -655,15 +678,15 @@ You are given an original SQL statement that returns a list of entities from a t
 an aggregation of entities from a table. Your task will be to \
 identify the source documents that are relevant to what the SQL statement is returning.
 
-The task is actually quite simple. There are two tables involved - kg_relationship and kg_entity. \
-kg_relationship was used to generate the original SQL statement. Again, returning entities \
-or aggregations of entities. The second table, kg_entity contains the entities and \
+The task is actually quite simple. There are two tables involved - relationship_table and entity_table. \
+relationship_table was used to generate the original SQL statement. Again, returning entities \
+or aggregations of entities. The second table, entity_table contains the entities and \
 the corresponding source_documents. All you need to do is to appropriately join the \
-kg_entity table on the entities that would be retrieved from the original SQL statement, \
-and then return the source_documents from the kg_entity table.
+entity_table table on the entities that would be retrieved from the original SQL statement, \
+and then return the source_documents from the entity_table table.
 
-For your orientation, the kg_relationship table has this structure:
- - Table name: kg_relationship
+For your orientation, the relationship_table table has this structure:
+ - Table name: relationship_table
  - Columns:
    - relationship (str): The name of the RELATIONSHIP, combining the nature of the relationship and the names of the entities. \
 It is of the form \
@@ -682,18 +705,18 @@ It is of the form \
 been removed. [example: ACCOUNT__has__CONCERN]
    - source_date (str): the 'event' date of the source document [example: 2021-01-01]
 
-The second table, kg_entity, has this structure:
- - Table name: kg_entity
+The second table, entity_table, has this structure:
+ - Table name: entity_table
  - Columns:
    - entity (str): The name of the ENTITY, which is unique in this table. source_entity and target_entity \
-in the kg_relationship table are the same as entity in this table.
+in the relationship_table table are the same as entity in this table.
    - source_document (str): the id of the document that contains the entity.
 
-Again, ultimately, your task is to join the kg_entity table on the entities that would be retrieved from the \
-original SQL statement, and then return the source_documents from the kg_entity table.
+Again, ultimately, your task is to join the entity_table table on the entities that would be retrieved from the \
+original SQL statement, and then return the source_documents from the entity_table table.
 
 The way to do that is to create a common table expression for the original SQL statement and join the \
-kg_entity table suitably on the entities.
+entity_table table suitably on the entities.
 
 Here is the *original* SQL statement:
 {SEPARATOR_LINE}
@@ -712,11 +735,11 @@ You are an expert in generating, understanding and analyzing SQL statements.
 You are given a SQL statement that returned an aggregation of entities in a table. \
 Your task will be to identify the source documents for the entities involved in \
 the answer. For example, should the original SQL statement be \
-'SELECT COUNT(entity) FROM kg_entity where entity_type = "ACCOUNT"' \
+'SELECT COUNT(entity) FROM entity_table where entity_type = "ACCOUNT"' \
 then you should return the source documents that contain the entities of type 'ACCOUNT'.
 
 The table has this structure:
- - Table name: kg_entity
+ - Table name: entity_table
  - Columns:
    - entity (str): The name of the ENTITY, combining the nature of the entity and the id of the entity. \
 It is of the form <entity_type>::<entity_name> [example: ACCOUNT::625482894].
@@ -755,7 +778,7 @@ You are an expert in generating a SQL statement that only uses ONE TABLE that ca
 between TWO ENTITIES. The table has the following structure:
 
 {SEPARATOR_LINE}
- - Table name: kg_relationship
+ - Table name: relationship_table
  - Columns:
    - relationship (str): The name of the RELATIONSHIP, combining the nature of the relationship and the names of the entities. \
 It is of the form \
@@ -816,7 +839,7 @@ the entities that were matched to them in the Knowledge Graph:
 
 --
 
-Identified relationships in query:
+Here are relationships that were identified as explicitly or implicitly referred to in the question:
 
 ---query_relationships---
 
@@ -893,6 +916,10 @@ updated (by him) last week. So this would likely be a UNION of multiple queries.
 - If you do joins consider the possibility that the second entity does not exist for all examples. \
 Therefore joins should generally be LEFT joins (or RIGHT joins) as appropriate. Think about which \
 entities you are interested in, and which ones provides attributes.
+Another important note:
+ - For questions that really try to explore what a certain entity was involved in like 'what did Paul Smith do \
+in the last 3 months?', and Paul Smith has been extracted ie as an entity of type 'EMPLOYEE', you will \
+want to consider all entities that Paul Smith may be related to that satisfy any potential other conditions.
 - Joins should always be made on entities, not source documents!
 - Try to be as efficient as possible.
 
@@ -942,7 +969,7 @@ You are an expert in generating a SQL statement that only uses ONE TABLE that ca
 and their attributes and other data. The table has the following structure:
 
 {SEPARATOR_LINE}
- - Table name: kg_entity
+ - Table name: entity_table
  - Columns:
    - entity (str): The name of the ENTITY, combining the nature of the entity and the id of the entity. \
 It is of the form <entity_type>::<entity_name> [example: ACCOUNT::625482894].

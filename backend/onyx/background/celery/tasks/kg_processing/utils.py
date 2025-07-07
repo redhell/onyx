@@ -4,7 +4,7 @@ from redis.lock import Lock as RedisLock
 
 from onyx.configs.constants import OnyxRedisLocks
 from onyx.db.document import check_for_documents_needing_kg_processing
-from onyx.db.engine import get_session_with_current_tenant
+from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.db.kg_config import get_kg_config_settings
 from onyx.db.kg_config import is_kg_config_settings_enabled_valid
 from onyx.db.models import KGEntityExtractionStaging
@@ -30,8 +30,20 @@ def is_kg_processing_requirements_met() -> bool:
         return False
 
     with get_session_with_current_tenant() as db_session:
-        return check_for_documents_needing_kg_processing(
-            db_session, kg_config.KG_COVERAGE_START_DATE, kg_config.KG_MAX_COVERAGE_DAYS
+        has_staging_entities = (
+            db_session.query(KGEntityExtractionStaging).first() is not None
+        )
+        has_staging_relationships = (
+            db_session.query(KGRelationshipExtractionStaging).first() is not None
+        )
+        return (
+            check_for_documents_needing_kg_processing(
+                db_session,
+                kg_config.KG_COVERAGE_START_DATE,
+                kg_config.KG_MAX_COVERAGE_DAYS,
+            )
+            or has_staging_entities
+            or has_staging_relationships
         )
 
 

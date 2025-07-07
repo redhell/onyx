@@ -31,7 +31,7 @@ from onyx.db.connector_credential_pair import (
 )
 from onyx.db.document import get_document_counts_for_cc_pairs
 from onyx.db.document import get_documents_for_cc_pair
-from onyx.db.engine import get_session
+from onyx.db.engine.sql_engine import get_session
 from onyx.db.enums import AccessType
 from onyx.db.enums import ConnectorCredentialPairStatus
 from onyx.db.index_attempt import count_index_attempt_errors_for_cc_pair
@@ -466,7 +466,9 @@ def associate_credential_to_connector(
     )
 
     try:
-        validate_ccpair_for_user(connector_id, credential_id, db_session)
+        validate_ccpair_for_user(
+            connector_id, credential_id, metadata.access_type, db_session
+        )
 
         response = add_credential_to_connector(
             db_session=db_session,

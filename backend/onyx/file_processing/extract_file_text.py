@@ -2,7 +2,6 @@ import io
 import json
 import os
 import re
-import uuid
 import zipfile
 from collections.abc import Callable
 from collections.abc import Iterator
@@ -29,6 +28,7 @@ from pypdf.errors import PdfStreamError
 
 from onyx.configs.constants import FileOrigin
 from onyx.configs.constants import ONYX_METADATA_FILENAME
+from onyx.configs.llm_configs import get_image_extraction_and_analysis_enabled
 from onyx.file_processing.html_utils import parse_html_page_basic
 from onyx.file_processing.unstructured import get_unstructured_api_key
 from onyx.file_processing.unstructured import unstructured_to_text
@@ -534,7 +534,9 @@ def extract_text_and_images(
         if extension == ".pdf":
             file.seek(0)
             text_content, pdf_metadata, images = read_pdf_file(
-                file, pdf_pass, extract_images=True
+                file,
+                pdf_pass,
+                extract_images=get_image_extraction_and_analysis_enabled(),
             )
             return ExtractionResult(
                 text_content=text_content, embedded_images=images, metadata=pdf_metadata
@@ -613,15 +615,13 @@ def convert_docx_to_txt(file: UploadFile, file_store: FileStore) -> str:
     all_paras = [p.text for p in doc.paragraphs]
     text_content = "\n".join(all_paras)
 
-    text_file_name = docx_to_txt_filename(file.filename or f"docx_{uuid.uuid4()}")
-    file_store.save_file(
-        file_name=text_file_name,
+    file_id = file_store.save_file(
         content=BytesIO(text_content.encode("utf-8")),
         display_name=file.filename,
         file_origin=FileOrigin.CONNECTOR,
         file_type="text/plain",
     )
-    return text_file_name
+    return file_id
 
 
 def docx_to_txt_filename(file_path: str) -> str:

@@ -222,17 +222,6 @@ try:
 except ValueError:
     POSTGRES_POOL_RECYCLE = POSTGRES_POOL_RECYCLE_DEFAULT
 
-# Experimental setting to control idle transactions
-POSTGRES_IDLE_SESSIONS_TIMEOUT_DEFAULT = 0  # milliseconds
-try:
-    POSTGRES_IDLE_SESSIONS_TIMEOUT = int(
-        os.environ.get(
-            "POSTGRES_IDLE_SESSIONS_TIMEOUT", POSTGRES_IDLE_SESSIONS_TIMEOUT_DEFAULT
-        )
-    )
-except ValueError:
-    POSTGRES_IDLE_SESSIONS_TIMEOUT = POSTGRES_IDLE_SESSIONS_TIMEOUT_DEFAULT
-
 USE_IAM_AUTH = os.getenv("USE_IAM_AUTH", "False").lower() == "true"
 
 
@@ -781,3 +770,20 @@ DB_READONLY_USER: str = os.environ.get("DB_READONLY_USER", "db_readonly_user")
 DB_READONLY_PASSWORD: str = urllib.parse.quote_plus(
     os.environ.get("DB_READONLY_PASSWORD") or "password"
 )
+
+# File Store Configuration
+S3_FILE_STORE_BUCKET_NAME = (
+    os.environ.get("S3_FILE_STORE_BUCKET_NAME") or "onyx-file-store-bucket"
+)
+S3_FILE_STORE_PREFIX = os.environ.get("S3_FILE_STORE_PREFIX") or "onyx-files"
+# S3_ENDPOINT_URL is for MinIO and other S3-compatible storage. Leave blank for AWS S3.
+S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")
+S3_VERIFY_SSL = os.environ.get("S3_VERIFY_SSL", "").lower() == "true"
+
+# S3/MinIO Access Keys
+S3_AWS_ACCESS_KEY_ID = os.environ.get("S3_AWS_ACCESS_KEY_ID")
+S3_AWS_SECRET_ACCESS_KEY = os.environ.get("S3_AWS_SECRET_ACCESS_KEY")
+
+# Forcing Vespa Language
+# English: en, German:de, etc. See: https://docs.vespa.ai/en/linguistics.html
+VESPA_LANGUAGE_OVERRIDE = os.environ.get("VESPA_LANGUAGE_OVERRIDE")
