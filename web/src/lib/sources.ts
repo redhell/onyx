@@ -55,10 +55,29 @@ interface PartialSourceMetadata {
   displayName: string;
   category: SourceCategory;
   docs?: string;
+  oauthSupported?: boolean;
+  federated?: boolean;
+  federatedTooltip?: string;
+  // federated connectors store the base source type if it's a source
+  // that has both indexed connectors and federated connectors
+  baseSourceType?: ValidSources;
 }
 
 type SourceMap = {
-  [K in ValidSources]: PartialSourceMetadata;
+  [K in ValidSources | "federated_slack"]: PartialSourceMetadata;
+};
+
+const slackMetadata = {
+  icon: ColorSlackIcon,
+  displayName: "Slack",
+  category: SourceCategory.Messaging,
+  docs: "https://docs.onyx.app/connectors/slack",
+  oauthSupported: true,
+  federated: true,
+  federatedTooltip:
+    "⚠️ WARNING: Due to Slack's rate limit and ToS changes, Slack is now federated. " +
+    "This will result in significantly greater latency and lower search quality.",
+  baseSourceType: "slack",
 };
 
 export const SOURCE_METADATA_MAP: SourceMap = {
@@ -74,13 +93,8 @@ export const SOURCE_METADATA_MAP: SourceMap = {
     category: SourceCategory.Storage,
     docs: "https://docs.onyx.app/connectors/file",
   },
-  slack: {
-    icon: ColorSlackIcon,
-    displayName: "Slack",
-    category: SourceCategory.Messaging,
-    docs: "https://docs.onyx.app/connectors/slack",
-    oauthSupported: true,
-  },
+  slack: slackMetadata,
+  federated_slack: slackMetadata,
   discord: {
     icon: ColorDiscordIcon,
     displayName: "Discord",
@@ -359,7 +373,7 @@ function fillSourceMetadata(
   internalName: ValidSources
 ): SourceMetadata {
   return {
-    internalName: internalName,
+    internalName: partialMetadata.baseSourceType || internalName,
     ...partialMetadata,
     adminUrl: `/admin/connectors/${internalName}`,
   };
@@ -382,7 +396,9 @@ export function listSourceMetadata(): SourceMetadata[] {
       ([source, _]) =>
         source !== "not_applicable" &&
         source !== "ingestion_api" &&
-        source !== "mock_connector"
+        source !== "mock_connector" &&
+        // use the "regular" slack connector when listing
+        source !== "federated_slack"
     )
     .map(([source, metadata]) => {
       return fillSourceMetadata(metadata, source as ValidSources);
