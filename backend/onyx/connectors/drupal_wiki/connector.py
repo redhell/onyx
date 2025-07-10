@@ -36,7 +36,7 @@ from onyx.connectors.models import DocumentFailure
 from onyx.connectors.models import ImageSection
 from onyx.connectors.models import SlimDocument
 from onyx.connectors.models import TextSection
-from onyx.db.engine import get_session_with_current_tenant
+from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.file_processing.extract_file_text import extract_file_text
 from onyx.file_processing.image_utils import store_image_and_create_section
 from onyx.indexing.indexing_heartbeat import IndexingHeartbeatInterface
@@ -358,10 +358,11 @@ class DrupalWikiConnector(
                 section, file_name = store_image_and_create_section(
                     db_session=db_session,
                     image_data=raw_bytes,
-                    file_name=str(attachment["id"]),
+                    file_id=str(attachment["id"]),  # correct param to identify image
                     display_name=attachment.get(
                         "name", attachment.get("fileName", "Unknown")
                     ),
+                    link=None,  # no direct link for stored images
                     media_type=media_type,
                     file_origin=FileOrigin.CONNECTOR,
                 )
@@ -606,7 +607,7 @@ class DrupalWikiConnector(
                     elif result.get("file_name") and self.allow_images:
                         # Image attachment - create ImageSection only if allow_images is True
                         image_section = ImageSection(
-                            image_file_name=result["file_name"], link=page_url
+                            image_file_id=result["file_name"], link=page_url
                         )
                         sections.append(image_section)
                         logger.info(
