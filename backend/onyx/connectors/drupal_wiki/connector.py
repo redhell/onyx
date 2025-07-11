@@ -587,6 +587,16 @@ class DrupalWikiConnector(
                     logger.info(
                         f"Processing attachment: {attachment.get('name', 'Unknown')} (ID: {attachment['id']})"
                     )
+                    # Use downloadUrl from API; fallback to page URL
+                    raw_download = attachment.get("downloadUrl")
+                    if raw_download:
+                        download_url = (
+                            raw_download
+                            if raw_download.startswith("http")
+                            else f"{self.base_url.rstrip('/')}" + raw_download
+                        )
+                    else:
+                        download_url = page_url
                     # Process the attachment
                     result = self._process_attachment(attachment, page.id)
                     if result.get("error"):
@@ -596,18 +606,18 @@ class DrupalWikiConnector(
                         continue
                     # Add successful processing results to sections
                     if result.get("text") is not None and result["text"] != "":
-                        # Text attachment - create TextSection
+                        # Text attachment - create TextSection with direct download URL
                         attachment_section = TextSection(
-                            text=result["text"], link=page_url
+                            text=result["text"], link=download_url
                         )
                         sections.append(attachment_section)
                         logger.info(
                             f"Added text section for attachment {attachment.get('name', 'Unknown')}"
                         )
                     elif result.get("file_name") and self.allow_images:
-                        # Image attachment - create ImageSection only if allow_images is True
+                        # Image attachment - create ImageSection with direct download URL
                         image_section = ImageSection(
-                            image_file_id=result["file_name"], link=page_url
+                            image_file_id=result["file_name"], link=download_url
                         )
                         sections.append(image_section)
                         logger.info(
