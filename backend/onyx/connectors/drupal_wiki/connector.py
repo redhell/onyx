@@ -36,7 +36,6 @@ from onyx.connectors.models import DocumentFailure
 from onyx.connectors.models import ImageSection
 from onyx.connectors.models import SlimDocument
 from onyx.connectors.models import TextSection
-from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.file_processing.extract_file_text import extract_file_text
 from onyx.file_processing.image_utils import store_image_and_create_section
 from onyx.indexing.indexing_heartbeat import IndexingHeartbeatInterface
@@ -354,21 +353,19 @@ class DrupalWikiConnector(
 
         try:
             # Store image using the standardized function
-            with get_session_with_current_tenant() as db_session:
-                section, file_name = store_image_and_create_section(
-                    db_session=db_session,
-                    image_data=raw_bytes,
-                    file_id=str(attachment["id"]),  # correct param to identify image
-                    display_name=attachment.get(
-                        "name", attachment.get("fileName", "Unknown")
-                    ),
-                    link=None,  # no direct link for stored images
-                    media_type=media_type,
-                    file_origin=FileOrigin.CONNECTOR,
-                )
-                result["text"] = ""  # Empty text for images
-                result["file_name"] = file_name
-                logger.info(f"Stored image attachment with file name: {file_name}")
+            section, file_name = store_image_and_create_section(
+                image_data=raw_bytes,
+                file_id=str(attachment["id"]),  # correct param to identify image
+                display_name=attachment.get(
+                    "name", attachment.get("fileName", "Unknown")
+                ),
+                link=None,  # no direct link for stored images
+                media_type=media_type,
+                file_origin=FileOrigin.CONNECTOR,
+            )
+            result["text"] = ""  # Empty text for images
+            result["file_name"] = file_name
+            logger.info(f"Stored image attachment with file name: {file_name}")
         except Exception as e:
             result["error"] = f"Image storage failed: {e}"
             logger.error(
