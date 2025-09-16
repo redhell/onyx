@@ -17,10 +17,10 @@ def _truncate_str(s: str) -> str:
 
 
 def _mask(data: Any) -> Any:
-    """Mask data if it exceeds the maximum length threshold."""
-    if len(str(data)) <= MASKING_LENGTH:
-        return data
-    return _truncate_str(str(data))
+    data_str = str(data)
+    if len(data_str) > 40_000:
+        return _truncate_str(data_str)
+    return data
 
 
 def setup_braintrust() -> None:

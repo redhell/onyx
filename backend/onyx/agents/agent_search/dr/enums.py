@@ -29,4 +29,5 @@ class DRPath(str, Enum):
     GENERIC_INTERNAL_TOOL = "Generic Internal Tool"
     CLOSER = "Closer"
     LOGGER = "Logger"
+    REWRITER = "Rewriter"
     END = "End"

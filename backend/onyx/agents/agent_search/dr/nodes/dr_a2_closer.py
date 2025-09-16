@@ -2,17 +2,15 @@ import re
 from datetime import datetime
 from typing import cast
 
+from langchain_core.messages import AIMessage
+from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 from sqlalchemy.orm import Session
 
-from onyx.agents.agent_search.dr.constants import MAX_CHAT_HISTORY_MESSAGES
-from onyx.agents.agent_search.dr.constants import MAX_NUM_CLOSER_SUGGESTIONS
-from onyx.agents.agent_search.dr.enums import DRPath
 from onyx.agents.agent_search.dr.enums import ResearchAnswerPurpose
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
-from onyx.agents.agent_search.dr.models import TestInfoCompleteResponse
 from onyx.agents.agent_search.dr.states import FinalUpdate
 from onyx.agents.agent_search.dr.states import MainState
 from onyx.agents.agent_search.dr.states import OrchestrationUpdate
@@ -21,17 +19,14 @@ from onyx.agents.agent_search.dr.sub_agents.image_generation.models import (
 )
 from onyx.agents.agent_search.dr.utils import aggregate_context
 from onyx.agents.agent_search.dr.utils import convert_inference_sections_to_search_docs
-from onyx.agents.agent_search.dr.utils import get_chat_history_string
 from onyx.agents.agent_search.dr.utils import get_prompt_question
 from onyx.agents.agent_search.dr.utils import parse_plan_to_dict
 from onyx.agents.agent_search.models import GraphConfig
-from onyx.agents.agent_search.shared_graph_utils.llm import invoke_llm_json
 from onyx.agents.agent_search.shared_graph_utils.llm import stream_llm_answer
 from onyx.agents.agent_search.shared_graph_utils.utils import (
     get_langgraph_node_log_string,
 )
 from onyx.agents.agent_search.shared_graph_utils.utils import write_custom_event
-from onyx.agents.agent_search.utils import create_question_prompt
 from onyx.chat.chat_utils import llm_doc_from_inference_section
 from onyx.configs.agent_configs import TF_DR_TIMEOUT_LONG
 from onyx.context.search.models import InferenceSection
@@ -45,7 +40,6 @@ from onyx.llm.utils import check_number_of_tokens
 from onyx.prompts.chat_prompts import PROJECT_INSTRUCTIONS_SEPARATOR
 from onyx.prompts.dr_prompts import FINAL_ANSWER_PROMPT_W_SUB_ANSWERS
 from onyx.prompts.dr_prompts import FINAL_ANSWER_PROMPT_WITHOUT_SUB_ANSWERS
-from onyx.prompts.dr_prompts import TEST_INFO_COMPLETE_PROMPT
 from onyx.server.query_and_chat.streaming_models import CitationDelta
 from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import MessageStart
@@ -54,7 +48,10 @@ from onyx.server.query_and_chat.streaming_models import StreamingType
 from onyx.utils.logger import setup_logger
 from onyx.utils.threadpool_concurrency import run_with_timeout
 
+
 logger = setup_logger()
+
+_SOURCE_MATERIAL_PROMPT = "Can yut please put together all of the supporting material?"
 
 
 def extract_citation_numbers(text: str) -> list[int]:
@@ -229,18 +226,19 @@ def closer(
     assistant_system_prompt: str = state.assistant_system_prompt or ""
     assistant_task_prompt = state.assistant_task_prompt
 
-    uploaded_context = state.uploaded_test_context or ""
+    state.uploaded_test_context or ""
+    message_history_for_final_answer = state.orchestration_llm_messages
 
     clarification = state.clarification
     prompt_question = get_prompt_question(base_question, clarification)
 
-    chat_history_string = (
-        get_chat_history_string(
-            graph_config.inputs.prompt_builder.message_history,
-            MAX_CHAT_HISTORY_MESSAGES,
-        )
-        or "(No chat history yet available)"
-    )
+    # chat_history_string = (
+    #     get_chat_history_string(
+    #         graph_config.inputs.prompt_builder.message_history,
+    #         MAX_CHAT_HISTORY_MESSAGES,
+    #     )
+    #     or "(No chat history yet available)"
+    # )
 
     aggregated_context_w_docs = aggregate_context(
         state.iteration_responses, include_documents=True
@@ -251,54 +249,10 @@ def closer(
     )
 
     iteration_responses_w_docs_string = aggregated_context_w_docs.context
-    iteration_responses_wo_docs_string = aggregated_context_wo_docs.context
+    aggregated_context_wo_docs.context
     all_cited_documents = aggregated_context_w_docs.cited_documents
 
-    num_closer_suggestions = state.num_closer_suggestions
-
-    if (
-        num_closer_suggestions < MAX_NUM_CLOSER_SUGGESTIONS
-        and research_type == ResearchType.DEEP
-    ):
-        test_info_complete_prompt = TEST_INFO_COMPLETE_PROMPT.build(
-            base_question=prompt_question,
-            questions_answers_claims=iteration_responses_wo_docs_string,
-            chat_history_string=chat_history_string,
-            high_level_plan=(
-                state.plan_of_record.plan
-                if state.plan_of_record
-                else "No plan available"
-            ),
-        )
-
-        test_info_complete_json = invoke_llm_json(
-            llm=graph_config.tooling.primary_llm,
-            prompt=create_question_prompt(
-                assistant_system_prompt,
-                test_info_complete_prompt + (assistant_task_prompt or ""),
-            ),
-            schema=TestInfoCompleteResponse,
-            timeout_override=TF_DR_TIMEOUT_LONG,
-            # max_tokens=1000,
-        )
-
-        if test_info_complete_json.complete:
-            pass
-
-        else:
-            return OrchestrationUpdate(
-                tools_used=[DRPath.ORCHESTRATOR.value],
-                query_list=[],
-                log_messages=[
-                    get_langgraph_node_log_string(
-                        graph_component="main",
-                        node_name="closer",
-                        node_start_time=node_start_time,
-                    )
-                ],
-                gaps=test_info_complete_json.gaps,
-                num_closer_suggestions=num_closer_suggestions + 1,
-            )
+    state.num_closer_suggestions
 
     retrieved_search_docs = convert_inference_sections_to_search_docs(
         all_cited_documents
@@ -313,49 +267,43 @@ def closer(
         writer,
     )
 
+    if state.query_list:
+        final_questions = "\n - " + "\n - ".join(state.query_list)
+    else:
+        final_questions = "(No final question specifications)"
+
     if research_type in [ResearchType.THOUGHTFUL, ResearchType.FAST]:
-        final_answer_base_prompt = FINAL_ANSWER_PROMPT_WITHOUT_SUB_ANSWERS
+        final_answer_base_prompt = FINAL_ANSWER_PROMPT_WITHOUT_SUB_ANSWERS.build(
+            base_question=prompt_question,
+            final_questions=final_questions or "(No final question specifications)",
+            final_user_instructions=assistant_task_prompt
+            or "(No final user instructions)",
+            # iteration_responses_w_docs_string=iteration_responses_w_docs_string,
+        )
     elif research_type == ResearchType.DEEP:
-        final_answer_base_prompt = FINAL_ANSWER_PROMPT_W_SUB_ANSWERS
+        final_answer_base_prompt = FINAL_ANSWER_PROMPT_W_SUB_ANSWERS.build(
+            base_question=prompt_question,
+            final_questions=final_questions or "(No final question specifications)",
+            final_user_instructions=assistant_task_prompt
+            or "(No final user instructions)",
+        )
+
+        message_history_for_final_answer.append(
+            HumanMessage(content=_SOURCE_MATERIAL_PROMPT)
+        )
+        message_history_for_final_answer.append(
+            AIMessage(
+                content=FINAL_ANSWER_DEEP_CITATION_PROMPT.build(
+                    iteration_responses_string=iteration_responses_w_docs_string
+                )
+            )
+        )
     else:
         raise ValueError(f"Invalid research type: {research_type}")
 
-    estimated_final_answer_prompt_tokens = check_number_of_tokens(
-        final_answer_base_prompt.build(
-            base_question=prompt_question,
-            iteration_responses_string=iteration_responses_w_docs_string,
-            chat_history_string=chat_history_string,
-            uploaded_context=uploaded_context,
-        )
+    message_history_for_final_answer.append(
+        HumanMessage(content=final_answer_base_prompt)
     )
-
-    # for DR, rely only on sub-answers and claims to save tokens if context is too long
-    # TODO: consider compression step for Thoughtful mode if context is too long.
-    # Should generally not be the case though.
-
-    max_allowed_input_tokens = graph_config.tooling.primary_llm.config.max_input_tokens
-
-    if (
-        estimated_final_answer_prompt_tokens > 0.8 * max_allowed_input_tokens
-        and research_type == ResearchType.DEEP
-    ):
-        iteration_responses_string = iteration_responses_wo_docs_string
-    else:
-        iteration_responses_string = iteration_responses_w_docs_string
-
-    final_answer_prompt = final_answer_base_prompt.build(
-        base_question=prompt_question,
-        iteration_responses_string=iteration_responses_string,
-        chat_history_string=chat_history_string,
-        uploaded_context=uploaded_context,
-    )
-
-    if graph_config.inputs.project_instructions:
-        assistant_system_prompt = (
-            assistant_system_prompt
-            + PROJECT_INSTRUCTIONS_SEPARATOR
-            + (graph_config.inputs.project_instructions or "")
-        )
 
     all_context_llmdocs = [
         llm_doc_from_inference_section(inference_section)
@@ -367,10 +315,7 @@ def closer(
             int(3 * TF_DR_TIMEOUT_LONG),
             lambda: stream_llm_answer(
                 llm=graph_config.tooling.primary_llm,
-                prompt=create_question_prompt(
-                    assistant_system_prompt,
-                    final_answer_prompt + (assistant_task_prompt or ""),
-                ),
+                prompt=message_history_for_final_answer,
                 event_name="basic_response",
                 writer=writer,
                 agent_answer_level=0,
@@ -398,16 +343,6 @@ def closer(
     write_custom_event(current_step_nr, SectionEnd(), writer)
 
     current_step_nr += 1
-
-    # Log the research agent steps
-    # save_iteration(
-    #     state,
-    #     graph_config,
-    #     aggregated_context,
-    #     final_answer,
-    #     all_cited_documents,
-    #     is_internet_marker_dict,
-    # )
 
     return FinalUpdate(
         final_answer=final_answer,

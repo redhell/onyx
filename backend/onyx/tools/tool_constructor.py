@@ -18,7 +18,6 @@ from onyx.configs.app_configs import OAUTH_CLIENT_ID
 from onyx.configs.app_configs import OAUTH_CLIENT_SECRET
 from onyx.configs.app_configs import OKTA_API_TOKEN
 from onyx.configs.app_configs import OPENID_CONFIG_URL
-from onyx.configs.constants import TMP_DRALPHA_PERSONA_NAME
 from onyx.configs.model_configs import GEN_AI_TEMPERATURE
 from onyx.context.search.enums import LLMEvaluationType
 from onyx.context.search.enums import OptionalSearchSetting
@@ -333,11 +332,11 @@ def construct_tools(
                     logger.debug("Knowledge Graph Tool is not enabled/exposed")
                     continue
 
-                if persona.name != TMP_DRALPHA_PERSONA_NAME:
-                    # TODO: remove this after the beta period
-                    raise ValueError(
-                        f"The Knowledge Graph Tool should only be used by the '{TMP_DRALPHA_PERSONA_NAME}' Agent."
-                    )
+                # if persona.name != TMP_DRALPHA_PERSONA_NAME:
+                #     # TODO: remove this after the beta period
+                #     raise ValueError(
+                #         f"The Knowledge Graph Tool should only be used by the '{TMP_DRALPHA_PERSONA_NAME}' Agent."
+                #     )
                 tool_dict[db_tool_model.id] = [
                     KnowledgeGraphTool(tool_id=db_tool_model.id)
                 ]

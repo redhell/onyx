@@ -58,4 +58,7 @@ def completeness_router(state: MainState) -> DRPath | str:
 
     if next_path == DRPath.ORCHESTRATOR.value:
         return DRPath.ORCHESTRATOR
+
+    if state.ResearchType.DEEP:
+        return DRPath.REWRITER
     return DRPath.LOGGER

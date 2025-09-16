@@ -19,7 +19,7 @@ from onyx.prompts.prompt_template import PromptTemplate
 def get_dr_prompt_orchestration_templates(
     purpose: DRPromptPurpose,
     research_type: ResearchType,
-    available_tools: dict[str, OrchestratorTool],
+    available_tools: dict[str, OrchestratorTool] | None = None,
     entity_types_string: str | None = None,
     relationship_types_string: str | None = None,
     reasoning_result: str | None = None,
