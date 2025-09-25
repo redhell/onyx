@@ -107,21 +107,21 @@ def orchestrator(
     research_type = graph_config.behavior.research_type
     remaining_time_budget = state.remaining_time_budget
     chat_history_string = state.chat_history_string or "(No chat history yet available)"
-    answer_history_w_docs_string = (
-        aggregate_context(state.iteration_responses, include_documents=True).context
-        or "(No answer history yet available)"
-    )
+    # answer_history_w_docs_string = (
+    #     aggregate_context(state.iteration_responses, include_documents=True).context
+    #     or "(No answer history yet available)"
+    # )
     answer_history_wo_docs_string = (
         aggregate_context(state.iteration_responses, include_documents=False).context
         or "(No answer history yet available)"
     )
 
-    most_recent_answer_history_w_docs_string = (
-        aggregate_context(
-            state.iteration_responses, include_documents=True, most_recent=True
-        ).context
-        or "(No answer history yet available)"
-    )
+    # most_recent_answer_history_w_docs_string = (
+    #     aggregate_context(
+    #         state.iteration_responses, include_documents=True, most_recent=True
+    #     ).context
+    #     or "(No answer history yet available)"
+    # )
     most_recent_answer_history_wo_docs_string = (
         aggregate_context(
             state.iteration_responses, include_documents=False, most_recent=True
@@ -135,7 +135,7 @@ def orchestrator(
         if research_type == ResearchType.DEEP:
             ai_text = most_recent_answer_history_wo_docs_string
         else:
-            ai_text = most_recent_answer_history_w_docs_string
+            ai_text = most_recent_answer_history_wo_docs_string
 
         message_history_for_continuation.append(HumanMessage(content=human_text))
         new_messages.append(HumanMessage(content=human_text))
@@ -263,7 +263,7 @@ def orchestrator(
             reasoning_prompt = base_reasoning_prompt.build(
                 question=question,
                 chat_history_string=chat_history_string,
-                answer_history_string=answer_history_w_docs_string,
+                answer_history_string=answer_history_wo_docs_string,
                 iteration_nr=str(iteration_nr),
                 remaining_time_budget=str(remaining_time_budget),
                 uploaded_context=uploaded_context,
@@ -364,6 +364,9 @@ def orchestrator(
             reasoning_result=reasoning_result,
             uploaded_context=uploaded_context,
         )
+
+        message_history_for_continuation.append(HumanMessage(content=human_text))
+        new_messages.append(HumanMessage(content=human_text))
 
         if remaining_time_budget > 0:
             try:

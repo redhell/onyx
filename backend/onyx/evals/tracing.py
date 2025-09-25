@@ -16,7 +16,7 @@ def _truncate_str(s: str, head: int = 800, tail: int = 200) -> str:
 
 def _mask(data: Any) -> Any:
     data_str = str(data)
-    if len(data_str) > 10_000:
+    if len(data_str) > 40_000:
         return _truncate_str(data_str)
     return data
 

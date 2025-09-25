@@ -17,7 +17,6 @@ from onyx.agents.agent_search.dr.dr_prompt_builder import (
 )
 from onyx.agents.agent_search.dr.enums import DRPath
 from onyx.agents.agent_search.dr.enums import ResearchAnswerPurpose
-from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import ClarificationGenerationResponse
 from onyx.agents.agent_search.dr.models import DecisionResponse
 from onyx.agents.agent_search.dr.models import DRPromptPurpose
@@ -392,6 +391,7 @@ def clarifier(
     original_question = graph_config.inputs.prompt_builder.raw_user_query
     research_type = graph_config.behavior.research_type
 
+    graph_config.tooling.force_use_tool.force_use = False
     force_use_tool = graph_config.tooling.force_use_tool
 
     message_id = graph_config.persistence.message_id
@@ -697,7 +697,8 @@ def clarifier(
 
     clarification = None
 
-    if research_type == ResearchType.DEEP:
+    # if research_type == ResearchType.DEEP:
+    if False:
         result = _get_existing_clarification_request(graph_config)
         if result is not None:
             clarification, original_question, chat_history_string = result

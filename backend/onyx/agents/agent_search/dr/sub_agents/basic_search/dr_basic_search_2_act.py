@@ -6,7 +6,6 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import StreamWriter
 
 from onyx.agents.agent_search.dr.constants import DR_BASIC_SEARCH_MAX_DOCS
-from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import BaseSearchProcessingResponse
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import SearchAnswer
@@ -191,7 +190,8 @@ def basic_search(
 
     # Built prompt
 
-    if research_type == ResearchType.DEEP:
+    # if research_type == ResearchType.DEEP:
+    if True:
         search_prompt = INTERNAL_SEARCH_PROMPTS[research_type].build(
             search_query=branch_query,
             base_question=base_question,
