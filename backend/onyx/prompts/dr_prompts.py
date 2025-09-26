@@ -364,36 +364,21 @@ to answer the user question IN FULL.
 
 Note: the current time is ---current_time---.
 
-Here is uploaded user context (if any):
-{SEPARATOR_LINE}
----uploaded_context---
-{SEPARATOR_LINE}
-
 Most importantly, here is the question that you must devise a plan for answering:
 {SEPARATOR_LINE}
 ---question---
 {SEPARATOR_LINE}
 
 
-Here are the past few chat messages for reference (if any). \
-Note that the chat history may already contain the answer to the user question, in which case you can \
-skip straight to the {CLOSER}, or the user question may be a follow-up to a previous question. \
-In any case, do not confuse the below with the user query. It is only there to provide context.
-{SEPARATOR_LINE}
----chat_history_string---
-{SEPARATOR_LINE}
-
-Here are the previous sub-questions/sub-tasks and corresponding retrieved documents/information so far (if any). \
-{SEPARATOR_LINE}
----answer_history_string---
-{SEPARATOR_LINE}
-
-
 GUIDELINES:
-   - please look at the overall question and then the previous sub-questions/sub-tasks with the \
-retrieved documents/information you already have to determine whether there is not only sufficient \
+   - please look at the overall question and entire chat history. Particularly focus on the sub-questions \
+and sub-answers in the chat history to determine whether there is not only sufficient \
 information to answer the overall question, but also that the depth of the information likely matches \
 the user expectation.
+   - for broader questions, consider whether another tool may well have relevant information. If so, \
+don't be too early to conclude that you have all of the information you need. If however \
+the question is narrow/fact focussed and you have the information in the conversation history,/
+you should say so.
    - here is roughly how you should decide whether you are done or more research is needed:
 {DONE_STANDARD[ResearchType.THOUGHTFUL]}
 
@@ -424,8 +409,13 @@ Note:
  - the current time is ---current_time---.
 
 For this step, you have these ---num_available_tools--- tools available: \
----available_tools---. You can only select from these tools.
+---available_tools---. You can only select from these tools. Look back at the whole conversation and the system prompt \
+to see what each tool is good at.
 
+As a reminder, here is the overall question that you need to answer:
+{SEPARATOR_LINE}
+---question---
+{SEPARATOR_LINE}
 
 CRITICALLY - here is the reasoning from the previous iteration on why more research (i.e., tool calls) \
 is needed:
@@ -435,16 +425,24 @@ is needed:
 
 
 GUIDELINES:
+   - carefully consider the tools availabe, the overall question, and the message history, which \
+will show previous tool calls, the questions addressed in them, and the answers that were provided. \
+Think about which tool will most likely have the information that is needed next to answer the question. \
+(if the information so far is not complete.). If no tool was called before, consider which tool \
+would most likely have access to the information that is needed most or first.
+
    - consider the reasoning for why more research is needed, the question, the available tools \
-(and their differentiations), the previous sub-questions/sub-tasks and corresponding retrieved documents/information \
-so far, and the past few chat messages for reference if applicable to decide which tool to call next\
-and what questions/tasks to send to that tool.
+(and their differentiations), and the chat history that may contain sub-questions and sub-answers and/or \
+supporting documents.
    - you can only consider a tool that fits the remaining time budget! The tool cost must be below \
 the remaining time budget.
    - be careful NOT TO REPEAT NEARLY THE SAME SUB-QUESTION ALREADY ASKED IN THE SAME TOOL AGAIN! \
 If you did not get a \
 good answer from one tool you may want to query another tool for the same purpose, but only of the \
 other tool seems suitable too!
+   - if web search is available as a tool and it is reasonable to expect that relevant information is \
+on the internet, please consider doing a web search even if an earlier internal search \
+provided some data.
    - Again, focus is on generating NEW INFORMATION! Try to generate questions that
          - address gaps in the information relative to the original question
          - or are interesting follow-ups to questions answered so far, if you think \
@@ -466,7 +464,7 @@ particular, make sure the keys are "tool" and "questions", and DO NOT refer to \
 <parameter name="tool"> tool_name" or something like that. Keys are "tool" and "questions".
 
 {{
-   "reasoning": "<keep empty, as it is already available>",
+   "reasoning": "reason for 1-2 sentences what the tool choice should be.",
    "next_step": {{"tool": "<Select directly and exclusively from the following options: ---tool_choice_options---.>",
                   "questions": "<the question you want to pose to the tool. Note that the \
 question should be appropriate for the tool. For example:
@@ -497,6 +495,8 @@ Note:
 
 For this step, you have these ---num_available_tools--- tools available: \
 ---available_tools---. You can only select from these tools.
+
+As a reminder, here is the overall question that you need to answer:
 
 
 CRITICALLY - here is the reasoning from the previous iteration on why more research (i.e., tool calls) \
@@ -730,20 +730,16 @@ ORCHESTRATOR_DEEP_ITERATIVE_DECISION_PROMPT = PromptTemplate(
 Overall, you need to answer a user query. To do so, you have various tools at your disposal that you \
 can call iteratively. And an initial plan that should guide your thinking.
 
-You may already have some answers to earlier questions calls you generated in previous iterations, and you also \
-have a high-level plan given to you.
+The tools have been described early in the system prompt. The conversation history may also
+contain previous tool calls and requests, plus then the generated answers to those requests.
+Claims and gaps may also have been stated in the conversation history.
+
 
 Your task is to decide which tool to call next, and what specific question/task you want to pose to the tool, \
 considering the answers you already got and claims that were stated, and guided by the initial plan.
 
 (You are planning for iteration ---iteration_nr--- now.). Also, the current time is ---current_time---.
 
-You have these ---num_available_tools--- tools available, \
----available_tools---.
-
----tool_descriptions---
-
----kg_types_descriptions---
 
 Here is the overall question that you need to answer:
 {SEPARATOR_LINE}
@@ -755,15 +751,6 @@ Here is the high-level plan:
 ---current_plan_of_record_string---
 {SEPARATOR_LINE}
 
-Here is the answer history so far (if any):
-{SEPARATOR_LINE}
----answer_history_string---
-{SEPARATOR_LINE}
-
-Here is uploaded user context (if any):
-{SEPARATOR_LINE}
----uploaded_context---
-{SEPARATOR_LINE}
 
 Again, to avoid duplication here is the list of previous questions and the tools that were used to answer them:
 {SEPARATOR_LINE}
@@ -781,14 +768,6 @@ Here is the list of gaps that were pointed out by a reviewer:
 
 When coming up with new questions, please consider the list of questions - and answers that you can find \
 further above - to AVOID REPEATING THE SAME QUESTIONS (for the same tool)!
-
-Finally, here are the past few chat messages for reference (if any). \
-Note that the chat history may already contain the answer to the user question, in which case you can \
-skip straight to the {CLOSER}, or the user question may be a follow-up to a previous question. \
-In any case, do not confuse the below with the user query. It is only there to provide context.
-{SEPARATOR_LINE}
----chat_history_string---
-{SEPARATOR_LINE}
 
 Here are the average costs of the tools that you should consider in your decision:
 {SEPARATOR_LINE}
@@ -808,9 +787,19 @@ MISCELLANEOUS HINTS:
 satisfactorily answered, or which areas need more research/information.
    - BE CURIOUS! Consider interesting questions that would help to deepen the understanding of \
 the information you need to answer the original question.
+   - if web search is available as a tool and it is reasonable to expect that relevant information is \
+on the internet, please consider doing a web search even if an earlier internal search \
+provided some data.
    - if you think a) you can answer the question with the information you already have AND b) \
 the information from the high-level plan has been sufficiently answered in enough detail, then \
-you can use the "{CLOSER}" tool.
+you can use the "{CLOSER}" tool. For the decision of whether there is 'sufficient \
+detail', consider the nature of the question. If the question essentially asks about facts,
+then the required detail is not very high. If however the question is more braod, you \
+may want to consider - for example - to complement internal searches with web searches if the \
+both are available, to get a broader view.
+   - consider the previous tool calls, questions, and answers. FOR KEY POINTS consider to ask \
+another reasonable tool a similar question. Example - if internal search and web search are available, \
+and you got relevant information from internal search, consider to ask some questions also of web search.
    - please first consider whether you already can answer the question with the information you already have. \
 Also consider whether the plan suggests you are already done. If so, you can use the "{CLOSER}" tool.
    - if you think more information is needed because a sub-question was not sufficiently answered, \
@@ -1238,20 +1227,20 @@ You are now ready to answer the original user question based on the previous \
 exchanges that also retrieved. Base your answer on these documents, and sub-answers \
 where available. Consider the entire conversation history and each of the iterations.
 
-As a reminder, here is the original user question:
-{SEPARATOR_LINE}
----base_question---
-{SEPARATOR_LINE}
-
-And here were the last instructions given to you:
+##FINAL INSTRUCTIONS
+Here were the last instructions given to you:
 {SEPARATOR_LINE}
 ---final_questions---
 {SEPARATOR_LINE}
 
-If applicable, here are the final user instructions:
+and:
 {SEPARATOR_LINE}
 ---final_user_instructions---
 {SEPARATOR_LINE}
+
+##SUB_ANSWERS AND DOCUMENTS
+The previous tool calls, sub-questions, and documents are provided in the full conversation \
+history.
 
 GUIDANCE:
 - if the documents/sub-answers (if available) do not explicitly mention the topic of interest with \
@@ -1270,6 +1259,15 @@ point out the ambiguity in your answer. But DO NOT say something like 'I was not
 information on <X> specifically, but here is what I found about <X> generally....'. Rather say, \
 'Here is what I found about <X> and I hope this is the <X> you were looking for...', or similar.
 - Again... CITE YOUR SOURCES INLINE IN FORMAT [[2]][[4]], etc! This is CRITICAL!
+
+
+##BASE QUESTION
+As a reminder, here is the original user question:
+{SEPARATOR_LINE}
+---base_question---
+{SEPARATOR_LINE}
+
+Please answer the question.
 
 ANSWER:
 """

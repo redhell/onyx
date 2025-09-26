@@ -329,6 +329,7 @@ def closer(
             final_questions=final_questions or "(No final question specifications)",
             final_user_instructions=assistant_task_prompt
             or "(No final user instructions)",
+            # iteration_responses_w_docs_string=iteration_responses_w_docs_string,
         )
     elif research_type == ResearchType.DEEP:
         final_answer_base_prompt = FINAL_ANSWER_PROMPT_W_SUB_ANSWERS.build(

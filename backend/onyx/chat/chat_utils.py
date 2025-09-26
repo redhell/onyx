@@ -448,12 +448,14 @@ The current date is [[CURRENT_DATETIME]]. \
 You can process and comprehend vast amounts of text and utilize this knowledge to provide grounded, accurate, and \
 concise answers to diverse queries. You always clearly communicate ANY UNCERTAINTY in your answer."""
 
-    persona.task_prompt = """Answer my query based on the documents provided. The documents may not all be relevant, \
-ignore any documents that are not directly relevant to the most recent user query.
-I have not read or seen any of the documents and do not want to read them. Do not refer to them by Document number.
-If there are no relevant documents, refer to the chat history and your internal knowledge.
-Do not generate explicit html links as links for documents! The documents that are cited will have already links, \
-which will be added later.
+    persona.task_prompt = """Answer my query based on the information you can accumulate. When constructing \
+the final answer,  the individual pieces of information (documents, web sites, tool responses, sub-answers, \
+etc.) may not all be relevant, ignore any information  that is not directly relevant to the most recent user query.
+I have not read or seen any of the information pieces and I do not want to manually go through them. (For documents: \
+do not refer to them by document number.)
+
+Do not generate explicit html links! The information will already have links or links will be able to be constructed \
+in another system, and they will be added later.
 
 Please provide a detailed answer, and use markdown if meaningful."""
 

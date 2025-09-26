@@ -116,12 +116,12 @@ def orchestrator(
         or "(No answer history yet available)"
     )
 
-    # most_recent_answer_history_w_docs_string = (
-    #     aggregate_context(
-    #         state.iteration_responses, include_documents=True, most_recent=True
-    #     ).context
-    #     or "(No answer history yet available)"
-    # )
+    most_recent_answer_history_w_docs_string = (
+        aggregate_context(
+            state.iteration_responses, include_documents=True, most_recent=True
+        ).context
+        or "(No answer history yet available)"
+    )
     most_recent_answer_history_wo_docs_string = (
         aggregate_context(
             state.iteration_responses, include_documents=False, most_recent=True
@@ -135,7 +135,7 @@ def orchestrator(
         if research_type == ResearchType.DEEP:
             ai_text = most_recent_answer_history_wo_docs_string
         else:
-            ai_text = most_recent_answer_history_wo_docs_string
+            ai_text = most_recent_answer_history_w_docs_string
 
         message_history_for_continuation.append(HumanMessage(content=human_text))
         new_messages.append(HumanMessage(content=human_text))
@@ -255,19 +255,16 @@ def orchestrator(
             base_reasoning_prompt = get_dr_prompt_orchestration_templates(
                 DRPromptPurpose.NEXT_STEP_REASONING,
                 ResearchType.THOUGHTFUL,
-                entity_types_string=all_entity_types,
-                relationship_types_string=all_relationship_types,
-                available_tools=available_tools,
             )
 
             reasoning_prompt = base_reasoning_prompt.build(
                 question=question,
-                chat_history_string=chat_history_string,
-                answer_history_string=answer_history_wo_docs_string,
-                iteration_nr=str(iteration_nr),
-                remaining_time_budget=str(remaining_time_budget),
-                uploaded_context=uploaded_context,
             )
+
+            message_history_for_continuation.append(
+                HumanMessage(content=reasoning_prompt)
+            )
+            new_messages.append(HumanMessage(content=reasoning_prompt))
 
             reasoning_tokens: list[str] = [""]
 
@@ -275,11 +272,7 @@ def orchestrator(
                 TF_DR_TIMEOUT_LONG,
                 lambda: stream_llm_answer(
                     llm=graph_config.tooling.primary_llm,
-                    prompt=create_question_prompt(
-                        decision_system_prompt,
-                        reasoning_prompt,
-                        uploaded_image_context=uploaded_image_context,
-                    ),
+                    prompt=message_history_for_continuation,
                     event_name="basic_response",
                     writer=writer,
                     agent_answer_level=0,
@@ -301,6 +294,19 @@ def orchestrator(
             current_step_nr += 1
 
             reasoning_result = cast(str, merge_content(*reasoning_tokens))
+
+            message_history_for_continuation.append(
+                AIMessage(
+                    content="Here is my reasoning about continuation:\n\n"
+                    + reasoning_result
+                )
+            )
+            new_messages.append(
+                AIMessage(
+                    content="Here is my reasoning about continuation:\n\n"
+                    + reasoning_result
+                )
+            )
 
             if SUFFICIENT_INFORMATION_STRING in reasoning_result:
 
@@ -350,23 +356,18 @@ def orchestrator(
         base_decision_prompt = get_dr_prompt_orchestration_templates(
             DRPromptPurpose.NEXT_STEP,
             ResearchType.THOUGHTFUL,
-            entity_types_string=all_entity_types,
-            relationship_types_string=all_relationship_types,
             reasoning_result=reasoning_result,
             available_tools=available_tools_for_decision,
         )
         decision_prompt = base_decision_prompt.build(
             question=question,
-            chat_history_string=chat_history_string,
-            answer_history_string=answer_history_wo_docs_string,
             iteration_nr=str(iteration_nr),
             remaining_time_budget=str(remaining_time_budget),
             reasoning_result=reasoning_result,
-            uploaded_context=uploaded_context,
         )
 
-        message_history_for_continuation.append(HumanMessage(content=human_text))
-        new_messages.append(HumanMessage(content=human_text))
+        message_history_for_continuation.append(HumanMessage(content=decision_prompt))
+        new_messages.append(HumanMessage(content=decision_prompt))
 
         if remaining_time_budget > 0:
             try:
@@ -386,6 +387,17 @@ def orchestrator(
             except Exception as e:
                 logger.error(f"Error in approach extraction: {e}")
                 raise e
+
+            message_history_for_continuation.append(
+                AIMessage(
+                    content=f"Chosen Tool: {next_tool_name}, Questions: {query_list}"
+                )
+            )
+            new_messages.append(
+                AIMessage(
+                    content=f"Chosen Tool: {next_tool_name}, Questions: {query_list}"
+                )
+            )
 
             if next_tool_name in available_tools.keys():
                 remaining_time_budget -= available_tools[next_tool_name].cost

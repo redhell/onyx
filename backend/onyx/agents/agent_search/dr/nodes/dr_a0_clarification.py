@@ -408,8 +408,11 @@ def clarifier(
         db_session, graph_config, kg_enabled, active_source_types
     )
 
-    available_tool_descriptions_str = "\n -" + "\n -".join(
-        [tool.description for tool in available_tools.values()]
+    available_tool_descriptions_str = "\n\n\n".join(
+        [
+            f"Tool: {tool_name}:\n\n{tool.description}"
+            for tool_name, tool in available_tools.items()
+        ]
     )
 
     kg_config = get_kg_config_settings()
