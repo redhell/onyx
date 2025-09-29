@@ -106,7 +106,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
       {/* Project Chat-Sessions */}
       {open &&
         project.chat_sessions.map((chatSession, index) => (
-          <ChatButton key={index} chatSession={chatSession} hideIcon />
+          <ChatButton key={index} chatSession={chatSession} project={project} />
         ))}
     </>
   );

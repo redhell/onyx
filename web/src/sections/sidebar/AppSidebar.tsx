@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, memo, useMemo, useRef } from "react";
+import React, { useCallback, useState, memo, useMemo } from "react";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
 import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
@@ -52,6 +52,7 @@ import Projects from "@/components/sidebar/Projects";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
+import { Project } from "@/app/chat/projects/projectsService";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -71,10 +72,10 @@ function buildVisibleAgents(
 
 interface ChatButtonProps {
   chatSession: ChatSession;
-  hideIcon?: boolean;
+  project?: Project;
 }
 
-function ChatButtonInner({ chatSession, hideIcon }: ChatButtonProps) {
+function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   const route = useAppRouter();
   const params = useAppParams();
 
@@ -136,7 +137,7 @@ function ChatButtonInner({ chatSession, hideIcon }: ChatButtonProps) {
       )}
 
       <NavigationTab
-        icon={hideIcon ? () => <></> : SvgBubbleText}
+        icon={project ? () => <></> : SvgBubbleText}
         onClick={() => route({ chatSessionId: chatSession.id })}
         active={params(SEARCH_PARAM_NAMES.CHAT_ID) === chatSession.id}
         popover={
