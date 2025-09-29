@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Project,
   useProjectsContext,
@@ -14,7 +14,7 @@ import SvgTrash from "@/icons/trash";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
-import { buildChatUrl } from "@/app/chat/services/lib";
+import { useAppRouter } from "@/app/chat/services/lib";
 import SvgFolderPlus from "@/icons/folder-plus";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
@@ -24,8 +24,7 @@ interface ProjectFolderProps {
 }
 
 function ProjectFolder({ project }: ProjectFolderProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const route = useAppRouter();
   const [open, setOpen] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
@@ -79,7 +78,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
       <NavigationTab
         icon={SvgFolder}
         active={active}
-        onClick={() => router.push(buildChatUrl(searchParams, null, null))}
+        onClick={() => route({ projectId: project.id })}
         popover={
           <PopoverMenu>
             {[
@@ -282,21 +281,17 @@ export default function Projects() {
     <>
       <CreateProjectModal />
 
-      {projects.length === 0 ? (
-        <NavigationTab
-          icon={SvgFolderPlus}
-          onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
-          lowlight
-        >
-          New Project
-        </NavigationTab>
-      ) : (
-        <>
-          {projects.map((project) => (
-            <ProjectFolder key={project.id} project={project} />
-          ))}
-        </>
-      )}
+      {projects.map((project) => (
+        <ProjectFolder key={project.id} project={project} />
+      ))}
+
+      <NavigationTab
+        icon={SvgFolderPlus}
+        onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
+        lowlight
+      >
+        New Project
+      </NavigationTab>
     </>
   );
 }

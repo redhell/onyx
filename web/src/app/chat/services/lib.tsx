@@ -6,7 +6,13 @@ import {
 } from "@/lib/search/interfaces";
 import { handleSSEStream } from "@/lib/search/streamingUtils";
 import { ChatState, FeedbackType } from "@/app/chat/interfaces";
-import { MutableRefObject, RefObject, useEffect, useRef } from "react";
+import {
+  MutableRefObject,
+  RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import {
   BackendMessage,
   ChatSession,
@@ -21,7 +27,7 @@ import {
   UserKnowledgeFilePacket,
 } from "../interfaces";
 import { MinimalPersonaSnapshot } from "../../admin/assistants/interfaces";
-import { ReadonlyURLSearchParams } from "next/navigation";
+import { ReadonlyURLSearchParams, useSearchParams } from "next/navigation";
 import { SEARCH_PARAM_NAMES } from "./searchParams";
 import { Settings } from "../../admin/settings/interfaces";
 import {
@@ -30,6 +36,8 @@ import {
 } from "@/app/chat/components/tools/constants";
 import { SEARCH_TOOL_ID } from "@/app/chat/components/tools/constants";
 import { Packet } from "./streamingModels";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { useRouter } from "next/navigation";
 
 // Date range group constants
 export const DATE_RANGE_GROUPS = {
@@ -605,6 +613,7 @@ const PARAMS_TO_SKIP = [
   // only use these if explicitly passed in
   SEARCH_PARAM_NAMES.CHAT_ID,
   SEARCH_PARAM_NAMES.PERSONA_ID,
+  SEARCH_PARAM_NAMES.PROJECT_ID,
   // do not persist project context in the URL after navigation
   "projectid",
 ];
@@ -645,6 +654,34 @@ export function buildChatUrl(
   }
 
   return `/${search ? "search" : "chat"}`;
+}
+
+interface UseAppRouterProps {
+  chatSessionId?: string;
+  agentId?: number;
+  projectId?: number;
+}
+
+export function useAppRouter() {
+  const router = useRouter();
+  return useCallback(
+    ({ chatSessionId, agentId, projectId }: UseAppRouterProps) => {
+      const finalParams = [];
+
+      if (chatSessionId)
+        finalParams.push(`${SEARCH_PARAM_NAMES.CHAT_ID}=${chatSessionId}`);
+      else if (agentId)
+        finalParams.push(`${SEARCH_PARAM_NAMES.PERSONA_ID}=${agentId}`);
+      else if (projectId)
+        finalParams.push(`${SEARCH_PARAM_NAMES.PROJECT_ID}=${projectId}`);
+
+      const finalString = finalParams.join("&");
+      const finalUrl = `/chat?${finalString}`;
+
+      router.push(finalUrl);
+    },
+    [router]
+  );
 }
 
 export async function uploadFilesForChat(

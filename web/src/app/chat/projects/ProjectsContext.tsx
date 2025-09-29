@@ -1,4 +1,5 @@
 "use client";
+
 import React, {
   createContext,
   useCallback,
@@ -30,6 +31,8 @@ import {
   unlinkFileFromProject as svcUnlinkFileFromProject,
   linkFileToProject as svcLinkFileToProject,
 } from "./projectsService";
+import { useSearchParams } from "next/navigation";
+import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 
 export type { Project, ProjectFile } from "./projectsService";
 
@@ -42,7 +45,6 @@ interface ProjectsContextType {
   error: string | null;
   currentMessageFiles: ProjectFile[];
   setCurrentMessageFiles: Dispatch<SetStateAction<ProjectFile[]>>;
-  setCurrentProjectId: (projectId: number | null) => void;
   upsertInstructions: (instructions: string) => Promise<void>;
   fetchProjects: () => Promise<Project[]>;
   createProject: (name: string) => Promise<Project>;
@@ -83,7 +85,11 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({
   const [recentFiles, setRecentFiles] = useState<ProjectFile[]>([]);
   const [currentProjectDetails, setCurrentProjectDetails] =
     useState<ProjectDetails | null>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const currentProjectIdRaw = searchParams.get(SEARCH_PARAM_NAMES.PROJECT_ID);
+  const currentProjectId = currentProjectIdRaw
+    ? Number.parseInt(currentProjectIdRaw)
+    : null;
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentMessageFiles, setCurrentMessageFiles] = useState<ProjectFile[]>(
@@ -175,7 +181,6 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({
         await fetchProjects();
         if (currentProjectId === projectId) {
           setCurrentProjectDetails(null);
-          setCurrentProjectId(null);
         }
       } catch (err) {
         const message =
@@ -496,7 +501,6 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({
       error,
       currentMessageFiles,
       setCurrentMessageFiles,
-      setCurrentProjectId,
       upsertInstructions,
       fetchProjects,
       createProject,

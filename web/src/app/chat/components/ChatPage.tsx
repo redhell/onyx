@@ -131,7 +131,6 @@ export function ChatPage({
   const {
     currentMessageFiles,
     setCurrentMessageFiles,
-    setCurrentProjectId,
     currentProjectId,
     currentProjectDetails,
     lastFailedFiles,
@@ -273,17 +272,6 @@ export function ChatPage({
       clearLastFailedFiles();
     }
   }, [lastFailedFiles, setPopup, clearLastFailedFiles]);
-
-  useEffect(() => {
-    const projectId = searchParams?.get("projectid");
-    if (projectId) {
-      console.log("setting project id", projectId);
-      setCurrentProjectId(parseInt(projectId));
-    } else {
-      console.log("clearing project id");
-      setCurrentProjectId(null);
-    }
-  }, [searchParams?.get("projectid"), setCurrentProjectId]);
 
   const [message, setMessage] = useState(
     searchParams?.get(SEARCH_PARAM_NAMES.USER_PROMPT) || ""

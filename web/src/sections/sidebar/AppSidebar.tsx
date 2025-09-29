@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useState, memo, useMemo, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
 import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
@@ -34,9 +33,9 @@ import AgentsModal from "@/sections/AgentsModal";
 import { useChatContext } from "@/components-2/context/ChatContext";
 import SvgBubbleText from "@/icons/bubble-text";
 import {
-  buildChatUrl,
   deleteChatSession,
   renameChatSession,
+  useAppRouter,
 } from "@/app/chat/services/lib";
 import { useAgentsContext } from "@/components-2/context/AgentsContext";
 import { useAppSidebarContext } from "@/components-2/context/AppSidebarContext";
@@ -77,8 +76,7 @@ interface ChatButtonProps {
 }
 
 function ChatButtonInner({ chatSession }: ChatButtonProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const route = useAppRouter();
 
   const [name, setName] = useState(chatSession.name);
   const [renaming, setRenaming] = useState(false);
@@ -139,9 +137,7 @@ function ChatButtonInner({ chatSession }: ChatButtonProps) {
 
       <NavigationTab
         icon={SvgBubbleText}
-        onClick={() =>
-          router.push(buildChatUrl(searchParams, chatSession.id, null))
-        }
+        onClick={() => route({ chatSessionId: chatSession.id })}
         active={currentChat?.id === chatSession.id}
         popover={
           <PopoverMenu>
@@ -185,8 +181,7 @@ interface AgentsButtonProps {
 }
 
 function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const route = useAppRouter();
   const { currentAgent, pinnedAgents, togglePinnedAgent } = useAgentsContext();
   const pinned = pinnedAgents.some(
     (pinnedAgent) => pinnedAgent.id === visibleAgent.id
@@ -198,9 +193,7 @@ function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
         <NavigationTab
           key={visibleAgent.id}
           icon={SvgLightbulbSimple}
-          onClick={() =>
-            router.push(buildChatUrl(searchParams, null, visibleAgent.id))
-          }
+          onClick={() => route({ agentId: visibleAgent.id })}
           active={currentAgent?.id === visibleAgent.id}
           popover={
             <PopoverMenu>
@@ -254,8 +247,7 @@ function SortableItem({ id, children }: SortableItemProps) {
 }
 
 function AppSidebarInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const route = useAppRouter();
   const { pinnedAgents, setPinnedAgents, currentAgent } = useAgentsContext();
   const { currentProjectId } = useProjectsContext();
   const { folded, setFolded, foldedAndHovered, setHovered } =
@@ -311,13 +303,6 @@ function AppSidebarInner() {
       });
     },
     [visibleAgentIds, setPinnedAgents, currentAgent, currentAgentIsPinned]
-  );
-
-  const handleChatSessionClick = useCallback(
-    (chatSessionId: string | null) => {
-      router.push(buildChatUrl(searchParams, chatSessionId || null, null));
-    },
-    [router, searchParams]
   );
 
   const isHistoryEmpty = useMemo(
@@ -381,7 +366,7 @@ function AppSidebarInner() {
               icon={SvgEditBig}
               className="!w-full"
               folded={folded}
-              onClick={() => handleChatSessionClick(null)}
+              onClick={() => route({})}
               active={!currentChat && !currentAgent && !currentProjectId}
               tooltip
             >
