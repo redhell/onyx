@@ -13,6 +13,7 @@ from onyx.chat.turn.infra.packet_translation import default_packet_translation
 from onyx.chat.turn.infra.session_sink import save_iteration
 from onyx.chat.turn.models import MyContext
 from onyx.chat.turn.models import RunDependencies
+from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
@@ -50,11 +51,21 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
     bridge = OnyxRunner().run_streamed(agent, messages, context=ctx, max_turns=100)
     final_answer = "filler final answer"
     for ev in bridge.events():
-        # TODO: Wrap in some cancellation handler
+        # TODO: Wrap in some cancellation handler and figure out a clearner way to generate
+        # the packets for cancellation
+        # since you don't need to emit the cancelled message if we're in the middle of an existing message
         if not is_connected(
             dependencies.dependencies_to_maybe_remove.chat_session_id,
             dependencies.redis_client,
         ):
+            dependencies.emitter.emit(
+                Packet(
+                    ind=ctx.current_run_step,
+                    obj=MessageStart(
+                        type="message_start", content="Cancelled", final_documents=None
+                    ),
+                )
+            )
             dependencies.emitter.emit(
                 Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
             )
