@@ -75,7 +75,10 @@ function ProjectFolder({ project }: ProjectFolderProps) {
       <NavigationTab
         icon={SvgFolder}
         active={params(SEARCH_PARAM_NAMES.PROJECT_ID) === String(project.id)}
-        onClick={() => route({ projectId: project.id })}
+        onClick={() => {
+          setOpen((prev) => !prev);
+          route({ projectId: project.id });
+        }}
         popover={
           <PopoverMenu>
             {[
@@ -101,174 +104,12 @@ function ProjectFolder({ project }: ProjectFolderProps) {
       </NavigationTab>
 
       {/* Project Chat-Sessions */}
-      {true &&
+      {open &&
         project.chat_sessions.map((chatSession, index) => (
           <ChatButton key={index} chatSession={chatSession} hideIcon />
         ))}
     </>
   );
-
-  // return (
-  //   <div className="w-full">
-  //     <div
-  //       className={`w-full group flex items-center gap-x-1 px-1 rounded-md hover:bg-background-chat-hover ${isSelected ? "bg-background-chat-selected" : ""}`}
-  //     >
-  //       <button
-  //         type="button"
-  //         aria-expanded={open}
-  //         onClick={() =>
-  //           setOpen((v) => {
-  //             const next = !v;
-  //             onToggle?.(next);
-  //             return next;
-  //           })
-  //         }
-  //         onMouseEnter={() => setHoveringIcon(true)}
-  //         onMouseLeave={() => setHoveringIcon(false)}
-  //         className="cursor-pointer text-base rounded-md p-1"
-  //       >
-  //         {open || hoveringIcon ? (
-  //           <FolderOpen
-  //             size={18}
-  //             className="flex-none text-text-history-sidebar-button"
-  //           />
-  //         ) : (
-  //           <FolderIcon
-  //             size={18}
-  //             className="flex-none text-text-history-sidebar-button"
-  //           />
-  //         )}
-  //       </button>
-  //       {isEditing ? (
-  //         <input
-  //           className="w-full text-base bg-transparent outline-none text-black dark:text-[#D4D4D4] py-1 rounded-md border-b border-transparent focus:border-accent-background-hovered"
-  //           value={editValue}
-  //           onChange={(e) => setEditValue(e.target.value)}
-  //           onKeyDown={async (e) => {
-  //             if (e.key === "Enter") {
-  //               if (!onRename) return;
-  //               const nextName = editValue.trim();
-  //               if (!nextName || nextName === title) {
-  //                 setIsEditing(false);
-  //                 setEditValue(title);
-  //                 return;
-  //               }
-  //               try {
-  //                 setIsSaving(true);
-  //                 await onRename(nextName);
-  //               } finally {
-  //                 setIsSaving(false);
-  //                 setIsEditing(false);
-  //               }
-  //             } else if (e.key === "Escape") {
-  //               setIsEditing(false);
-  //               setEditValue(title);
-  //             }
-  //           }}
-  //           autoFocus
-  //         />
-  //       ) : (
-  //         <button
-  //           type="button"
-  //           onClick={() => {
-  //             setOpen((v) => {
-  //               const next = !v;
-  //               onToggle?.(next);
-  //               return next;
-  //             });
-  //             onNameClick?.();
-  //           }}
-  //           className="w-full text-left text-base text-black dark:text-[#D4D4D4] py-1  rounded-md"
-  //         >
-  //           <span className="truncate">{title}</span>
-  //         </button>
-  //       )}
-  //       <div
-  //         className={`ml-2 flex items-center gap-x-1 transition-opacity ${isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-  //       >
-  //         {isEditing ? (
-  //           <>
-  //             <button
-  //               type="button"
-  //               aria-label="Save name"
-  //               disabled={isSaving}
-  //               onClick={async (e) => {
-  //                 e.stopPropagation();
-  //                 if (!onRename) return;
-  //                 const nextName = editValue.trim();
-  //                 if (!nextName || nextName === title) {
-  //                   setIsEditing(false);
-  //                   setEditValue(title);
-  //                   return;
-  //                 }
-  //                 try {
-  //                   setIsSaving(true);
-  //                   await onRename(nextName);
-  //                 } finally {
-  //                   setIsSaving(false);
-  //                   setIsEditing(false);
-  //                 }
-  //               }}
-  //               className="p-1 rounded hover:bg-accent-background-hovered text-green-600 disabled:opacity-50"
-  //             >
-  //               <Check size={16} />
-  //             </button>
-  //             <button
-  //               type="button"
-  //               aria-label="Cancel rename"
-  //               onClick={(e) => {
-  //                 e.stopPropagation();
-  //                 setIsEditing(false);
-  //                 setEditValue(title);
-  //               }}
-  //               className="p-1 rounded hover:bg-accent-background-hovered text-red-600"
-  //             >
-  //               <X size={16} />
-  //             </button>
-  //           </>
-  //         ) : (
-  //           <>
-  //             <button
-  //               type="button"
-  //               aria-label="Rename project"
-  //               onClick={(e) => {
-  //                 e.stopPropagation();
-  //                 setIsEditing(true);
-  //                 setEditValue(title);
-  //               }}
-  //               className="p-1 rounded hover:bg-accent-background-hovered text-text-history-sidebar-button"
-  //             >
-  //               <Pencil size={16} />
-  //             </button>
-  //             {onDeleteClick && (
-  //               <button
-  //                 type="button"
-  //                 aria-label="Delete project"
-  //                 onClick={(e) => {
-  //                   e.stopPropagation();
-  //                   onDeleteClick();
-  //                 }}
-  //                 className="p-1 rounded hover:bg-accent-background-hovered text-text-history-sidebar-button"
-  //               >
-  //                 <Trash2 size={16} />
-  //               </button>
-  //             )}
-  //           </>
-  //         )}
-  //       </div>
-  //     </div>
-
-  //     <div
-  //       className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-  //         open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-  //       }`}
-  //     >
-  //       <div className="overflow-hidden">
-  //         <div className="pl-6 pr-2 py-1 space-y-1">{children}</div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
 }
 
 export default function Projects() {
