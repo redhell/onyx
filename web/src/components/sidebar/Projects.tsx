@@ -15,7 +15,6 @@ import Button from "@/components-2/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
 import { useAppRouter } from "@/app/chat/services/lib";
 import SvgFolderPlus from "@/icons/folder-plus";
-import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 
 interface ProjectFolderProps {
@@ -278,8 +277,6 @@ export default function Projects() {
   const { toggleModal } = useModal();
   return (
     <>
-      <CreateProjectModal />
-
       {projects.map((project) => (
         <ProjectFolder key={project.id} project={project} />
       ))}

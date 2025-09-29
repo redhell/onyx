@@ -55,6 +55,7 @@ import SvgOnyxOctagon from "@/icons/onyx-octagon";
 import Projects from "@/components/sidebar/Projects";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { useSearchParams } from "next/navigation";
+import CreateProjectModal from "@/components/modals/CreateProjectModal";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -317,6 +318,7 @@ function AppSidebarInner() {
   return (
     <>
       <AgentsModal />
+      <CreateProjectModal />
 
       <div
         className={cn(
@@ -381,7 +383,12 @@ function AppSidebarInner() {
                 >
                   Agents
                 </NavigationTab>
-                <NavigationTab icon={SvgFolderPlus} folded tooltip>
+                <NavigationTab
+                  icon={SvgFolderPlus}
+                  folded
+                  tooltip
+                  onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
+                >
                   New Project
                 </NavigationTab>
               </>
