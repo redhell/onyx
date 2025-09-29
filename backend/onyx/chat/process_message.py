@@ -9,6 +9,7 @@ from typing import Dict
 from typing import Protocol
 from uuid import UUID
 
+from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.orchestration.nodes.call_tool import ToolCallException
@@ -31,6 +32,7 @@ from onyx.chat.models import UserKnowledgeFilePacket
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
+from onyx.chat.stop_signal_checker import reset
 from onyx.chat.turn import fast_chat_turn
 from onyx.chat.turn.infra.chat_turn_event_stream import convert_to_packet_obj
 from onyx.chat.turn.models import DependenciesToMaybeRemove
@@ -310,6 +312,7 @@ def stream_chat_message_objects(
     # messages.
     # NOTE: is not stored in the database at all.
     single_message_history: str | None = None,
+    redis_client: Redis | None = None,
 ) -> AnswerStream:
     """Streams in order:
     1. [conditional] Retrieved documents if a search needs to be run
@@ -320,6 +323,7 @@ def stream_chat_message_objects(
     tenant_id = get_current_tenant_id()
     use_existing_user_message = new_msg_req.use_existing_user_message
     existing_assistant_message_id = new_msg_req.existing_assistant_message_id
+    reset(new_msg_req.chat_session_id, redis_client)
 
     # Currently surrounding context is not supported for chat
     # Chat is already token heavy and harder for the model to process plus it would roll history over much faster
@@ -793,6 +797,7 @@ def stream_chat_message_objects(
                 llm=answer.graph_tooling.primary_llm,
                 search_tool=answer.graph_tooling.search_tool,
                 db_session=db_session,
+                redis_client=redis_client,
                 dependencies_to_maybe_remove=DependenciesToMaybeRemove(
                     chat_session_id=chat_session_id,
                     message_id=reserved_message_id,

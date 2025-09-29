@@ -38,7 +38,8 @@ def unified_event_stream(
         current_context = contextvars.copy_context()
         dependencies.emitter = emitter
 
-        def run_with_exception_capture():
+        # TODO: Use / make threadpool_concurrency util
+        def run_with_exception_capture() -> None:
             try:
                 current_context.run(turn_func, messages, dependencies)
             except Exception as e:

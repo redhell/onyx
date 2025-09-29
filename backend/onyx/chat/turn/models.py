@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from redis.client import Redis
 from sqlalchemy.orm import Session
 
 from onyx.agents.agent_search.dr.enums import ResearchType
@@ -22,6 +23,7 @@ class DependenciesToMaybeRemove:
 class RunDependencies:
     llm: LLM
     db_session: Session
+    redis_client: Redis | None = None
     emitter: Emitter | None = None
     search_tool: SearchTool | None = None
     dependencies_to_maybe_remove: DependenciesToMaybeRemove | None = None

@@ -9,6 +9,7 @@ from typing import Optional
 
 from agents import Agent
 from agents import Runner
+from agents import RunResultStreaming
 from agents import TContext
 
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -27,7 +28,7 @@ class OnyxRunner:
         self._q: "queue.Queue[object]" = queue.Queue()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
-        self._streamed = None
+        self._streamed: Optional[RunResultStreaming] = None
         self.SENTINEL = object()
 
     def run_streamed(
@@ -154,7 +155,6 @@ def convert_to_packet_obj(packet: dict[str, Any]) -> Any | None:
                 )
             elif packet_type == "response.output_item.done":
                 return SectionEnd(type="section_end")
-            packet_class(**filtered_data)
             return packet_class(**filtered_data)
 
     except Exception as e:
