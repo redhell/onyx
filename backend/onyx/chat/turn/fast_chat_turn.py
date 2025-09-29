@@ -64,7 +64,6 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
     for ev in bridge.events():
         ctx.current_run_step
         obj = default_packet_translation(ev)
-        print(ev)
         # TODO this obviously won't work for cancellation
         if isinstance(ev, RunItemStreamEvent):
             ev = cast(RunItemStreamEvent, ev)
