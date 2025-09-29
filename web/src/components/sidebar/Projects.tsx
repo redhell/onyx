@@ -9,14 +9,14 @@ import {
 import NavigationTab from "@/components-2/buttons/NavigationTab";
 import SvgFolder from "@/icons/folder";
 import SvgEdit from "@/icons/edit";
-import { PopoverMenu } from "../ui/popover";
+import { PopoverMenu } from "@/components/ui/popover";
 import SvgTrash from "@/icons/trash";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
 import { buildChatUrl } from "@/app/chat/services/lib";
 import SvgFolderPlus from "@/icons/folder-plus";
-import CreateProjectModal from "../modals/CreateProjectModal";
+import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 
 interface ProjectFolderProps {
@@ -286,6 +286,7 @@ export default function Projects() {
         <NavigationTab
           icon={SvgFolderPlus}
           onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
+          lowlight
         >
           New Project
         </NavigationTab>
