@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { ToolSnapshot } from "@/lib/tools/interfaces";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
+import { fetchProjects } from "@/app/chat/projects/projectsService";
 
 // We use Omit to exclude some fields that are defined within the component
 export interface ChatProviderProps
@@ -44,11 +45,19 @@ export function ChatProvider({
       const response = await fetch("/api/chat/get-user-chat-sessions");
       if (!response.ok) throw new Error("Failed to fetch chat sessions");
       const { sessions } = await response.json();
+      const projects = await fetchProjects();
+      const projectSessions = projects.flatMap(
+        (project) => project.chat_sessions
+      );
       setChatSessions(sessions);
+
+      const allChatSession = [...sessions, ...projectSessions];
 
       if (
         currentChatId &&
-        !sessions.some((session: ChatSession) => session.id === currentChatId)
+        !allChatSession.some(
+          (session: ChatSession) => session.id === currentChatId
+        )
       ) {
         router.replace("/chat");
       }
