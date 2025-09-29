@@ -12,6 +12,7 @@ import { ChatInputOption } from "./ChatInputOption";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import LLMPopover from "./LLMPopover";
 import { InputPrompt } from "@/app/chat/interfaces";
+import { ChatFileType } from "@/app/chat/interfaces";
 
 import { FilterManager, LlmManager, useFederatedConnectors } from "@/lib/hooks";
 import { useChatContext } from "@/components/context/ChatContext";
@@ -42,6 +43,8 @@ import {
   ProjectFile,
   UserFileStatus,
 } from "@/app/chat/projects/projectsService";
+import { modelSupportsImageInput } from "@/lib/llm/utils";
+import { PopupSpec, usePopup } from "@/components/admin/connectors/Popup";
 
 const MAX_INPUT_HEIGHT = 200;
 
@@ -117,6 +120,7 @@ interface ChatInputBarProps {
   setPresentingDocument?: (document: MinimalOnyxDocument) => void;
   toggleDeepResearch: () => void;
   placeholder?: string;
+  setPopup: (popupSpec: PopupSpec | null) => void;
 }
 
 export const ChatInputBar = React.memo(function ChatInputBar({
@@ -143,6 +147,7 @@ export const ChatInputBar = React.memo(function ChatInputBar({
   toggleDeepResearch,
   placeholder,
   setPresentingDocument,
+  setPopup,
 }: ChatInputBarProps) {
   const { user } = useUser();
 
@@ -507,8 +512,7 @@ export const ChatInputBar = React.memo(function ChatInputBar({
                 currentMessageFiles.length > 0 ||
                 filterManager.timeRange ||
                 filterManager.selectedDocumentSets.length > 0 ||
-                filterManager.selectedTags.length > 0 ||
-                filterManager.selectedSources.length > 0) && (
+                filterManager.selectedTags.length > 0) && (
                 <div className="flex bg-input-background gap-x-.5 px-2">
                   <div className="flex gap-x-1 px-2 overflow-visible overflow-x-scroll items-end miniscroll">
                     {filterManager.selectedTags &&
@@ -558,26 +562,6 @@ export const ChatInputBar = React.memo(function ChatInputBar({
                           />
                         )
                       )}
-                    {filterManager.selectedSources.length > 0 &&
-                      filterManager.selectedSources.map((source, index) => (
-                        <SourceChip
-                          key={`source-${index}`}
-                          icon={
-                            <SourceIcon
-                              sourceType={source.internalName}
-                              iconSize={16}
-                            />
-                          }
-                          title={source.displayName}
-                          onRemove={() => {
-                            filterManager.setSelectedSources(
-                              filterManager.selectedSources.filter(
-                                (s) => s.internalName !== source.internalName
-                              )
-                            );
-                          }}
-                        />
-                      ))}
                     {selectedDocuments.length > 0 && (
                       <SourceChip
                         key="selected-documents"
@@ -598,22 +582,45 @@ export const ChatInputBar = React.memo(function ChatInputBar({
                   <FilePicker
                     onFileClick={handleFileClick}
                     onPickRecent={(file: ProjectFile) => {
-                      // Check if file with same ID already exists
-                      if (
-                        !currentMessageFiles.some(
-                          (existingFile) =>
-                            existingFile.file_id === file.file_id
-                        )
-                      ) {
-                        setCurrentMessageFiles((prev) => [...prev, file]);
+                      // Prevent duplicates
+                      const alreadyPresent = currentMessageFiles.some(
+                        (existingFile) => existingFile.file_id === file.file_id
+                      );
+                      if (alreadyPresent) return;
+
+                      // If picking an image while the current model is non-vision, block
+                      const pickedIsImage =
+                        (file.file_type &&
+                          file.file_type.startsWith("image/")) ||
+                        file.chat_file_type === ChatFileType.IMAGE;
+                      if (pickedIsImage) {
+                        const llmAcceptsImages = modelSupportsImageInput(
+                          llmProviders,
+                          llmManager.currentLlm.modelName,
+                          llmManager.currentLlm.name
+                        );
+                        if (!llmAcceptsImages) {
+                          setPopup({
+                            type: "error",
+                            message:
+                              "The current model does not support image input. Please select a model with Vision support.",
+                          });
+                          return;
+                        }
                       }
+
+                      setCurrentMessageFiles((prev) => [...prev, file]);
                     }}
                     recentFiles={recentFiles}
                     handleUploadChange={handleUploadChange}
                   />
 
                   {selectedAssistant.tools.length > 0 && (
-                    <ActionToggle selectedAssistant={selectedAssistant} />
+                    <ActionToggle
+                      selectedAssistant={selectedAssistant}
+                      availableSources={memoizedAvailableSources}
+                      filterManager={filterManager}
+                    />
                   )}
 
                   {retrievalEnabled &&
