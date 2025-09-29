@@ -15,12 +15,15 @@ import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
 import { buildChatUrl } from "@/app/chat/services/lib";
+import SvgFolderPlus from "@/icons/folder-plus";
+import CreateProjectModal from "../modals/CreateProjectModal";
+import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 
-interface ProjectProps {
+interface ProjectFolderProps {
   project: Project;
 }
 
-function ProjectFolder({ project }: ProjectProps) {
+function ProjectFolder({ project }: ProjectFolderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -274,11 +277,25 @@ function ProjectFolder({ project }: ProjectProps) {
 
 export default function Projects() {
   const { projects } = useProjectsContext();
+  const { toggleModal } = useModal();
   return (
     <>
-      {projects.map((project) => (
-        <ProjectFolder key={project.id} project={project} />
-      ))}
+      <CreateProjectModal />
+
+      {projects.length === 0 ? (
+        <NavigationTab
+          icon={SvgFolderPlus}
+          onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
+        >
+          New Project
+        </NavigationTab>
+      ) : (
+        <>
+          {projects.map((project) => (
+            <ProjectFolder key={project.id} project={project} />
+          ))}
+        </>
+      )}
     </>
   );
 }

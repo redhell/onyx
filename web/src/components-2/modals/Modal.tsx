@@ -3,64 +3,79 @@ import Text from "@/components-2/Text";
 import SvgX from "@/icons/x";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import IconButton from "@/components-2/buttons/IconButton";
+import { cn } from "@/lib/utils";
+import { SvgProps } from "@/icons";
+import CoreModal from "@/components-2/modals/CoreModal";
 
 interface ModalProps {
-  id: ModalIds;
-  title: string;
+  // Modal sizes
+  sm?: boolean;
+  xs?: boolean;
+
+  // Modal configurations
   clickOutsideToClose?: boolean;
-  mini?: boolean;
+
+  // Base modal props
+  id: ModalIds;
+  icon: React.FunctionComponent<SvgProps>;
+  title: string;
+  description?: string;
   className?: string;
   children?: React.ReactNode;
 }
 
 export default function Modal({
-  id,
-  title,
+  sm,
+  xs,
+
   clickOutsideToClose = true,
-  mini,
+
+  id,
+  icon: Icon,
+  title,
+  description,
   children,
   className,
 }: ModalProps) {
   const { isOpen, toggleModal } = useModal();
-  const outsideModal = useRef(false);
+  const insideModal = useRef(false);
 
   if (!isOpen(id)) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-mask-03 backdrop-blur-md"
-      onClick={
+    <CoreModal
+      className={cn(
+        "w-[80dvw] h-[80dvh]",
+        sm && "max-w-[60rem]",
+        xs && "max-w-[32rem] h-fit",
+        className
+      )}
+      onClickOutside={
         clickOutsideToClose
           ? () => {
-              if (outsideModal.current) {
-                toggleModal(id, false);
-              }
+              if (insideModal.current) return;
+              toggleModal(id, false);
             }
           : undefined
       }
     >
-      <div
-        className={`z-10 w-[80dvw] h-[80dvh] rounded-16 border flex flex-col bg-background-tint-01 ${mini && "max-w-[60rem]"} ${className}`}
-        onMouseOver={() => (outsideModal.current = false)}
-        onMouseLeave={() => (outsideModal.current = true)}
-      >
-        {/* Header with title */}
-        <div className="flex items-center justify-between p-padding-block-end">
-          <Text headingH2>{title}</Text>
+      <div className="flex flex-col gap-spacing-interline p-spacing-paragraph">
+        <div className="flex flex-row items-center justify-between">
+          <Icon className="w-[1.5rem] h-[1.5rem] stroke-text-04" />
           <IconButton
             icon={SvgX}
             internal
             onClick={() => toggleModal(id, false)}
           />
         </div>
-
-        <div className="border-b" />
-
-        {/* Content area */}
-        <div className="flex-1 m-padding-block-end overflow-scroll">
-          {children}
-        </div>
+        <Text headingH3>{title}</Text>
+        {description && (
+          <Text secondaryBody text02>
+            {description}
+          </Text>
+        )}
       </div>
-    </div>
+      {children}
+    </CoreModal>
   );
 }

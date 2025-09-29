@@ -33,6 +33,7 @@ import { SourceIcon } from "@/components/SourceIcon";
 import { ValidSources, CCPairBasicInfo } from "@/lib/types";
 import { getSourceMetadata } from "@/lib/sources";
 import { ModalIds } from "@/components-2/context/ModalContext";
+import SvgSettings from "@/icons/settings";
 
 type SettingsSection = "settings" | "password" | "connectors";
 
@@ -975,6 +976,7 @@ export function UserSettingsModal(props: UserSettingsProps) {
   return (
     <Modal
       id={ModalIds.UserSettingsModal}
+      icon={SvgSettings}
       title="User Settings"
       clickOutsideToClose
     >

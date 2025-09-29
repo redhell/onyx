@@ -11,6 +11,7 @@ import Text from "@/components-2/Text";
 import Modal from "@/components-2/modals/Modal";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import SvgFilter from "@/icons/filter";
+import SvgOnyxOctagon from "@/icons/onyx-octagon";
 
 interface AgentsSectionProps {
   title: string;
@@ -141,7 +142,7 @@ export default function AgentsModal() {
   );
 
   return (
-    <Modal id={ModalIds.AgentsModal} title="Agents" mini>
+    <Modal id={ModalIds.AgentsModal} icon={SvgOnyxOctagon} title="Agents" sm>
       <div className="flex flex-col sticky top-[0rem] z-10 bg-background-tint-01">
         <div className="flex flex-row items-center gap-spacing-interline">
           <input

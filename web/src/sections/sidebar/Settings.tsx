@@ -185,7 +185,12 @@ export default function Settings({
 
   return (
     <>
-      <Modal id={ModalIds.UserSettingsModal} title="User Settings" mini>
+      <Modal
+        id={ModalIds.UserSettingsModal}
+        title="User Settings"
+        icon={SvgSettings}
+        sm
+      >
         <UserSettings
           setPopup={() => toggleModal(ModalIds.UserSettingsModal, false)}
           llmProviders={[]}

@@ -6,6 +6,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 export enum ModalIds {
   AgentsModal = "AgentsModal",
   UserSettingsModal = "UserSettingsModal",
+  CreateProjectModal = "CreateProjectModal",
 }
 
 interface ModalProviderProps {

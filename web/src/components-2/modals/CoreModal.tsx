@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { MODAL_ROOT_ID } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface CoreModalProps {
   onClickOutside?: () => void;
@@ -33,12 +34,15 @@ export default function CoreModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-mask-03 backdrop-blur-md"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-mask-03 backdrop-blur-xl"
       onClick={() => (insideModal.current ? undefined : onClickOutside?.())}
     >
       <div
         ref={modalRef}
-        className={`z-10 rounded-16 border flex flex-col bg-background-tint-01 ${className}`}
+        className={cn(
+          "z-10 rounded-16 flex border shadow-2xl flex-col bg-background-tint-00",
+          className
+        )}
         onMouseOver={() => (insideModal.current = true)}
         onMouseEnter={() => (insideModal.current = true)}
         onMouseLeave={() => (insideModal.current = false)}
