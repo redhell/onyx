@@ -3,27 +3,28 @@ import { SvgProps } from "@/icons";
 import Text from "@/components-2/Text";
 import SvgX from "@/icons/x";
 import CoreModal from "@/components-2/modals/CoreModal";
-import { useEscape } from "@/hooks/useEscape";
+import { useEscape } from "@/hooks/useKeyPress";
 import IconButton from "../buttons/IconButton";
 
 interface ConfirmationModalProps {
-  icon: React.FunctionComponent<SvgProps>;
-  title: string;
   escapeToClose?: boolean;
   clickOutsideToClose?: boolean;
   onClose: () => void;
+
+  icon: React.FunctionComponent<SvgProps>;
+  title: string;
   description?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 export default function ConfirmationModal({
-  icon: Icon,
-  title,
   escapeToClose = true,
   clickOutsideToClose = true,
   onClose,
-  description,
 
+  icon: Icon,
+  title,
+  description,
   children,
 }: ConfirmationModalProps) {
   useEscape(onClose, escapeToClose);

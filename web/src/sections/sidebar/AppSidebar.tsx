@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useState,
-  memo,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useCallback, useState, memo, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
 import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
@@ -36,7 +29,7 @@ import SvgMoreHorizontal from "@/icons/more-horizontal";
 import SvgLightbulbSimple from "@/icons/lightbulb-simple";
 import Settings from "@/sections/sidebar/Settings";
 import { SidebarSection } from "@/sections/sidebar/components";
-import { NavigationTab } from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/components-2/buttons/NavigationTab";
 import AgentsModal from "@/sections/AgentsModal";
 import { useChatContext } from "@/components-2/context/ChatContext";
 import SvgBubbleText from "@/icons/bubble-text";
@@ -48,7 +41,6 @@ import {
 import { useAgentsContext } from "@/components-2/context/AgentsContext";
 import { useAppSidebarContext } from "@/components-2/context/AppSidebarContext";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
-import { useClickOutside } from "@/hooks/useClickOutside";
 import { ChatSession } from "@/app/chat/interfaces";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import SvgTrash from "@/icons/trash";
@@ -59,6 +51,10 @@ import SvgPin from "@/icons/pin";
 import { cn, noProp } from "@/lib/utils";
 import { PopoverMenu } from "@/components/ui/popover";
 import IconButton from "@/components-2/buttons/IconButton";
+import SvgFolderPlus from "@/icons/folder-plus";
+import SvgOnyxOctagon from "@/icons/onyx-octagon";
+import Projects from "@/components/sidebar/Projects";
+import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -78,66 +74,39 @@ function buildVisibleAgents(
 
 interface ChatButtonProps {
   chatSession: ChatSession;
-  onChatSessionClick: (chatSessionId: string | null) => void;
 }
 
-function ChatButtonInner({ chatSession, onChatSessionClick }: ChatButtonProps) {
+function ChatButtonInner({ chatSession }: ChatButtonProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [name, setName] = useState(chatSession.name);
+  const [renaming, setRenaming] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
-  const [renamingChat, setRenamingChat] = useState(false);
-  const [renamingChatName, setRenamingChatName] = useState(chatSession.name);
-  const textareaRef = useRef<HTMLInputElement>(null);
   const { refreshChatSessions, currentChat } = useChatContext();
 
-  useEffect(() => {
-    if (!textareaRef.current) return;
-    if (!renamingChat) return;
+  async function submitRename(renamingValue: string) {
+    const newName = renamingValue.trim();
+    if (newName === "" || newName === chatSession.name) return;
 
-    textareaRef.current.focus();
-    textareaRef.current.select();
-  }, [renamingChat, textareaRef]);
-
-  // Handle click outside to abort rename
-  useClickOutside(
-    textareaRef,
-    () => {
-      setRenamingChatName(chatSession.name);
-      setRenamingChat(false);
-    },
-    renamingChat
-  );
-
-  const handleSaveRename = useCallback(async () => {
-    const newChatName = renamingChatName.trim();
-
-    if (newChatName && newChatName !== chatSession.name) {
-      try {
-        await renameChatSession(chatSession.id, newChatName);
-        chatSession.name = newChatName;
-        await refreshChatSessions();
-      } catch (error) {
-        console.error("Failed to rename chat:", error);
-      }
+    setName(newName);
+    try {
+      await renameChatSession(chatSession.id, newName);
+      await refreshChatSessions();
+    } catch (error) {
+      console.error("Failed to rename chat:", error);
     }
+  }
 
-    setRenamingChat(false);
-  }, [
-    renamingChatName,
-    chatSession.id,
-    chatSession.name,
-    renameChatSession,
-    refreshChatSessions,
-    setRenamingChat,
-  ]);
-
-  const handleChatDelete = useCallback(async () => {
+  async function handleChatDelete() {
     try {
       await deleteChatSession(chatSession.id);
       await refreshChatSessions();
     } catch (error) {
       console.error("Failed to delete chat:", error);
     }
-  }, [chatSession, deleteChatSession, refreshChatSessions]);
+  }
 
   return (
     <>
@@ -170,12 +139,10 @@ function ChatButtonInner({ chatSession, onChatSessionClick }: ChatButtonProps) {
 
       <NavigationTab
         icon={SvgBubbleText}
-        onClick={() => onChatSessionClick(chatSession.id)}
+        onClick={() =>
+          router.push(buildChatUrl(searchParams, chatSession.id, null))
+        }
         active={currentChat?.id === chatSession.id}
-        className={cn(
-          "!w-full",
-          renamingChat && "border-[0.125rem] border-text-04"
-        )}
         popover={
           <PopoverMenu>
             {[
@@ -185,7 +152,7 @@ function ChatButtonInner({ chatSession, onChatSessionClick }: ChatButtonProps) {
               <NavigationTab
                 key="rename"
                 icon={SvgEdit}
-                onClick={noProp(() => setRenamingChat(true))}
+                onClick={noProp(() => setRenaming(true))}
               >
                 Rename
               </NavigationTab>,
@@ -201,49 +168,26 @@ function ChatButtonInner({ chatSession, onChatSessionClick }: ChatButtonProps) {
             ]}
           </PopoverMenu>
         }
+        renaming={renaming}
+        setRenaming={setRenaming}
+        submitRename={submitRename}
       >
-        {renamingChat ? (
-          <div className="flex flex-col justify-center items-start">
-            <input
-              ref={textareaRef}
-              value={renamingChatName}
-              onChange={(event) => setRenamingChatName(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleSaveRename();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  setRenamingChat(false);
-                }
-              }}
-              className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full"
-            />
-          </div>
-        ) : (
-          chatSession.name
-        )}
+        {name}
       </NavigationTab>
     </>
   );
 }
 
-const ChatButton = memo(ChatButtonInner);
+export const ChatButton = memo(ChatButtonInner);
 
 interface AgentsButtonProps {
   visibleAgent: MinimalPersonaSnapshot;
-  currentAgent: MinimalPersonaSnapshot | null;
-  onAgentClick: (agentId: number) => void;
-  onTogglePin: (agent: MinimalPersonaSnapshot, pinned: boolean) => void;
 }
 
-function AgentsButtonInner({
-  visibleAgent,
-  currentAgent,
-  onAgentClick,
-  onTogglePin,
-}: AgentsButtonProps) {
-  const { pinnedAgents } = useAgentsContext();
+function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { currentAgent, pinnedAgents, togglePinnedAgent } = useAgentsContext();
   const pinned = pinnedAgents.some(
     (pinnedAgent) => pinnedAgent.id === visibleAgent.id
   );
@@ -254,8 +198,9 @@ function AgentsButtonInner({
         <NavigationTab
           key={visibleAgent.id}
           icon={SvgLightbulbSimple}
-          className="!w-full"
-          onClick={() => onAgentClick(visibleAgent.id)}
+          onClick={() =>
+            router.push(buildChatUrl(searchParams, null, visibleAgent.id))
+          }
           active={currentAgent?.id === visibleAgent.id}
           popover={
             <PopoverMenu>
@@ -263,7 +208,9 @@ function AgentsButtonInner({
                 <NavigationTab
                   key="pin-unpin-chat"
                   icon={SvgPin}
-                  onClick={noProp(() => onTogglePin(visibleAgent, !pinned))}
+                  onClick={noProp(() =>
+                    togglePinnedAgent(visibleAgent, !pinned)
+                  )}
                 >
                   {pinned ? "Unpin chat" : "Pin chat"}
                 </NavigationTab>,
@@ -309,8 +256,8 @@ function SortableItem({ id, children }: SortableItemProps) {
 function AppSidebarInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { pinnedAgents, setPinnedAgents, togglePinnedAgent, currentAgent } =
-    useAgentsContext();
+  const { pinnedAgents, setPinnedAgents, currentAgent } = useAgentsContext();
+  const { currentProjectId } = useProjectsContext();
   const { folded, setFolded, foldedAndHovered, setHovered } =
     useAppSidebarContext();
   const { toggleModal } = useModal();
@@ -373,13 +320,6 @@ function AppSidebarInner() {
     [router, searchParams]
   );
 
-  const handleAgentClick = useCallback(
-    (agentId: number) => {
-      router.push(buildChatUrl(searchParams, null, agentId));
-    },
-    [router, searchParams]
-  );
-
   const isHistoryEmpty = useMemo(
     () => !chatSessions || chatSessions.length === 0,
     [chatSessions]
@@ -395,61 +335,78 @@ function AppSidebarInner() {
 
       <div
         className={cn(
-          "h-full flex flex-col bg-background-tint-02 py-padding-content flex-shrink-0 gap-padding-content px-padding-button",
+          "h-full flex flex-col bg-background-tint-02 py-padding-content flex-shrink-0 px-padding-button justify-between",
           folded ? "w-[4rem]" : "w-[15rem]"
         )}
         onMouseOver={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Header - fixed height */}
-        <div
-          className={cn(
-            "flex flex-row items-center px-spacing-interline py-spacing-inline flex-shrink-0",
-            folded ? "justify-center" : "justify-between"
-          )}
-        >
-          {folded ? (
-            <div className="h-[2rem] flex flex-col justify-center items-center">
-              {foldedAndHovered ? (
+        {/* Top */}
+        <div className="flex h-full flex-col gap-padding-content">
+          <div
+            className={cn(
+              "flex flex-row items-center px-spacing-interline py-spacing-inline flex-shrink-0",
+              folded ? "justify-center" : "justify-between"
+            )}
+          >
+            {folded ? (
+              <div className="h-[2rem] flex flex-col justify-center items-center">
+                {foldedAndHovered ? (
+                  <IconButton
+                    icon={SvgSidebar}
+                    tertiary
+                    onClick={() => setFolded(false)}
+                  />
+                ) : (
+                  <OnyxIcon size={24} />
+                )}
+              </div>
+            ) : (
+              <>
+                <OnyxLogoTypeIcon size={88} />
                 <IconButton
                   icon={SvgSidebar}
                   tertiary
-                  onClick={() => setFolded(false)}
+                  onClick={() => {
+                    setFolded(true);
+                    setHovered(false);
+                  }}
                 />
-              ) : (
-                <OnyxIcon size={24} />
-              )}
-            </div>
-          ) : (
-            <>
-              <OnyxLogoTypeIcon size={88} />
-              <IconButton
-                icon={SvgSidebar}
-                tertiary
-                onClick={() => {
-                  setFolded(true);
-                  setHovered(false);
-                }}
-              />
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
 
-        <NavigationTab
-          icon={SvgEditBig}
-          className="!w-full"
-          folded={folded}
-          onClick={() => handleChatSessionClick(null)}
-          active={!currentChat?.id && !currentAgent}
-          tooltip
-        >
-          New Session
-        </NavigationTab>
+          <div className="flex flex-col gap-spacing-interline">
+            <NavigationTab
+              icon={SvgEditBig}
+              className="!w-full"
+              folded={folded}
+              onClick={() => handleChatSessionClick(null)}
+              active={!currentChat && !currentAgent && !currentProjectId}
+              tooltip
+            >
+              New Session
+            </NavigationTab>
 
-        {/* Scrollable content area - takes remaining space */}
-        <div className="flex flex-col gap-padding-content flex-1 overflow-y-scroll">
+            {folded && (
+              <>
+                <NavigationTab
+                  icon={SvgOnyxOctagon}
+                  folded
+                  tooltip
+                  onClick={() => toggleModal(ModalIds.AgentsModal, true)}
+                >
+                  Agents
+                </NavigationTab>
+                <NavigationTab icon={SvgFolderPlus} folded tooltip>
+                  New Project
+                </NavigationTab>
+              </>
+            )}
+          </div>
+
           {!folded && (
-            <>
+            <div className="flex flex-col gap-padding-content flex-1 overflow-y-scroll">
               {/* Agents */}
               <SidebarSection title="Agents">
                 <DndContext
@@ -465,9 +422,6 @@ function AppSidebarInner() {
                       <AgentsButton
                         key={visibleAgent.id}
                         visibleAgent={visibleAgent}
-                        currentAgent={currentAgent}
-                        onAgentClick={handleAgentClick}
-                        onTogglePin={togglePinnedAgent}
                       />
                     ))}
                   </SortableContext>
@@ -481,6 +435,10 @@ function AppSidebarInner() {
                 </NavigationTab>
               </SidebarSection>
 
+              <SidebarSection title="Projects">
+                <Projects />
+              </SidebarSection>
+
               {/* Recents */}
               <SidebarSection title="Recents">
                 {isHistoryEmpty ? (
@@ -492,17 +450,16 @@ function AppSidebarInner() {
                     <ChatButton
                       key={chatSession.id}
                       chatSession={chatSession}
-                      onChatSessionClick={handleChatSessionClick}
                     />
                   ))
                 )}
               </SidebarSection>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Footer - fixed height */}
-        <div className="flex flex-col flex-shrink-0">
+        {/* Bottom */}
+        <div className="flex flex-col">
           <Settings folded={folded} />
         </div>
       </div>

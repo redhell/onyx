@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, {
+  useState,
+  useEffect,
+  Dispatch,
+  SetStateAction,
+  useRef,
+} from "react";
 import Link from "next/link";
 import Text from "@/components-2/Text";
 import { SvgProps } from "@/icons";
@@ -18,6 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 import IconButton from "@/components-2/buttons/IconButton";
 import Truncated from "@/components-2/Truncated";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 const textClasses = (active: boolean | undefined) =>
   ({
@@ -70,10 +78,13 @@ export interface NavigationTabProps {
   popover?: React.ReactNode;
   className?: string;
   icon: React.FunctionComponent<SvgProps>;
-  children?: React.ReactNode;
+  renaming?: boolean;
+  setRenaming?: Dispatch<SetStateAction<boolean>>;
+  submitRename?: (renamingValue: string) => void;
+  children?: string;
 }
 
-export function NavigationTab({
+export default function NavigationTab({
   folded,
   active,
 
@@ -87,12 +98,46 @@ export function NavigationTab({
   popover,
   className,
   icon: Icon,
+  renaming,
+  setRenaming,
+  submitRename,
   children,
 }: NavigationTabProps) {
   // This is used to determine if the `PopoverTrigger` should be shown or not.
   // Do NOT use it for background colours.
   const [hovered, setHovered] = useState(false);
   const [kebabMenuOpen, setKebabMenuOpen] = useState(false);
+  const [renamingValue, setRenamingValue] = useState<string | undefined>(
+    renaming ? children : undefined
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!inputRef.current) return;
+    if (renaming) {
+      inputRef.current.focus();
+      inputRef.current.select();
+      setRenamingValue(children);
+    } else {
+      setRenamingValue(undefined);
+    }
+  }, [renaming, inputRef]);
+  useClickOutside(
+    inputRef,
+    () => {
+      setRenamingValue(undefined);
+      setRenaming?.(false);
+    },
+    !!renamingValue
+  );
+  useKeyPress(() => setRenaming?.(false), "Escape", !!renamingValue);
+  useKeyPress(
+    () => {
+      setRenaming?.(false);
+      if (renamingValue) submitRename?.(renamingValue);
+    },
+    "Enter",
+    !!renamingValue
+  );
 
   const variant = danger
     ? "danger"
@@ -105,8 +150,9 @@ export function NavigationTab({
   const innerContent = (
     <div
       className={cn(
-        "flex flex-row justify-center items-center p-spacing-inline gap-spacing-inline rounded-08 cursor-pointer hover:bg-background-tint-03 group/NavigationTab w-full",
+        "flex flex-row justify-center items-center p-spacing-inline gap-spacing-inline rounded-08 cursor-pointer hover:bg-background-tint-03 group/NavigationTab w-full select-none",
         active ? "bg-background-tint-00" : "bg-transparent",
+        renaming && "border-[0.125rem] border-text-04",
         className
       )}
       onMouseEnter={() => setHovered(true)}
@@ -129,7 +175,16 @@ export function NavigationTab({
           />
         </div>
         {!folded &&
-          (typeof children === "string" ? (
+          (renaming && typeof children === "string" ? (
+            <div className="flex flex-col justify-center items-start">
+              <input
+                ref={inputRef}
+                value={renamingValue}
+                onChange={(event) => setRenamingValue(event.target.value)}
+                className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full"
+              />
+            </div>
+          ) : typeof children === "string" ? (
             <Truncated
               side="right"
               offset={40}

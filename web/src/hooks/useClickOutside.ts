@@ -40,12 +40,12 @@ import { useEffect, RefObject } from "react";
  * ```
  */
 export function useClickOutside<T extends HTMLElement>(
-  ref: RefObject<T>,
+  ref: RefObject<T> | null,
   callback: () => void,
-  enabled: boolean
+  enabled: boolean = true
 ): void {
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !ref?.current) {
       return;
     }
 
@@ -64,19 +64,4 @@ export function useClickOutside<T extends HTMLElement>(
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [ref, callback, enabled]);
-}
-
-/**
- * A specialized version of useClickOutside for common modal/dropdown patterns.
- *
- * @param ref - A ref to the element to monitor for outside clicks
- * @param callback - Function to call when a click outside is detected
- * @param enabled - Whether the element is currently open/visible
- */
-export function useClickOutsideWhenOpen<T extends HTMLElement>(
-  ref: RefObject<T>,
-  callback: () => void,
-  enabled: boolean
-): void {
-  useClickOutside(ref, callback, enabled);
 }

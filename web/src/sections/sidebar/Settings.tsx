@@ -9,7 +9,7 @@ import { checkUserIsNoAuthUser, logout } from "@/lib/user";
 import { useUser } from "@/components/user/UserProvider";
 import { Avatar } from "@/components/ui/avatar";
 import Text from "@/components-2/Text";
-import { NavigationTab } from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/components-2/buttons/NavigationTab";
 import {
   Popover,
   PopoverContent,

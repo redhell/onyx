@@ -25,7 +25,7 @@ import Truncated from "@/components-2/Truncated";
 import SvgBubbleText from "@/icons/bubble-text";
 import SvgPin from "@/icons/pin";
 import { SvgProps } from "@/icons";
-import { NavigationTab } from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/components-2/buttons/NavigationTab";
 import SvgEditBig from "@/icons/edit-big";
 import SvgTrash from "@/icons/trash";
 import SvgMoreHorizontal from "@/icons/more-horizontal";

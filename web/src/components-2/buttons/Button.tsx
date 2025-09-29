@@ -54,7 +54,7 @@ const textClasses = (active: boolean | undefined) =>
       disabled: [],
     },
     danger: {
-      main: ["text-text-inverted-05"],
+      main: ["text-text-05"],
       secondary: [],
       tertiary: [],
       disabled: [],

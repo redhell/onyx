@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import Text from "@/components-2/Text";
 import SvgX from "@/icons/x";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import IconButton from "@/components-2/buttons/IconButton";
 
 interface ModalProps {
   id: ModalIds;
@@ -46,8 +47,9 @@ export default function Modal({
         {/* Header with title */}
         <div className="flex items-center justify-between p-padding-block-end">
           <Text headingH2>{title}</Text>
-          <SvgX
-            className="stroke-text-03 w-[1.5rem] h-[1.5rem]"
+          <IconButton
+            icon={SvgX}
+            internal
             onClick={() => toggleModal(id, false)}
           />
         </div>

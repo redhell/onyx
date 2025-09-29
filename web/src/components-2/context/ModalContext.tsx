@@ -1,6 +1,6 @@
 "use client";
 
-import { useEscape } from "@/hooks/useEscape";
+import { useEscape } from "@/hooks/useKeyPress";
 import { createContext, useContext, useState, ReactNode } from "react";
 
 export enum ModalIds {
