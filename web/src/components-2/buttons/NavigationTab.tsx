@@ -105,8 +105,7 @@ export function NavigationTab({
   const innerContent = (
     <div
       className={cn(
-        "flex flex-row justify-center items-center p-spacing-inline gap-spacing-inline rounded-08 cursor-pointer hover:bg-background-tint-03 group/NavigationTab",
-        folded ? "w-min" : "w-full",
+        "flex flex-row justify-center items-center p-spacing-inline gap-spacing-inline rounded-08 cursor-pointer hover:bg-background-tint-03 group/NavigationTab w-full",
         active ? "bg-background-tint-00" : "bg-transparent",
         className
       )}

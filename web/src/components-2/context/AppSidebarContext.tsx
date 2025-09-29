@@ -37,10 +37,6 @@ export function AppSidebarProvider({
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    setFoldedState(folded);
-  }, [folded]);
-
-  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const isMac = navigator.userAgent.toLowerCase().includes("mac");
       const isModifierPressed = isMac ? event.metaKey : event.ctrlKey;
