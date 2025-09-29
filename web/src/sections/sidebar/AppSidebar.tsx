@@ -54,6 +54,7 @@ import SvgFolderPlus from "@/icons/folder-plus";
 import SvgOnyxOctagon from "@/icons/onyx-octagon";
 import Projects from "@/components/sidebar/Projects";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
+import { useSearchParams } from "next/navigation";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -248,12 +249,11 @@ function SortableItem({ id, children }: SortableItemProps) {
 
 function AppSidebarInner() {
   const route = useAppRouter();
+  const searchParams = useSearchParams();
   const { pinnedAgents, setPinnedAgents, currentAgent } = useAgentsContext();
-  const { currentProjectId } = useProjectsContext();
-  const { folded, setFolded, foldedAndHovered, setHovered } =
-    useAppSidebarContext();
+  const { folded, setFolded } = useAppSidebarContext();
   const { toggleModal } = useModal();
-  const { chatSessions, currentChat } = useChatContext();
+  const { chatSessions } = useChatContext();
   const combinedSettings = useSettingsContext();
 
   const [visibleAgents, currentAgentIsPinned] = useMemo(
@@ -320,11 +320,9 @@ function AppSidebarInner() {
 
       <div
         className={cn(
-          "h-full flex flex-col bg-background-tint-02 py-padding-content flex-shrink-0 px-padding-button justify-between",
+          "h-full flex flex-col bg-background-tint-02 py-padding-content flex-shrink-0 px-padding-button justify-between dbg-red group/AppSidebar",
           folded ? "w-[4rem]" : "w-[15rem]"
         )}
-        onMouseOver={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         {/* Top */}
         <div className="flex h-full flex-col gap-padding-content">
@@ -336,15 +334,18 @@ function AppSidebarInner() {
           >
             {folded ? (
               <div className="h-[2rem] flex flex-col justify-center items-center">
-                {foldedAndHovered ? (
+                <>
                   <IconButton
                     icon={SvgSidebar}
                     tertiary
                     onClick={() => setFolded(false)}
+                    className="hidden group-hover/AppSidebar:flex"
                   />
-                ) : (
-                  <OnyxIcon size={24} />
-                )}
+                  <OnyxIcon
+                    size={24}
+                    className="visible group-hover/AppSidebar:hidden"
+                  />
+                </>
               </div>
             ) : (
               <>
@@ -352,10 +353,7 @@ function AppSidebarInner() {
                 <IconButton
                   icon={SvgSidebar}
                   tertiary
-                  onClick={() => {
-                    setFolded(true);
-                    setHovered(false);
-                  }}
+                  onClick={() => setFolded(true)}
                 />
               </>
             )}
@@ -367,7 +365,7 @@ function AppSidebarInner() {
               className="!w-full"
               folded={folded}
               onClick={() => route({})}
-              active={!currentChat && !currentAgent && !currentProjectId}
+              active={searchParams.size === 0}
               tooltip
             >
               New Session

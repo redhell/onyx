@@ -34,8 +34,6 @@ export function AppSidebarProvider({
     return initiallyFolded;
   });
 
-  const [hovered, setHovered] = useState(false);
-
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const isMac = navigator.userAgent.toLowerCase().includes("mac");
@@ -61,8 +59,6 @@ export function AppSidebarProvider({
       value={{
         folded,
         setFolded,
-        foldedAndHovered: folded && hovered,
-        setHovered,
       }}
     >
       {children}
@@ -73,8 +69,6 @@ export function AppSidebarProvider({
 export interface AppSidebarContextType {
   folded: boolean;
   setFolded: Dispatch<SetStateAction<boolean>>;
-  foldedAndHovered: boolean;
-  setHovered: Dispatch<SetStateAction<boolean>>;
 }
 
 const AppSidebarContext = createContext<AppSidebarContextType | undefined>(
