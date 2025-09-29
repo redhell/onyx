@@ -8,7 +8,7 @@ import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import FieldInput from "@/components-2/FieldInput";
-import { useAppRouter } from "@/app/chat/services/lib";
+import { useAppRouter } from "@/hooks/appNavigation";
 
 export default function CreateProjectModal() {
   const { createProject } = useProjectsContext();

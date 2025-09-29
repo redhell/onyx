@@ -32,11 +32,7 @@ import NavigationTab from "@/components-2/buttons/NavigationTab";
 import AgentsModal from "@/sections/AgentsModal";
 import { useChatContext } from "@/components-2/context/ChatContext";
 import SvgBubbleText from "@/icons/bubble-text";
-import {
-  deleteChatSession,
-  renameChatSession,
-  useAppRouter,
-} from "@/app/chat/services/lib";
+import { deleteChatSession, renameChatSession } from "@/app/chat/services/lib";
 import { useAgentsContext } from "@/components-2/context/AgentsContext";
 import { useAppSidebarContext } from "@/components-2/context/AppSidebarContext";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
@@ -53,9 +49,9 @@ import IconButton from "@/components-2/buttons/IconButton";
 import SvgFolderPlus from "@/icons/folder-plus";
 import SvgOnyxOctagon from "@/icons/onyx-octagon";
 import Projects from "@/components/sidebar/Projects";
-import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
-import { useSearchParams } from "next/navigation";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
+import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
+import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -75,16 +71,18 @@ function buildVisibleAgents(
 
 interface ChatButtonProps {
   chatSession: ChatSession;
+  hideIcon?: boolean;
 }
 
-function ChatButtonInner({ chatSession }: ChatButtonProps) {
+function ChatButtonInner({ chatSession, hideIcon }: ChatButtonProps) {
   const route = useAppRouter();
+  const params = useAppParams();
 
   const [name, setName] = useState(chatSession.name);
   const [renaming, setRenaming] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
-  const { refreshChatSessions, currentChat } = useChatContext();
+  const { refreshChatSessions } = useChatContext();
 
   async function submitRename(renamingValue: string) {
     const newName = renamingValue.trim();
@@ -138,9 +136,9 @@ function ChatButtonInner({ chatSession }: ChatButtonProps) {
       )}
 
       <NavigationTab
-        icon={SvgBubbleText}
+        icon={hideIcon ? () => <></> : SvgBubbleText}
         onClick={() => route({ chatSessionId: chatSession.id })}
-        active={currentChat?.id === chatSession.id}
+        active={params(SEARCH_PARAM_NAMES.CHAT_ID) === chatSession.id}
         popover={
           <PopoverMenu>
             {[
@@ -184,6 +182,7 @@ interface AgentsButtonProps {
 
 function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
   const route = useAppRouter();
+  const params = useAppParams();
   const { currentAgent, pinnedAgents, togglePinnedAgent } = useAgentsContext();
   const pinned = pinnedAgents.some(
     (pinnedAgent) => pinnedAgent.id === visibleAgent.id
@@ -196,7 +195,9 @@ function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
           key={visibleAgent.id}
           icon={SvgLightbulbSimple}
           onClick={() => route({ agentId: visibleAgent.id })}
-          active={currentAgent?.id === visibleAgent.id}
+          active={
+            params(SEARCH_PARAM_NAMES.PERSONA_ID) === String(visibleAgent.id)
+          }
           popover={
             <PopoverMenu>
               {[
@@ -250,7 +251,7 @@ function SortableItem({ id, children }: SortableItemProps) {
 
 function AppSidebarInner() {
   const route = useAppRouter();
-  const searchParams = useSearchParams();
+  const params = useAppParams();
   const { pinnedAgents, setPinnedAgents, currentAgent } = useAgentsContext();
   const { folded, setFolded } = useAppSidebarContext();
   const { toggleModal } = useModal();
@@ -367,7 +368,7 @@ function AppSidebarInner() {
               className="!w-full"
               folded={folded}
               onClick={() => route({})}
-              active={searchParams.size === 0}
+              active={!!params()}
               tooltip
             >
               New Session

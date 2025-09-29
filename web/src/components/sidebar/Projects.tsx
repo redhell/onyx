@@ -13,9 +13,10 @@ import SvgTrash from "@/icons/trash";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
-import { useAppRouter } from "@/app/chat/services/lib";
+import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import SvgFolderPlus from "@/icons/folder-plus";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 
 interface ProjectFolderProps {
   project: Project;
@@ -23,15 +24,13 @@ interface ProjectFolderProps {
 
 function ProjectFolder({ project }: ProjectFolderProps) {
   const route = useAppRouter();
+  const params = useAppParams();
   const [open, setOpen] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
-  const { currentProjectId, renameProject, deleteProject } =
-    useProjectsContext();
+  const { renameProject, deleteProject } = useProjectsContext();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(project.name);
-
-  const active = currentProjectId === project.id;
 
   async function submitRename(renamedValue: string) {
     const newName = renamedValue.trim();
@@ -75,7 +74,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
       {/* Project Folder */}
       <NavigationTab
         icon={SvgFolder}
-        active={active}
+        active={params(SEARCH_PARAM_NAMES.PROJECT_ID) === String(project.id)}
         onClick={() => route({ projectId: project.id })}
         popover={
           <PopoverMenu>
@@ -103,8 +102,8 @@ function ProjectFolder({ project }: ProjectFolderProps) {
 
       {/* Project Chat-Sessions */}
       {true &&
-        project.chat_sessions.map((chatSession) => (
-          <ChatButton chatSession={chatSession} />
+        project.chat_sessions.map((chatSession, index) => (
+          <ChatButton key={index} chatSession={chatSession} hideIcon />
         ))}
     </>
   );
