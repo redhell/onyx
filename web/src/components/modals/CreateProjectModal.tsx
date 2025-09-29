@@ -8,11 +8,13 @@ import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import FieldInput from "@/components-2/FieldInput";
+import { useAppRouter } from "@/app/chat/services/lib";
 
 export default function CreateProjectModal() {
   const { createProject } = useProjectsContext();
   const { toggleModal } = useModal();
   const fieldInputRef = useRef<HTMLInputElement>(null);
+  const route = useAppRouter();
 
   async function handleSubmit() {
     if (!fieldInputRef.current) return;
@@ -20,7 +22,8 @@ export default function CreateProjectModal() {
     if (!name) return;
 
     try {
-      createProject(name);
+      const newProject = await createProject(name);
+      route({ projectId: newProject.id });
     } catch (e) {
       console.error(`Failed to create the project ${name}`);
     }

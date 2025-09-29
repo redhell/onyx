@@ -665,7 +665,7 @@ interface UseAppRouterProps {
 export function useAppRouter() {
   const router = useRouter();
   return useCallback(
-    ({ chatSessionId, agentId, projectId }: UseAppRouterProps) => {
+    ({ chatSessionId, agentId, projectId }: UseAppRouterProps = {}) => {
       const finalParams = [];
 
       if (chatSessionId)
