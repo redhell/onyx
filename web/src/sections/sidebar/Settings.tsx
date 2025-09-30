@@ -113,7 +113,7 @@ function SettingsPopover({
         >
           {`Notifications ${(notifications && notifications.length) || 0 > 0 ? `(${notifications!.length})` : ""}`}
         </NavigationTab>,
-        showLogout && null,
+        null,
         showLogout && (
           <NavigationTab
             key="log-out"
