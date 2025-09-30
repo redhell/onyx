@@ -1,5 +1,4 @@
 import React, {
-  memo,
   useCallback,
   useContext,
   useEffect,
@@ -8,9 +7,8 @@ import React, {
 } from "react";
 import { FiPlus } from "react-icons/fi";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
-import LLMPopover from "./LLMPopover";
+import LLMPopover from "@/app/chat/components/input/LLMPopover";
 import { InputPrompt } from "@/app/chat/interfaces";
-
 import { FilterManager, LlmManager, useFederatedConnectors } from "@/lib/hooks";
 import { useChatContext } from "@/components-2/context/ChatContext";
 import { DocumentIcon2, FileIcon } from "@/components/icons/icons";
@@ -24,9 +22,9 @@ import { truncateString, cn } from "@/lib/utils";
 import { useUser } from "@/components/user/UserProvider";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { UnconfiguredLlmProviderText } from "@/components/chat/UnconfiguredLlmProviderText";
-import { SelectedTool } from "./SelectedTool";
-import { useProjectsContext } from "../../projects/ProjectsContext";
-import { FileCard } from "../projects/ProjectContextPanel";
+import { SelectedTool } from "@/app/chat/components/input/SelectedTool";
+import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
+import { FileCard } from "@/app/chat/components/projects/ProjectContextPanel";
 import {
   ProjectFile,
   UserFileStatus,
@@ -35,8 +33,8 @@ import IconButton from "@/components-2/buttons/IconButton";
 import SvgHourglass from "@/icons/hourglass";
 import SvgArrowUp from "@/icons/arrow-up";
 import SvgStop from "@/icons/stop";
-import FilePicker from "../files/FilePicker";
-import { ActionToggle } from "./ActionManagement";
+import FilePicker from "@/app/chat/components/files/FilePicker";
+import { ActionToggle } from "@/app/chat/components/input/ActionManagement";
 
 const MAX_INPUT_HEIGHT = 200;
 
