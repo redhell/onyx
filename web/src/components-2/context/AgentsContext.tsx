@@ -86,17 +86,6 @@ export function AgentsProvider({
         : null,
     [agents, currentAgentId]
   );
-  const fallbackAgent = useMemo(() => {
-    if (currentAgent) return currentAgent;
-    if (pinnedAgents.length > 0) return pinnedAgents[0]!;
-
-    if (agents.length === 0)
-      throw new Error(
-        "There must always be at least one configured agent (i.e., the default agent)"
-      );
-
-    return agents[0]!;
-  }, [agents, currentAgent]);
 
   async function refreshAgents() {
     setAgents(await fetchAllAgents());
@@ -131,7 +120,6 @@ export function AgentsProvider({
         setPinnedAgents,
         togglePinnedAgent,
         currentAgent,
-        fallbackAgent,
       }}
     >
       {children}
@@ -151,7 +139,6 @@ interface AgentsContextProps {
 
   // Currently live/active agent (from searchParams)
   currentAgent: MinimalPersonaSnapshot | null;
-  fallbackAgent: MinimalPersonaSnapshot;
 }
 
 const AgentsContext = createContext<AgentsContextProps | undefined>(undefined);

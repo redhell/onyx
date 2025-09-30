@@ -408,7 +408,7 @@ function ChatInputBarInner({
           ref={textAreaRef}
           id="onyx-chat-input-textarea"
           className={cn(
-            "w-full outline-none bg-transparent resize-none placeholder:text-text-03 whitespace-normal break-word overscroll-contain overflow-y-auto px-spacing-paragraph py-padding-button"
+            "w-full outline-none bg-transparent resize-none placeholder:text-text-03 whitespace-normal break-word overscroll-contain overflow-y-auto p-spacing-paragraph"
           )}
           autoFocus
           style={{ scrollbarWidth: "thin" }}
