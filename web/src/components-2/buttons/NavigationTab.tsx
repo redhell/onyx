@@ -152,16 +152,13 @@ export default function NavigationTab({
     >
       <div
         className={cn(
-          "flex-1 h-[1.8rem] flex flex-row items-center p-spacing-inline gap-spacing-interline",
+          "flex-1 h-[1.5rem] flex flex-row items-center px-spacing-inline py-spacing-mini gap-spacing-interline",
           folded ? "justify-center" : "justify-start"
         )}
       >
-        <div className="w-[1.2rem] h-[1.2rem]">
+        <div className="w-[1rem] h-[1rem]">
           <Icon
-            className={cn(
-              "h-[1.2rem] w-[1.2rem]",
-              iconClasses(active)[variant]
-            )}
+            className={cn("h-[1rem] w-[1rem]", iconClasses(active)[variant])}
           />
         </div>
         {!folded &&
