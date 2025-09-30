@@ -57,7 +57,7 @@ class SerperClient(InternetSearchProvider):
         if not urls:
             return []
 
-        with ThreadPoolExecutor(max_workers=min(4, len(urls))) as e:
+        with ThreadPoolExecutor(max_workers=min(8, len(urls))) as e:
             return list(e.map(self._get_webpage_content, urls))
 
     @retry_builder(tries=3, delay=1, backoff=2)
