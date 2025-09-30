@@ -10,7 +10,7 @@ from onyx.agents.agent_search.dr.sub_agents.web_search.providers import (
     get_default_provider,
 )
 from onyx.agents.agent_search.dr.sub_agents.web_search.utils import (
-    dummy_inference_section_from_internet_search_result,
+    dummy_inference_section_from_internet_content,
 )
 from onyx.chat.turn.models import MyContext
 from onyx.configs.constants import DocumentSource
@@ -81,43 +81,6 @@ def web_search_tool(run_context: RunContextWrapper[MyContext], query: str) -> st
                 ),
             }
         )
-    saved_search_docs = [
-        SavedSearchDoc(
-            db_doc_id=0,
-            document_id=hit.link,
-            chunk_ind=0,
-            semantic_identifier=hit.link,
-            link=hit.link,
-            blurb=hit.snippet,
-            source_type=DocumentSource.WEB,
-            boost=1,
-            hidden=False,
-            metadata={},
-            score=0.0,
-            is_relevant=None,
-            relevance_explanation=None,
-            match_highlights=[],
-            updated_at=None,
-            primary_owners=None,
-            secondary_owners=None,
-            is_internet=True,
-        )
-        for hit in hits
-    ]
-    # TODO: Remove "Results" section from internet search tool
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=SearchToolDelta(
-                type="internal_search_tool_delta",
-                queries=None,
-                documents=saved_search_docs,
-            ),
-        )
-    )
-    dummy_docs_inference_sections = [
-        dummy_inference_section_from_internet_search_result(doc) for doc in hits
-    ]
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
             tool="web_search",
@@ -127,10 +90,8 @@ def web_search_tool(run_context: RunContextWrapper[MyContext], query: str) -> st
             question=query,
             reasoning=f"I am now using Web Search to gather information on {query}",
             answer="Cool",
-            cited_documents={
-                i: inference_section
-                for i, inference_section in enumerate(dummy_docs_inference_sections)
-            },
+            cited_documents={},
+            claims=["web_search"],
         )
     )
     run_context.context.run_dependencies.emitter.emit(
@@ -187,7 +148,6 @@ def web_fetch_tool(run_context: RunContextWrapper[MyContext], urls: List[str]) -
         for url in urls
     ]
 
-    # Emit FetchToolStart event
     run_context.context.run_dependencies.emitter.emit(
         Packet(
             ind=index,
@@ -210,20 +170,35 @@ def web_fetch_tool(run_context: RunContextWrapper[MyContext], urls: List[str]) -
                 ),
             }
         )
+    run_context.context.iteration_instructions.append(
+        IterationInstructions(
+            iteration_nr=index,
+            plan="plan",
+            purpose="Fetching content from URLs",
+            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
+        )
+    )
 
-    # Track web fetch results in MyContext
-    if run_context.context.web_fetch_results is None:
-        run_context.context.web_fetch_results = []
+    inference_sections = [
+        dummy_inference_section_from_internet_content(d) for d in docs
+    ]
+    run_context.context.aggregated_context.global_iteration_responses.append(
+        IterationAnswer(
+            tool="web_fetch",
+            tool_id=18,
+            iteration_nr=index,
+            parallelization_nr=0,
+            question=f"Fetch content from URLs: {', '.join(urls)}",
+            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
+            answer="Cool",
+            cited_documents={
+                i: inference_section
+                for i, inference_section in enumerate(inference_sections)
+            },
+            claims=["web_fetch"],
+        )
+    )
 
-    web_fetch_result = {
-        "iteration_nr": index,
-        "urls": urls,
-        "results": out,
-        "timestamp": run_context.context.current_run_step,
-    }
-    run_context.context.web_fetch_results.append(web_fetch_result)
-
-    # Emit SectionEnd event
     run_context.context.run_dependencies.emitter.emit(
         Packet(
             ind=index,
