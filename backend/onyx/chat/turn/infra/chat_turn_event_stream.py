@@ -11,6 +11,7 @@ from agents import Agent
 from agents import Runner
 from agents import RunResultStreaming
 from agents import TContext
+from agents import TResponseInputItem
 
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.utils.threadpool_concurrency import run_in_background
@@ -36,17 +37,16 @@ class OnyxRunner:
     def run_streamed_in_background(
         self,
         agent: Agent,
-        messages: list[dict],
+        input: str | list[TResponseInputItem],
         context: TContext | None = None,
         max_turns: int = 100,
     ) -> tuple[Self, TimeoutThread[None]]:
-        # TODO: Use / create threadpool_concurrency util
         def worker() -> None:
             async def run_and_consume():
                 # Create the streamed run *inside* the loop thread
                 self._streamed = Runner.run_streamed(
                     agent,
-                    messages,
+                    input,
                     context=context,
                     max_turns=max_turns,
                 )
