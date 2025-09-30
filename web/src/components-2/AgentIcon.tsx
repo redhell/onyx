@@ -96,7 +96,7 @@ export function AgentIcon({ agent }: AgentIconProps) {
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <Text>{agent.description}</Text>
+          <Text inverted>{agent.description}</Text>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

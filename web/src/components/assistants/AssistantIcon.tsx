@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Text from "@/components-2/Text";
 type IconSize = number | "xs" | "small" | "medium" | "large" | "header";
 
 function md5ToBits(str: string): number[] {
@@ -165,7 +166,7 @@ export function AssistantIcon({
         </TooltipTrigger>
         {!disableToolip && assistant.description && (
           <TooltipContent>
-            <p className="text-left">{assistant.description}</p>
+            <Text inverted>{assistant.description}</Text>
           </TooltipContent>
         )}
       </Tooltip>
