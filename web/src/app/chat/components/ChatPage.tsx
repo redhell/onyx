@@ -912,7 +912,7 @@ export function ChatPage({
                 >
                   <div
                     onScroll={handleScroll}
-                    className="w-full h-full flex flex-col default-scrollbar overflow-y-auto overflow-x-hidden relative"
+                    className="w-full h-[calc(100dvh-100px)] flex flex-col default-scrollbar overflow-y-auto overflow-x-hidden relative"
                     ref={scrollableDivRef}
                   >
                     <MessagesDisplay
@@ -944,7 +944,7 @@ export function ChatPage({
                   <div
                     ref={inputRef}
                     className={cn(
-                      "absolute pointer-events-none z-10 w-full inset-0",
+                      "absolute pointer-events-none z-10 w-full",
                       showCenteredHero
                         ? "inset-0"
                         : currentProjectId !== null && showCenteredInput
