@@ -46,7 +46,6 @@ import { Modal } from "@/components/Modal";
 import { useSendMessageToParent } from "@/lib/extension/utils";
 import { SUBMIT_MESSAGE_TYPES } from "@/lib/extension/constants";
 import { getSourceMetadata } from "@/lib/sources";
-import { UserSettingsModal } from "@/app/chat/components/modal/UserSettingsModal";
 import AssistantModal from "@/app/assistants/mine/AssistantModal";
 import { SourceMetadata } from "@/lib/search/interfaces";
 import { FederatedConnectorDetail, ValidSources } from "@/lib/types";
@@ -88,6 +87,7 @@ import {
 } from "@/app/chat/projects/projectsService";
 import ProjectChatSessionList from "@/app/chat/components/projects/ProjectChatSessionList";
 import { cn } from "@/lib/utils";
+import { OnyxIcon } from "@/components/icons/icons";
 
 interface ChatPageProps {
   documentSidebarInitialWidth?: number;
