@@ -17,6 +17,7 @@ import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import SvgFolderPlus from "@/icons/folder-plus";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
+import { noProp } from "@/lib/utils";
 
 interface ProjectFolderProps {
   project: Project;
@@ -85,7 +86,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
               <NavigationTab
                 key="rename-project"
                 icon={SvgEdit}
-                onClick={() => setIsEditing(true)}
+                onClick={noProp(() => setIsEditing(true))}
               >
                 Rename Project
               </NavigationTab>,
@@ -93,7 +94,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
               <NavigationTab
                 key="delete-project"
                 icon={SvgTrash}
-                onClick={() => setDeleteConfirmationModalOpen(true)}
+                onClick={noProp(() => setDeleteConfirmationModalOpen(true))}
                 danger
               >
                 Delete Project
