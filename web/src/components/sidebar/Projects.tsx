@@ -82,11 +82,16 @@ function ProjectFolder({ project }: ProjectFolderProps) {
         popover={
           <PopoverMenu>
             {[
-              <NavigationTab icon={SvgEdit} onClick={() => setIsEditing(true)}>
+              <NavigationTab
+                key="rename-project"
+                icon={SvgEdit}
+                onClick={() => setIsEditing(true)}
+              >
                 Rename Project
               </NavigationTab>,
               null,
               <NavigationTab
+                key="delete-project"
                 icon={SvgTrash}
                 onClick={() => setDeleteConfirmationModalOpen(true)}
                 danger
