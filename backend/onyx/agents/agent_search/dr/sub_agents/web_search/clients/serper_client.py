@@ -85,7 +85,7 @@ class SerperClient(InternetSearchProvider):
 
         # Response only guarantees text
         text = response_json["text"]
-        
+
         # metadata & jsonld is not guaranteed to be present
         metadata = response_json.get("metadata", {})
         jsonld = response_json.get("jsonld", {})
