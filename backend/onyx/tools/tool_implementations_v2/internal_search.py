@@ -5,6 +5,7 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
+from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.turn.models import MyContext
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -71,6 +72,11 @@ def internal_search(run_context: RunContextWrapper[MyContext], query: str) -> st
                 original_query=query,
             ),
         ):
+            if not is_connected(
+                run_context.context.run_dependencies.dependencies_to_maybe_remove.chat_session_id,
+                run_context.context.run_dependencies.redis_client,
+            ):
+                break
             # get retrieved docs to send to the rest of the graph
             if tool_response.id == SEARCH_RESPONSE_SUMMARY_ID:
                 response = cast(SearchResponseSummary, tool_response.response)
