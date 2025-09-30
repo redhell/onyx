@@ -16,26 +16,26 @@ from onyx.configs.chat_configs import SERPER_API_KEY
 from onyx.connectors.cross_connector_utils.miscellaneous_utils import time_str_to_utc
 from onyx.utils.retry_wrapper import retry_builder
 
-
 SERPER_SEARCH_URL = "https://google.serper.dev/search"
 SERPER_CONTENTS_URL = "https://scrape.serper.dev"
 
 
 class SerperClient(InternetSearchProvider):
     def __init__(self, api_key: str | None = SERPER_API_KEY) -> None:
-        self.api_key = api_key
+        self.headers = {
+            "X-API-KEY": api_key,
+            "Content-Type": "application/json",
+        }
 
     @retry_builder(tries=3, delay=1, backoff=2)
     def search(self, query: str) -> list[InternetSearchResult]:
-        headers = self._create_header()
-
         payload = {
             "q": query,
         }
 
         response = requests.post(
             SERPER_SEARCH_URL,
-            headers=headers,
+            headers=self.headers,
             data=json.dumps(payload),
         )
 
@@ -62,15 +62,13 @@ class SerperClient(InternetSearchProvider):
 
     @retry_builder(tries=3, delay=1, backoff=2)
     def _get_webpage_content(self, url: str) -> InternetContent:
-        headers = self._create_header()
-
         payload = {
             "url": url,
         }
 
         response = requests.post(
             SERPER_CONTENTS_URL,
-            headers=headers,
+            headers=self.headers,
             data=json.dumps(payload),
         )
 
@@ -81,18 +79,19 @@ class SerperClient(InternetSearchProvider):
         metadata = response_json["metadata"]
 
         # jsonld is not guaranteed to be present
-        jsonld = response_json["jsonld"] if "jsonld" in response_json else {}
+        jsonld = response_json.get("jsonld", {})
 
         title = extract_title_from_metadata(metadata)
 
-        # Serper does not provide an easy mechanism to extract the url
+        # Serper does not provide a reliable mechanism to extract the url
         response_url = url
-        published_date = extract_published_date_from_jsonld(jsonld)
+        published_date_str = extract_published_date_from_jsonld(jsonld)
+        published_date = None
 
-        if published_date:
+        if published_date_str:
             try:
-                published_date = time_str_to_utc(published_date)
-            except ValueError:
+                published_date = time_str_to_utc(published_date_str)
+            except Exception:
                 published_date = None
 
         return InternetContent(
@@ -101,12 +100,6 @@ class SerperClient(InternetSearchProvider):
             full_content=text or "",
             published_date=published_date,
         )
-
-    def _create_header(self) -> dict[str, str]:
-        return {
-            "X-API-KEY": self.api_key,
-            "Content-Type": "application/json",
-        }
 
 
 def extract_title_from_metadata(metadata: dict[str, str]) -> str | None:
