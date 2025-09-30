@@ -77,6 +77,7 @@ export interface NavigationTabProps {
   href?: string;
   tooltip?: boolean;
   popover?: React.ReactNode;
+  onPopoverChange?: (open: boolean) => void;
   className?: string;
   icon: React.FunctionComponent<SvgProps>;
   renaming?: boolean;
@@ -97,6 +98,7 @@ export default function NavigationTab({
   href,
   tooltip,
   popover,
+  onPopoverChange,
   className,
   icon: Icon,
   renaming,
@@ -105,13 +107,12 @@ export default function NavigationTab({
   children,
 }: NavigationTabProps) {
   const { ref, inside } = useBoundingBox();
-  const [kebabMenuOpen, setKebabMenuOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [renamingValue, setRenamingValue] = useState<string>(children ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!inputRef.current) return;
-
-    setKebabMenuOpen(false);
+    setPopoverOpen(false);
     if (renaming) {
       setRenamingValue(children ?? "");
       inputRef.current.focus();
@@ -120,6 +121,11 @@ export default function NavigationTab({
       setRenamingValue("");
     }
   }, [renaming, inputRef]);
+  useEffect(() => {
+    if (!onPopoverChange) return;
+    // We add a 100ms timeout to ensure that the callback runs only when the fade-out animation has finished.
+    setTimeout(() => onPopoverChange(popoverOpen), 100);
+  }, [popoverOpen]);
   useClickOutside(inputRef, () => setRenaming?.(false), renaming);
   useKeyPress(() => setRenaming?.(false), "Escape", renaming);
   useKeyPress(
@@ -184,14 +190,14 @@ export default function NavigationTab({
             children
           ))}
       </div>
-      {!folded && popover && (active || inside || kebabMenuOpen) && (
-        <Popover onOpenChange={setKebabMenuOpen}>
+      {!folded && popover && (active || inside || popoverOpen) && (
+        <Popover onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild onClick={(event) => event.stopPropagation()}>
             <div>
               <IconButton
                 icon={SvgMoreHorizontal}
                 internal
-                active={kebabMenuOpen}
+                active={popoverOpen}
               />
             </div>
           </PopoverTrigger>

@@ -378,6 +378,7 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
         onClick={() => route({ chatSessionId: chatSession.id })}
         active={params(SEARCH_PARAM_NAMES.CHAT_ID) === chatSession.id}
         popover={<PopoverMenu>{popoverItems}</PopoverMenu>}
+        onPopoverChange={(open) => !open && setShowMoveOptions(false)}
         renaming={renaming}
         setRenaming={setRenaming}
         submitRename={submitRename}
