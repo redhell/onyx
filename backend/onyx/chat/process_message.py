@@ -3,9 +3,7 @@ import time
 import traceback
 from collections.abc import Callable
 from collections.abc import Iterator
-from typing import Any
 from typing import cast
-from typing import Dict
 from typing import Protocol
 from uuid import UUID
 
@@ -34,7 +32,6 @@ from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.chat.stop_signal_checker import reset
 from onyx.chat.turn import fast_chat_turn
-from onyx.chat.turn.infra.chat_turn_event_stream import convert_to_packet_obj
 from onyx.chat.turn.models import DependenciesToMaybeRemove
 from onyx.chat.turn.models import RunDependencies
 from onyx.chat.user_files.parse_user_files import parse_user_files
@@ -49,6 +46,7 @@ from onyx.configs.constants import NO_AUTH_USER_ID
 from onyx.context.search.enums import OptionalSearchSetting
 from onyx.context.search.models import InferenceSection
 from onyx.context.search.models import RetrievalDetails
+from onyx.context.search.models import SavedSearchDoc
 from onyx.context.search.retrieval.search_runner import (
     inference_sections_from_ids,
 )
@@ -87,7 +85,11 @@ from onyx.llm.models import PreviousMessage
 from onyx.llm.utils import litellm_exception_to_error_msg
 from onyx.natural_language_processing.utils import get_tokenizer
 from onyx.server.query_and_chat.models import CreateChatMessageRequest
+from onyx.server.query_and_chat.streaming_models import CitationDelta
 from onyx.server.query_and_chat.streaming_models import CitationInfo
+from onyx.server.query_and_chat.streaming_models import MessageDelta
+from onyx.server.query_and_chat.streaming_models import MessageStart
+from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.utils import get_json_line
 from onyx.tools.force import ForceUseTool
 from onyx.tools.models import SearchToolOverrideKwargs
@@ -885,28 +887,46 @@ def remove_answer_citations(answer: str) -> str:
 
 @log_function_time()
 def gather_stream(
-    packets: Iterator[Dict[str, Any]],
+    packets: AnswerStream,
 ) -> ChatBasicResponse:
     answer = ""
-    for packet in packets:
-        if packet != {"type": "event"}:
-            print(packet)
+    citations: list[CitationInfo] = []
+    error_msg: str | None = None
+    message_id: int | None = None
+    top_documents: list[SavedSearchDoc] = []
 
-        # Convert packet to PacketObj when possible
-        packet_obj = convert_to_packet_obj(packet)
-        if packet_obj:
-            # Handle PacketObj types that contain text content
-            if hasattr(packet_obj, "content") and packet_obj.content:
-                answer += packet_obj.content
-        elif "text" in packet:
-            # Fallback for legacy packet format
-            answer += packet["text"]
+    for packet in packets:
+        if isinstance(packet, Packet):
+            # Handle the different packet object types
+            if isinstance(packet.obj, MessageStart):
+                # MessageStart contains the initial content and final documents
+                if packet.obj.content:
+                    answer += packet.obj.content
+                if packet.obj.final_documents:
+                    top_documents = packet.obj.final_documents
+            elif isinstance(packet.obj, MessageDelta):
+                # MessageDelta contains incremental content updates
+                if packet.obj.content:
+                    answer += packet.obj.content
+            elif isinstance(packet.obj, CitationDelta):
+                # CitationDelta contains citation information
+                if packet.obj.citations:
+                    citations.extend(packet.obj.citations)
+        elif isinstance(packet, StreamingError):
+            error_msg = packet.error
+        elif isinstance(packet, MessageResponseIDInfo):
+            message_id = packet.reserved_assistant_message_id
+
+    if message_id is None:
+        raise ValueError("Message ID is required")
 
     return ChatBasicResponse(
         answer=answer,
         answer_citationless=remove_answer_citations(answer),
-        cited_documents={},
-        message_id=0,
-        error_msg=None,
-        top_documents=[],
+        cited_documents={
+            citation.citation_num: citation.document_id for citation in citations
+        },
+        message_id=message_id,
+        error_msg=error_msg,
+        top_documents=top_documents,
     )

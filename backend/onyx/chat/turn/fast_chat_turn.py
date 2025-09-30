@@ -20,7 +20,6 @@ from onyx.tools.tool_implementations_v2.web import web_fetch
 from onyx.tools.tool_implementations_v2.web import web_search
 
 
-# TODO: Dependency injection?
 @unified_event_stream
 def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
     ctx = MyContext(

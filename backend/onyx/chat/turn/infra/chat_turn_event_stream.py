@@ -4,7 +4,6 @@ import queue
 import threading
 from collections.abc import Iterator
 from queue import Queue
-from typing import Any
 from typing import Optional
 
 from agents import Agent
@@ -38,6 +37,7 @@ class OnyxRunner:
         context: TContext | None = None,
         max_turns: int = 100,
     ):
+        # TODO: Use / create threadpool_concurrency util
         def worker() -> None:
             async def run_and_consume():
                 # Create the streamed run *inside* the loop thread
@@ -83,85 +83,6 @@ class OnyxRunner:
                     pass
 
             self._loop.call_soon_threadsafe(_do_cancel)
-
-
-def convert_to_packet_obj(packet: dict[str, Any]) -> Any | None:
-    """Convert a packet dictionary to PacketObj when possible.
-
-    Args:
-        packet: Dictionary containing packet data
-
-    Returns:
-        PacketObj instance if conversion is possible, None otherwise
-    """
-    if not isinstance(packet, dict) or "type" not in packet:
-        return None
-
-    packet_type = packet.get("type")
-    if not packet_type:
-        return None
-
-    try:
-        # Import here to avoid circular imports
-        from onyx.server.query_and_chat.streaming_models import (
-            MessageStart,
-            MessageDelta,
-            OverallStop,
-            SectionEnd,
-            SearchToolStart,
-            SearchToolDelta,
-            ImageGenerationToolStart,
-            ImageGenerationToolDelta,
-            ImageGenerationToolHeartbeat,
-            CustomToolStart,
-            CustomToolDelta,
-            ReasoningStart,
-            ReasoningDelta,
-            CitationStart,
-            CitationDelta,
-        )
-
-        # Map packet types to their corresponding classes
-        type_mapping = {
-            "response.created": MessageStart,
-            "response.output_text.delta": MessageDelta,
-            "response.completed": OverallStop,
-            "response.output_item.done": SectionEnd,
-            "internal_search_tool_start": SearchToolStart,
-            "internal_search_tool_delta": SearchToolDelta,
-            "image_generation_tool_start": ImageGenerationToolStart,
-            "image_generation_tool_delta": ImageGenerationToolDelta,
-            "image_generation_tool_heartbeat": ImageGenerationToolHeartbeat,
-            "custom_tool_start": CustomToolStart,
-            "custom_tool_delta": CustomToolDelta,
-            "reasoning_start": ReasoningStart,
-            "reasoning_delta": ReasoningDelta,
-            "citation_start": CitationStart,
-            "citation_delta": CitationDelta,
-        }
-
-        packet_class = type_mapping.get(packet_type)
-        if packet_class:
-            # Create instance using the packet data, filtering out None values
-            filtered_data = {k: v for k, v in packet.items() if v is not None}
-            if packet_type == "response.output_text.delta":
-                filtered_data["type"] = "message_delta"
-                filtered_data["content"] = filtered_data["delta"]
-            elif packet_type == "response.completed":
-                filtered_data["type"] = "stop"
-            elif packet_type == "response.created":
-                return MessageStart(
-                    type="message_start", content="", final_documents=None
-                )
-            elif packet_type == "response.output_item.done":
-                return SectionEnd(type="section_end")
-            return packet_class(**filtered_data)
-
-    except Exception as e:
-        # Log the error but don't fail the entire process
-        logger.debug(f"Failed to convert packet to PacketObj: {e}")
-
-    return None
 
 
 class Emitter:
