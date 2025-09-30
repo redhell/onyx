@@ -8,7 +8,7 @@ export default function LoginText() {
   const settings = useContext(SettingsContext);
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <Text inverted headingH3>
+      <Text headingH3>
         Log In to{" "}
         {(settings && settings?.enterpriseSettings?.application_name) || "Onyx"}
       </Text>

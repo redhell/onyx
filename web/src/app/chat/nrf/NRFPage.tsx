@@ -355,7 +355,6 @@ export default function NRFPage({
                 anonymousUserEnabled: null,
               }}
               nextUrl="/nrf"
-              searchParams={{}}
             />
           ) : (
             <div className="flex flex-col items-center">

@@ -53,9 +53,9 @@ export default function LoginPage({
           {authUrl && authTypeMetadata && (
             <>
               <div className="flex flex-row items-center w-full gap-spacing-interline">
-                <div className="flex-1 border-t" />
-                <Text inverted>or</Text>
-                <div className="flex-1 border-t" />
+                <div className="flex-1 border-t border-text-04" />
+                <Text>or</Text>
+                <div className="flex-1 border-t border-text-04" />
               </div>
 
               <SignInButton
