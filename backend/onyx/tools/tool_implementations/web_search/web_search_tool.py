@@ -50,7 +50,7 @@ class WebSearchTool(Tool[None]):
     @override
     @classmethod
     def is_available(cls, db_session: Session) -> bool:
-        """Available only if EXA API key is configured."""
+        """Available only if EXA or SERPER API key is configured."""
         return bool(EXA_API_KEY) or bool(SERPER_API_KEY)
 
     def tool_definition(self) -> dict:

@@ -39,6 +39,8 @@ class SerperClient(InternetSearchProvider):
             data=json.dumps(payload),
         )
 
+        response.raise_for_status()
+
         results = response.json()
         organic_results = results["organic"]
 
@@ -72,6 +74,7 @@ class SerperClient(InternetSearchProvider):
             data=json.dumps(payload),
         )
 
+        # 400 returned when serper cannot scrape
         if response.status_code == 400:
             return InternetContent(
                 title="",
@@ -80,6 +83,8 @@ class SerperClient(InternetSearchProvider):
                 published_date=None,
                 scrape_successful=False,
             )
+
+        response.raise_for_status()
 
         response_json = response.json()
 
