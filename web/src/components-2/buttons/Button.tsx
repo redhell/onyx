@@ -114,7 +114,7 @@ export default function Button({
   return (
     <button
       className={cn(
-        "p-spacing-interline rounded-08 group",
+        "p-spacing-interline rounded-08 group w-fit",
         variantClasses(active)[variant][subvariant],
         className
       )}

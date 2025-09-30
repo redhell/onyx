@@ -773,14 +773,7 @@ export function ChatPage({
 
       <ChatPopup />
 
-      {currentFeedback && (
-        <FeedbackModal
-          feedbackType={currentFeedback[0]}
-          messageId={currentFeedback[1]}
-          onClose={() => setCurrentFeedback(null)}
-          setPopup={setPopup}
-        />
-      )}
+      <FeedbackModal setPopup={setPopup} />
 
       <ChatSearchModal
         open={isChatSearchModalOpen}

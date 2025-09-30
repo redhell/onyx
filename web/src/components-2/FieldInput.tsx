@@ -15,7 +15,7 @@ function FieldInputInner(
   ref: React.ForwardedRef<HTMLInputElement>
 ) {
   return (
-    <div className="flex flex-col gap-spacing-interline">
+    <div className="flex flex-col gap-spacing-interline w-full">
       <Text mainAction>{label}</Text>
       <input
         ref={ref}

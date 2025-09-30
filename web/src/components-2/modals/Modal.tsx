@@ -40,7 +40,10 @@ export default function Modal({
   const { isOpen, toggleModal } = useModal();
   const insideModal = useRef(false);
 
-  if (!isOpen(id)) return null;
+  if (!isOpen(id)) {
+    console.log("Closing!");
+    return null;
+  }
 
   return (
     <CoreModal

@@ -7,6 +7,7 @@ export enum ModalIds {
   AgentsModal = "AgentsModal",
   UserSettingsModal = "UserSettingsModal",
   CreateProjectModal = "CreateProjectModal",
+  FeedbackModal = "FeedbackModal",
 }
 
 interface ModalProviderProps {
@@ -15,13 +16,22 @@ interface ModalProviderProps {
 
 export function ModalProvider({ children }: ModalProviderProps) {
   const [openModal, setOpenModal] = useState<string | undefined>();
+  const [modalData, setModalData] = useState<any | undefined>();
 
-  function toggleModal(id: ModalIds, open: boolean) {
+  function toggleModal(id: ModalIds, open: boolean, data?: any) {
     if (openModal !== undefined) {
-      if (openModal === id && !open) setOpenModal(undefined);
-      else if (openModal !== id && open) setOpenModal(id);
+      if (openModal === id && !open) {
+        setOpenModal(undefined);
+        setModalData(undefined);
+      } else if (openModal !== id && open) {
+        setOpenModal(id);
+        setModalData(data);
+      }
     } else {
-      if (open) setOpenModal(id);
+      if (open) {
+        setOpenModal(id);
+        setModalData(data);
+      }
     }
   }
 
@@ -29,10 +39,17 @@ export function ModalProvider({ children }: ModalProviderProps) {
     return openModal === id;
   }
 
-  useEscape(() => setOpenModal(undefined));
+  function getModalData<T = any>(): T | undefined {
+    return modalData as T | undefined;
+  }
+
+  useEscape(() => {
+    setOpenModal(undefined);
+    setModalData(undefined);
+  });
 
   return (
-    <ModalContext.Provider value={{ isOpen, toggleModal }}>
+    <ModalContext.Provider value={{ isOpen, toggleModal, getModalData }}>
       {children}
     </ModalContext.Provider>
   );
@@ -40,7 +57,8 @@ export function ModalProvider({ children }: ModalProviderProps) {
 
 interface ModalContextType {
   isOpen: (id: ModalIds) => boolean;
-  toggleModal: (id: ModalIds, open: boolean) => void;
+  toggleModal: (id: ModalIds, open: boolean, data?: any) => void;
+  getModalData: <T = any>() => T | undefined;
 }
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
