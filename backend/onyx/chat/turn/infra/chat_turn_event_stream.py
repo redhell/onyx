@@ -61,7 +61,7 @@ class OnyxRunner:
             finally:
                 self._loop.close()
 
-        self._thread = threading.Thread(target=worker, daemon=True)
+        self._thread = threading.Thread(target=worker, daemon=False)
         self._thread.start()
         return self
 
@@ -85,6 +85,10 @@ class OnyxRunner:
             self._loop.call_soon_threadsafe(_do_cancel)
 
 
+class EmittedException:
+    exception: Exception
+
+
 class Emitter:
     """Use this inside tools to emit arbitrary UI progress."""
 
@@ -92,6 +96,6 @@ class Emitter:
         self.bus = bus
         self.packet_history: list[Packet] = []
 
-    def emit(self, packet: Packet) -> None:
+    def emit(self, packet: Packet | EmittedException) -> None:
         self.bus.put(packet)
         self.packet_history.append(packet)

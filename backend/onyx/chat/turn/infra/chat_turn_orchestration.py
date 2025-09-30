@@ -1,5 +1,3 @@
-import contextvars
-import threading
 from collections.abc import Callable
 from collections.abc import Generator
 from queue import Queue
@@ -12,6 +10,7 @@ from onyx.chat.turn.models import RunDependencies
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import PacketException
+from onyx.utils.threadpool_concurrency import run_in_background
 
 
 def unified_event_stream(
@@ -35,21 +34,17 @@ def unified_event_stream(
     ) -> Generator[Packet, None]:
         bus: Queue = Queue()
         emitter = Emitter(bus)
-        current_context = contextvars.copy_context()
         dependencies.emitter = emitter
 
-        # TODO: Use / make threadpool_concurrency util
         def run_with_exception_capture() -> None:
             try:
-                current_context.run(turn_func, messages, dependencies)
+                turn_func(messages, dependencies)
             except Exception as e:
                 emitter.emit(
                     Packet(ind=0, obj=PacketException(type="error", exception=e))
                 )
 
-        t = threading.Thread(target=run_with_exception_capture, daemon=True)
-        t.start()
-
+        run_in_background(run_with_exception_capture)
         while True:
             pkt: Packet = emitter.bus.get()
             if pkt.obj == OverallStop(type="stop"):
@@ -59,5 +54,6 @@ def unified_event_stream(
                 raise pkt.obj.exception
             else:
                 yield pkt
+        # wait_on_background(thread)
 
     return wrapper
