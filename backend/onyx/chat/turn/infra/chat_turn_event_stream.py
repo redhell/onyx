@@ -33,7 +33,7 @@ class OnyxRunner:
         self._streamed: Optional[RunResultStreaming] = None
         self.SENTINEL = object()
 
-    def run_streamed(
+    def run_streamed_in_background(
         self,
         agent: Agent,
         messages: list[dict],
@@ -55,14 +55,12 @@ class OnyxRunner:
                         self._q.put(ev)
                 finally:
                     self._q.put(self.SENTINEL)
+                self._loop.close()
 
             # Each thread needs its own loop
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            try:
-                self._loop.run_until_complete(run_and_consume())
-            finally:
-                self._loop.close()
+            self._loop.run_until_complete(run_and_consume())
 
         return self, run_in_background(worker)
 
