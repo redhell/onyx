@@ -189,6 +189,7 @@ export default function Settings({
         id={ModalIds.UserSettingsModal}
         title="User Settings"
         icon={SvgSettings}
+        className="h-fit"
         sm
       >
         <UserSettings

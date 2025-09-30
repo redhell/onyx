@@ -1,9 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
-// import { Modal } from "@/components/Modal";
 import Modal from "@/components-2/modals/Modal";
 import { getDisplayNameForModel, LlmDescriptor } from "@/lib/hooks";
 import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
-
 import { parseLlmDescriptor, structureValue } from "@/lib/llm/utils";
 import { setUserDefaultModel } from "@/lib/users/UserSettings";
 import { usePathname, useRouter } from "next/navigation";
@@ -295,8 +293,8 @@ export function UserSettings({
   };
 
   return (
-    <div className="flex flex-col">
-      {(showPasswordSection || hasConnectors) && (
+    <div className="flex flex-col p-padding-content">
+      {/* {(showPasswordSection || hasConnectors) && (
         <div className="w-1/4 pr-4 flex-shrink-0">
           <nav>
             <ul className="space-y-2">
@@ -343,13 +341,11 @@ export function UserSettings({
             </ul>
           </nav>
         </div>
-      )}
+      )} */}
       <div
         className={`${
-          showPasswordSection || hasConnectors
-            ? "w-3/4 pl-4 pr-3"
-            : "w-full pr-3"
-        } overflow-y-scroll default-scrollbar`}
+          showPasswordSection || hasConnectors ? "w-3/4" : "w-full"
+        } overflow-y-scroll default-scrollbar !w-full`}
       >
         {activeSection === "settings" && (
           <div className="space-y-6">

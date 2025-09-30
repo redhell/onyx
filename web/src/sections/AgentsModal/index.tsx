@@ -143,7 +143,7 @@ export default function AgentsModal() {
 
   return (
     <Modal id={ModalIds.AgentsModal} icon={SvgOnyxOctagon} title="Agents" sm>
-      <div className="flex flex-col sticky top-[0rem] z-10 bg-background-tint-01">
+      <div className="flex flex-col sticky top-[0rem] z-10 bg-background-tint-01 p-spacing-paragraph">
         <div className="flex flex-row items-center gap-spacing-interline">
           <input
             className="w-full h-[3rem] border bg-transparent rounded-08 p-padding-button"
@@ -188,7 +188,7 @@ export default function AgentsModal() {
         </div>
       </div>
 
-      <div className="h-full w-full">
+      <div className="h-full w-full p-spacing-paragraph">
         {featuredAgents.length === 0 && allAgents.length === 0 ? (
           <Text
             mainBody

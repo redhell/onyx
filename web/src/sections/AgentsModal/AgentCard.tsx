@@ -5,6 +5,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  PopoverMenu,
 } from "@/components/ui/popover";
 import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
@@ -32,37 +33,8 @@ import SvgMoreHorizontal from "@/icons/more-horizontal";
 import SvgBarChart from "@/icons/bar-chart";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
-
-interface AgentActionButtonProps {
-  title: string;
-  icon: React.FunctionComponent<SvgProps>;
-  onClick: () => void;
-  tooltip: string;
-}
-
-function AgentActionButton({
-  title,
-  icon: Icon,
-  onClick,
-  tooltip,
-}: AgentActionButtonProps) {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={onClick}
-            className="hover:bg-background-tint-03 p-spacing-interline gap-spacing-interline rounded-08 border flex items-center"
-          >
-            <Icon className="w-[1rem] h-[1rem] stroke-text-05" />
-            <Text secondaryBody>{title}</Text>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
+import { useAppRouter } from "@/hooks/appNavigation";
+import IconButton from "@/components-2/buttons/IconButton";
 
 interface AgentCardProps {
   agent: MinimalPersonaSnapshot;
@@ -76,6 +48,7 @@ export default function AgentCard({
   closeModal,
 }: AgentCardProps) {
   const router = useRouter();
+  const route = useAppRouter();
   const { user } = useUser();
   const { togglePinnedAgent, refreshAgents } = useAgentsContext();
   const { popup, setPopup } = usePopup();
@@ -111,15 +84,17 @@ export default function AgentCard({
           onClose={() => setDeleteConfirmationModalOpen(false)}
           description="Are you sure you want to delete this agent? This action cannot be undone."
         >
-          <Button
-            secondary
-            onClick={() => setDeleteConfirmationModalOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button danger onClick={confirmDelete}>
-            Delete
-          </Button>
+          <div className="flex flex-row items-center justify-end gap-spacing-interline">
+            <Button
+              secondary
+              onClick={() => setDeleteConfirmationModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button danger onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
         </ConfirmationModal>
       )}
 
@@ -145,36 +120,39 @@ export default function AgentCard({
                   </PopoverTrigger>
 
                   <PopoverContent>
-                    <div className="flex flex-col gap-spacing-inline">
-                      <NavigationTab
-                        icon={SvgEditBig}
-                        onClick={() =>
-                          router.push(`/assistants/edit/${agent.id}`)
-                        }
-                      >
-                        Edit
-                      </NavigationTab>
-                      {isPaidEnterpriseFeaturesEnabled && (
+                    <PopoverMenu>
+                      {[
                         <NavigationTab
-                          icon={SvgBarChart}
+                          icon={SvgEditBig}
                           onClick={() =>
-                            router.push(`/assistants/stats/${agent.id}`)
+                            router.push(`/assistants/edit/${agent.id}`)
                           }
                         >
-                          Stats
-                        </NavigationTab>
-                      )}
-                      <NavigationTab
-                        icon={SvgTrash}
-                        onClick={() => {
-                          setKebabMenuOpen(false);
-                          setDeleteConfirmationModalOpen(true);
-                        }}
-                        danger
-                      >
-                        Delete
-                      </NavigationTab>
-                    </div>
+                          Edit
+                        </NavigationTab>,
+                        isPaidEnterpriseFeaturesEnabled ? (
+                          <NavigationTab
+                            icon={SvgBarChart}
+                            onClick={() =>
+                              router.push(`/assistants/stats/${agent.id}`)
+                            }
+                          >
+                            Stats
+                          </NavigationTab>
+                        ) : undefined,
+                        null,
+                        <NavigationTab
+                          icon={SvgTrash}
+                          onClick={() => {
+                            setKebabMenuOpen(false);
+                            setDeleteConfirmationModalOpen(true);
+                          }}
+                          danger
+                        >
+                          Delete
+                        </NavigationTab>,
+                      ]}
+                    </PopoverMenu>
                   </PopoverContent>
                 </Popover>
               )}
@@ -208,24 +186,22 @@ export default function AgentCard({
               </Text>
             </div>
 
-            <div className="flex gap-2">
-              <AgentActionButton
-                title="Start Chat"
-                icon={SvgBubbleText}
+            <div className="flex gap-spacing-interline">
+              <Button
                 onClick={() => {
-                  router.push(
-                    `/chat?${SEARCH_PARAM_NAMES.PERSONA_ID}=${agent.id}`
-                  );
+                  route({ agentId: agent.id });
                   closeModal();
                 }}
-                tooltip="Start a new chat with this agent"
-              />
-              <AgentActionButton
-                title={pinned ? "Unpin" : "Pin"}
-                icon={SvgPin}
+                secondary
+              >
+                Start Chat
+              </Button>
+              <Button
                 onClick={() => togglePinnedAgent(agent, !pinned)}
-                tooltip={`${pinned ? "Remove from" : "Add to"} your pinned list`}
-              />
+                secondary
+              >
+                {pinned ? "Unpin Chat" : "Pin Chat"}
+              </Button>
             </div>
           </div>
         </div>
