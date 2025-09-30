@@ -72,13 +72,22 @@ class SerperClient(InternetSearchProvider):
             data=json.dumps(payload),
         )
 
+        if response.status_code == 400:
+            return InternetContent(
+                title="",
+                link=url,
+                full_content="",
+                published_date=None,
+                scrape_successful=False,
+            )
+
         response_json = response.json()
 
-        # Response contains at a minimum text and metadata
+        # Response only guarantees text
         text = response_json["text"]
-        metadata = response_json["metadata"]
-
-        # jsonld is not guaranteed to be present
+        
+        # metadata & jsonld is not guaranteed to be present
+        metadata = response_json.get("metadata", {})
         jsonld = response_json.get("jsonld", {})
 
         title = extract_title_from_metadata(metadata)
@@ -96,7 +105,7 @@ class SerperClient(InternetSearchProvider):
 
         return InternetContent(
             title=title or "",
-            link=response_url or url,
+            link=response_url,
             full_content=text or "",
             published_date=published_date,
         )
