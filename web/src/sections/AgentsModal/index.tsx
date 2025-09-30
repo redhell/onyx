@@ -12,6 +12,7 @@ import Modal from "@/components-2/modals/Modal";
 import { ModalIds, useModal } from "@/components-2/context/ModalContext";
 import SvgFilter from "@/icons/filter";
 import SvgOnyxOctagon from "@/icons/onyx-octagon";
+import Button from "@/components-2/buttons/Button";
 
 interface AgentsSectionProps {
   title: string;
@@ -57,12 +58,9 @@ function AgentBadgeSelector({
   toggleFilter,
 }: AgentBadgeSelectorProps) {
   return (
-    <div
-      className={`bg-background-tint-03 hover:bg-background-tint-02 ${selected && "!bg-action-link-05 hover:!bg-action-link-04"} border p-spacing-interline rounded-08`}
-      onClick={toggleFilter}
-    >
-      <Text secondaryBody>{text}</Text>
-    </div>
+    <Button secondary active={selected} onClick={toggleFilter}>
+      {text}
+    </Button>
   );
 }
 
@@ -151,15 +149,15 @@ export default function AgentsModal() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
           />
-          <button
+          <Button
             onClick={() => {
               toggleModal(ModalIds.AgentsModal, false);
               router.push("/assistants/new");
             }}
-            className="p-padding-button bg-background-tint-03 rounded-08 hover:bg-background-tint-02"
+            className="h-full"
           >
-            <Text>Create</Text>
-          </button>
+            Create
+          </Button>
         </div>
 
         <div className="py-padding-content flex items-center gap-spacing-interline flex-wrap">

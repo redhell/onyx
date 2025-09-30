@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 import {
   Popover,
   PopoverTrigger,
@@ -11,21 +10,12 @@ import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import { useUser } from "@/components/user/UserProvider";
 import { checkUserOwnsAssistant as checkUserOwnsAgent } from "@/lib/assistants/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { deletePersona } from "@/app/admin/assistants/lib";
 import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidEnterpriseFeaturesEnabled";
 import { usePopup } from "@/components/admin/connectors/Popup";
 import { useAgentsContext } from "@/components-2/context/AgentsContext";
 import Text from "@/components-2/Text";
 import Truncated from "@/components-2/Truncated";
-import SvgBubbleText from "@/icons/bubble-text";
-import SvgPin from "@/icons/pin";
-import { SvgProps } from "@/icons";
 import NavigationTab from "@/components-2/buttons/NavigationTab";
 import SvgEditBig from "@/icons/edit-big";
 import SvgTrash from "@/icons/trash";
@@ -34,7 +24,6 @@ import SvgBarChart from "@/icons/bar-chart";
 import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
 import Button from "@/components-2/buttons/Button";
 import { useAppRouter } from "@/hooks/appNavigation";
-import IconButton from "@/components-2/buttons/IconButton";
 
 interface AgentCardProps {
   agent: MinimalPersonaSnapshot;
@@ -105,10 +94,8 @@ export default function AgentCard({
 
           <div className="flex-1 flex flex-col gap-padding-button">
             <div className="flex flex-row justify-between items-center">
-              <Truncated>
-                <Text headingH3 text04>
-                  {agent.name}
-                </Text>
+              <Truncated headingH3 text04>
+                {agent.name}
               </Truncated>
 
               {isOwnedByUser && (
@@ -164,10 +151,8 @@ export default function AgentCard({
 
             <div className="flex flex-row items-center gap-spacing-interline">
               <div className="max-w-[33%]">
-                <Truncated>
-                  <Text secondaryBody text02>
-                    By {agent.owner?.email || "Onyx"} asdf
-                  </Text>
+                <Truncated secondaryBody text02>
+                  By {agent.owner?.email || "Onyx"} asdf
                 </Truncated>
               </div>
               <Text secondaryBody text01>
