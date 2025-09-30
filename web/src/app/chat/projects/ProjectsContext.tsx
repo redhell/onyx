@@ -123,7 +123,7 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({
       await fetchProjects();
       setCurrentProjectDetails(details);
     }
-  }, [currentProjectId, setCurrentProjectDetails]);
+  }, [fetchProjects, currentProjectId, setCurrentProjectDetails]);
 
   const upsertInstructions = useCallback(
     async (instructions: string) => {
