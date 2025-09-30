@@ -18,6 +18,7 @@ from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.tool_implementations_v2.internal_search import internal_search
 from onyx.tools.tool_implementations_v2.web import web_fetch
 from onyx.tools.tool_implementations_v2.web import web_search
+from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 @unified_event_stream
@@ -45,7 +46,9 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
         ),
     )
 
-    bridge = OnyxRunner().run_streamed(agent, messages, context=ctx, max_turns=100)
+    bridge, thread = OnyxRunner().run_streamed(
+        agent, messages, context=ctx, max_turns=100
+    )
     for ev in bridge.events():
         if not is_connected(
             dependencies.dependencies_to_maybe_remove.chat_session_id,
@@ -72,6 +75,7 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
     )
+    wait_on_background(thread)
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?

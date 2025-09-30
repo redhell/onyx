@@ -5,6 +5,7 @@ import threading
 from collections.abc import Iterator
 from queue import Queue
 from typing import Optional
+from typing import Self
 
 from agents import Agent
 from agents import Runner
@@ -12,6 +13,8 @@ from agents import RunResultStreaming
 from agents import TContext
 
 from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.utils.threadpool_concurrency import run_in_background
+from onyx.utils.threadpool_concurrency import TimeoutThread
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +39,7 @@ class OnyxRunner:
         messages: list[dict],
         context: TContext | None = None,
         max_turns: int = 100,
-    ):
+    ) -> tuple[Self, TimeoutThread[None]]:
         # TODO: Use / create threadpool_concurrency util
         def worker() -> None:
             async def run_and_consume():
@@ -61,9 +64,7 @@ class OnyxRunner:
             finally:
                 self._loop.close()
 
-        self._thread = threading.Thread(target=worker, daemon=False)
-        self._thread.start()
-        return self
+        return self, run_in_background(worker)
 
     def events(self) -> Iterator[object]:
         while True:
