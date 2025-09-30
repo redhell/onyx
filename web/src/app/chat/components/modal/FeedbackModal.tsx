@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FeedbackType } from "@/app/chat/interfaces";
 import Modal from "@/components-2/modals/Modal";
 import { FilledLikeIcon } from "@/components/icons/icons";
@@ -32,7 +32,7 @@ interface FeedbackModalProps {
 }
 
 export const FeedbackModal = ({ setPopup }: FeedbackModalProps) => {
-  const { toggleModal, getModalData } = useModal();
+  const { isOpen, toggleModal, getModalData } = useModal();
   const data = getModalData<{
     feedbackType: FeedbackType;
     messageId: number;
@@ -41,6 +41,12 @@ export const FeedbackModal = ({ setPopup }: FeedbackModalProps) => {
     string | undefined
   >();
   const fieldInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen(ModalIds.FeedbackModal)) {
+      setPredefinedFeedback(undefined);
+    }
+  }, [isOpen(ModalIds.FeedbackModal)]);
 
   const handleSubmit = async () => {
     if (
@@ -80,12 +86,14 @@ export const FeedbackModal = ({ setPopup }: FeedbackModalProps) => {
     toggleModal(ModalIds.FeedbackModal, false);
   };
 
+  useEffect(() => {
+    handleSubmit();
+  }, [predefinedFeedback]);
+
   useKeyPress(handleSubmit, "Enter");
 
   if (!data) return null;
   const { feedbackType, messageId } = data;
-
-  console.log({ predefinedFeedback });
 
   const predefinedFeedbackOptions =
     feedbackType === "like"
@@ -106,10 +114,7 @@ export const FeedbackModal = ({ setPopup }: FeedbackModalProps) => {
           {predefinedFeedbackOptions.map((feedback, index) => (
             <LineItem
               key={index}
-              onClick={() => {
-                setPredefinedFeedback(feedback);
-                handleSubmit();
-              }}
+              onClick={() => setPredefinedFeedback(feedback)}
             >
               {feedback}
             </LineItem>
