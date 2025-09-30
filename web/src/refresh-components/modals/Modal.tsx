@@ -1,11 +1,11 @@
 import React, { useRef } from "react";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import SvgX from "@/icons/x";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
-import IconButton from "@/components-2/buttons/IconButton";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import { cn } from "@/lib/utils";
 import { SvgProps } from "@/icons";
-import CoreModal from "@/components-2/modals/CoreModal";
+import CoreModal from "@/refresh-components/modals/CoreModal";
 
 interface ModalProps {
   // Modal sizes

@@ -46,9 +46,9 @@ import { MCPApiKeyModal } from "@/components/chat/MCPApiKeyModal";
 import { ValidSources } from "@/lib/types";
 import { SourceMetadata } from "@/lib/search/interfaces";
 import { SourceIcon } from "@/components/SourceIcon";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import { useTheme } from "next-themes";
-import IconButton from "@/components-2/buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgSliders from "@/icons/sliders";
 
 // Get source metadata for configured sources - deduplicated by source type

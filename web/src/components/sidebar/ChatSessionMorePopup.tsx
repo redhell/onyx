@@ -14,18 +14,18 @@ import {
   PopoverMenu,
 } from "@/components/ui/popover";
 import { FiMoreHorizontal } from "react-icons/fi";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import { useCallback, useState, useMemo } from "react";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
 // PopoverMenu already imported above
-import NavigationTab from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import SvgShare from "@/icons/share";
 import SvgFolderIn from "@/icons/folder-in";
 import SvgTrash from "@/icons/trash";
 import SvgFolder from "@/icons/folder";
 import { cn, noProp } from "@/lib/utils";
-import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
-import Button from "@/components-2/buttons/Button";
+import ConfirmationModal from "@/refresh-components/modals/ConfirmationModal";
+import Button from "@/refresh-components/buttons/Button";
 import { PopoverSearchInput } from "@/sections/sidebar/AppSidebar";
 // Constants
 const DEFAULT_PERSONA_ID = 0;

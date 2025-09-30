@@ -8,11 +8,11 @@ import ToolResult from "@/components/tools/ToolResult";
 import CsvContent from "@/components/tools/CSVContent";
 import "katex/dist/katex.min.css";
 import MessageSwitcher from "@/app/chat/message/MessageSwitcher";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import { cn } from "@/lib/utils";
-import IconButton from "@/components-2/buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgEdit from "@/icons/edit";
-import Button from "@/components-2/buttons/Button";
+import Button from "@/refresh-components/buttons/Button";
 import SvgCopy from "@/icons/copy";
 import { copyAll } from "./copyingUtils";
 

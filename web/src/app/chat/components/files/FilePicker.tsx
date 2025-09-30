@@ -20,9 +20,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProjectFile } from "../../projects/projectsService";
-import LineItem from "@/components-2/buttons/LineItem";
+import LineItem from "@/refresh-components/buttons/LineItem";
 import SvgPaperclip from "@/icons/paperclip";
-import IconButton from "@/components-2/buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgPlusCircle from "@/icons/plus-circle";
 
 // Small helper to render an icon + label row

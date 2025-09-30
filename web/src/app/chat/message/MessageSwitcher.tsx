@@ -1,5 +1,5 @@
-import IconButton from "@/components-2/buttons/IconButton";
-import Text from "@/components-2/Text";
+import IconButton from "@/refresh-components/buttons/IconButton";
+import Text from "@/refresh-components/Text";
 import SvgChevronLeft from "@/icons/chevron-left";
 import SvgChevronRight from "@/icons/chevron-right";
 

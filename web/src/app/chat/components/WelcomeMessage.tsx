@@ -2,7 +2,7 @@ import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { Logo } from "@/components/logo/Logo";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import { cn } from "@/lib/utils";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 
 interface WelcomeMessageProps {
   assistant: MinimalPersonaSnapshot;

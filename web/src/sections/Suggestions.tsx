@@ -1,8 +1,8 @@
 "use client";
 
 import { OnSubmitProps } from "@/app/chat/hooks/useChatController";
-import LineItem from "@/components-2/buttons/LineItem";
-import { useAgentsContext } from "@/components-2/context/AgentsContext";
+import LineItem from "@/refresh-components/buttons/LineItem";
+import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
 import { cn } from "@/lib/utils";
 
 interface SuggestionsProps {

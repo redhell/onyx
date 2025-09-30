@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef } from "react";
-import Button from "@/components-2/buttons/Button";
+import Button from "@/refresh-components/buttons/Button";
 import SvgFolderPlus from "@/icons/folder-plus";
-import Modal from "@/components-2/modals/Modal";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import Modal from "@/refresh-components/modals/Modal";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import FieldInput from "@/components-2/FieldInput";
+import FieldInput from "@/refresh-components/FieldInput";
 import { useAppRouter } from "@/hooks/appNavigation";
 
 export default function CreateProjectModal() {

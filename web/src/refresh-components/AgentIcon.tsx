@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 
 const SIZE = 24;
 

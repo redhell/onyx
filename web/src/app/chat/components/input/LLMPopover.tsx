@@ -13,13 +13,13 @@ import { modelSupportsImageInput, structureValue } from "@/lib/llm/utils";
 import { getProviderIcon } from "@/app/admin/configuration/llm/utils";
 import { Slider } from "@/components/ui/slider";
 import { useUser } from "@/components/user/UserProvider";
-import { useChatContext } from "@/components-2/context/ChatContext";
-import { useAgentsContext } from "@/components-2/context/AgentsContext";
-import IconButton from "@/components-2/buttons/IconButton";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
+import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgRefreshCw from "@/icons/refresh-cw";
-import { SelectButton } from "@/components-2/buttons/SelectButton";
-import LineItem from "@/components-2/buttons/LineItem";
-import Text from "@/components-2/Text";
+import { SelectButton } from "@/refresh-components/buttons/SelectButton";
+import LineItem from "@/refresh-components/buttons/LineItem";
+import Text from "@/refresh-components/Text";
 
 interface LLMPopoverProps {
   requiresImageGeneration?: boolean;

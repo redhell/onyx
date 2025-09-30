@@ -6,9 +6,9 @@ import { AssistantsProvider } from "@/components/context/AssistantsContext";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import { User } from "@/lib/types";
 import { ModalProvider } from "@/components/context/ModalContext";
-import { ModalProvider as NewModalProvider } from "@/components-2/context/ModalContext";
+import { ModalProvider as NewModalProvider } from "@/refresh-components/context/ModalContext";
 import { AuthTypeMetadata } from "@/lib/userSS";
-import { AgentsProvider } from "@/components-2/context/AgentsContext";
+import { AgentsProvider } from "@/refresh-components/context/AgentsContext";
 
 interface AppProviderProps {
   children: React.ReactNode;

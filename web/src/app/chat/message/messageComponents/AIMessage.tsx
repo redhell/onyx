@@ -32,12 +32,12 @@ import {
 import { useMessageSwitching } from "@/app/chat/message/messageComponents/hooks/useMessageSwitching";
 import MultiToolRenderer from "@/app/chat/message/messageComponents/MultiToolRenderer";
 import { RendererComponent } from "@/app/chat/message/messageComponents/renderMessageComponent";
-import { AgentIcon } from "@/components-2/AgentIcon";
-import IconButton from "@/components-2/buttons/IconButton";
+import { AgentIcon } from "@/refresh-components/AgentIcon";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgCopy from "@/icons/copy";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
 
 export interface AIMessageProps {
   rawPackets: Packet[];

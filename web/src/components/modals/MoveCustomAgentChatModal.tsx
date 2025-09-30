@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
+import ConfirmationModal from "@/refresh-components/modals/ConfirmationModal";
 import { InfoIcon } from "@/components/icons/icons";
-import Button from "@/components-2/buttons/Button";
+import Button from "@/refresh-components/buttons/Button";
 import { Checkbox } from "@/components/ui/checkbox";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 
 interface MoveCustomAgentChatModalProps {
   isOpen: boolean;

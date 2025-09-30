@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import { cn } from "@/lib/utils";
 
 const variantClasses = (active: boolean | undefined) =>

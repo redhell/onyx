@@ -54,7 +54,7 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import Prism from "prismjs";
 import {
   useChatSessionStore,

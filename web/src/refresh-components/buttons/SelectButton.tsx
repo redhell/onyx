@@ -3,7 +3,7 @@
 import React from "react";
 import { SvgProps } from "@/icons";
 import { cn } from "@/lib/utils";
-import Truncated from "@/components-2/Truncated";
+import Truncated from "@/refresh-components/Truncated";
 import SvgChevronDownSmall from "@/icons/chevron-down-small";
 
 const textClasses = {

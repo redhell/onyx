@@ -7,8 +7,8 @@ import SignInButton from "@/app/auth/login/SignInButton";
 import { EmailPasswordForm } from "./EmailPasswordForm";
 import { NEXT_PUBLIC_FORGOT_PASSWORD_ENABLED } from "@/lib/constants";
 import { useSendAuthRequiredMessage } from "@/lib/extension/utils";
-import Text from "@/components-2/Text";
-import Button from "@/components-2/buttons/Button";
+import Text from "@/refresh-components/Text";
+import Button from "@/refresh-components/buttons/Button";
 
 interface LoginPageProps {
   authUrl: string | null;

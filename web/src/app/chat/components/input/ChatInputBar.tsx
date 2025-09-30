@@ -10,7 +10,7 @@ import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import LLMPopover from "@/app/chat/components/input/LLMPopover";
 import { InputPrompt } from "@/app/chat/interfaces";
 import { FilterManager, LlmManager, useFederatedConnectors } from "@/lib/hooks";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import { DocumentIcon2, FileIcon } from "@/components/icons/icons";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { ChatState } from "@/app/chat/interfaces";
@@ -29,7 +29,7 @@ import {
   ProjectFile,
   UserFileStatus,
 } from "@/app/chat/projects/projectsService";
-import IconButton from "@/components-2/buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgHourglass from "@/icons/hourglass";
 import SvgArrowUp from "@/icons/arrow-up";
 import SvgStop from "@/icons/stop";

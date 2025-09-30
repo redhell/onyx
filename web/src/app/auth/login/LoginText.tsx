@@ -2,7 +2,7 @@
 
 import React, { useContext } from "react";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 
 export default function LoginText() {
   const settings = useContext(SettingsContext);

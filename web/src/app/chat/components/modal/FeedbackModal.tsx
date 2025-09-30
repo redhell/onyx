@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FeedbackType } from "@/app/chat/interfaces";
-import Modal from "@/components-2/modals/Modal";
+import Modal from "@/refresh-components/modals/Modal";
 import { FilledLikeIcon } from "@/components/icons/icons";
 import { handleChatFeedback } from "../../services/lib";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
-import Button from "@/components-2/buttons/Button";
-import FieldInput from "@/components-2/FieldInput";
-import LineItem from "@/components-2/buttons/LineItem";
+import Button from "@/refresh-components/buttons/Button";
+import FieldInput from "@/refresh-components/FieldInput";
+import LineItem from "@/refresh-components/buttons/LineItem";
 import { useKeyPress } from "@/hooks/useKeyPress";
 
 const predefinedPositiveFeedbackOptions = process.env

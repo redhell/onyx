@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { CgArrowsExpandUpLeft } from "react-icons/cg";
 import { LogoComponent } from "@/components/logo/FixedLogo";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import { SidebarSection } from "@/sections/sidebar/components";
 import Settings from "@/sections/sidebar/Settings";
-import NavigationTab from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import { cn } from "@/lib/utils";
 
 interface Item {

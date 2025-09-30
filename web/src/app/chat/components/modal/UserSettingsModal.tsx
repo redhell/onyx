@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import Modal from "@/components-2/modals/Modal";
+import Modal from "@/refresh-components/modals/Modal";
 import { getDisplayNameForModel, LlmDescriptor } from "@/lib/hooks";
 import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
 import { parseLlmDescriptor, structureValue } from "@/lib/llm/utils";
@@ -25,12 +25,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiTrash2, FiExternalLink } from "react-icons/fi";
 import { deleteAllChatSessions } from "@/app/chat/services/lib";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import { FederatedConnectorOAuthStatus } from "@/components/chat/FederatedOAuthModal";
 import { SourceIcon } from "@/components/SourceIcon";
 import { ValidSources, CCPairBasicInfo } from "@/lib/types";
 import { getSourceMetadata } from "@/lib/sources";
-import { ModalIds } from "@/components-2/context/ModalContext";
+import { ModalIds } from "@/refresh-components/context/ModalContext";
 import SvgSettings from "@/icons/settings";
 
 type SettingsSection = "settings" | "password" | "connectors";

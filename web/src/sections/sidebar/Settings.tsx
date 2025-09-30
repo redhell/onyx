@@ -8,8 +8,8 @@ import { errorHandlingFetcher } from "@/lib/fetcher";
 import { checkUserIsNoAuthUser, logout } from "@/lib/user";
 import { useUser } from "@/components/user/UserProvider";
 import { Avatar } from "@/components/ui/avatar";
-import Text from "@/components-2/Text";
-import NavigationTab from "@/components-2/buttons/NavigationTab";
+import Text from "@/refresh-components/Text";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import {
   Popover,
   PopoverContent,
@@ -21,8 +21,8 @@ import SvgLogOut from "@/icons/log-out";
 import SvgBell from "@/icons/bell";
 import SvgX from "@/icons/x";
 import { useRouter } from "next/navigation";
-import Modal from "@/components-2/modals/Modal";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import Modal from "@/refresh-components/modals/Modal";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
 import SvgUser from "@/icons/user";
 import { UserSettings } from "@/app/chat/components/modal/UserSettingsModal";
 import { cn } from "@/lib/utils";

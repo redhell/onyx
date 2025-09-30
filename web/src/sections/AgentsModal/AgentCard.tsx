@@ -13,16 +13,16 @@ import { checkUserOwnsAssistant as checkUserOwnsAgent } from "@/lib/assistants/u
 import { deletePersona } from "@/app/admin/assistants/lib";
 import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidEnterpriseFeaturesEnabled";
 import { usePopup } from "@/components/admin/connectors/Popup";
-import { useAgentsContext } from "@/components-2/context/AgentsContext";
-import Text from "@/components-2/Text";
-import Truncated from "@/components-2/Truncated";
-import NavigationTab from "@/components-2/buttons/NavigationTab";
+import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
+import Text from "@/refresh-components/Text";
+import Truncated from "@/refresh-components/Truncated";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import SvgEditBig from "@/icons/edit-big";
 import SvgTrash from "@/icons/trash";
 import SvgMoreHorizontal from "@/icons/more-horizontal";
 import SvgBarChart from "@/icons/bar-chart";
-import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
-import Button from "@/components-2/buttons/Button";
+import ConfirmationModal from "@/refresh-components/modals/ConfirmationModal";
+import Button from "@/refresh-components/buttons/Button";
 import { useAppRouter } from "@/hooks/appNavigation";
 
 interface AgentCardProps {

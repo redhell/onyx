@@ -1,8 +1,8 @@
 import React from "react";
 import { SvgProps } from "@/icons";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import SvgX from "@/icons/x";
-import CoreModal from "@/components-2/modals/CoreModal";
+import CoreModal from "@/refresh-components/modals/CoreModal";
 import { useEscape } from "@/hooks/useKeyPress";
 import IconButton from "../buttons/IconButton";
 

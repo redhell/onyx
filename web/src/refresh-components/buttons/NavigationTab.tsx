@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import { SvgProps } from "@/icons";
 import SvgMoreHorizontal from "@/icons/more-horizontal";
 import {
@@ -22,8 +22,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import IconButton from "@/components-2/buttons/IconButton";
-import Truncated from "@/components-2/Truncated";
+import IconButton from "@/refresh-components/buttons/IconButton";
+import Truncated from "@/refresh-components/Truncated";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { useBoundingBox } from "@/hooks/useBoundingBox";

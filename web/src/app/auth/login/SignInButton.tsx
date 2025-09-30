@@ -1,5 +1,5 @@
-import Button from "@/components-2/buttons/Button";
-import Text from "@/components-2/Text";
+import Button from "@/refresh-components/buttons/Button";
+import Text from "@/refresh-components/Text";
 import { AuthType } from "@/lib/constants";
 import Link from "next/link";
 import { FaGoogle } from "react-icons/fa";

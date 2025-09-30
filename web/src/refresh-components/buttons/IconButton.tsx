@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 
 const buttonClasses = (active: boolean | undefined) =>
   ({

@@ -4,7 +4,7 @@ import React, { useCallback, useState, memo, useMemo, useEffect } from "react";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
 import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
-import Text from "@/components-2/Text";
+import Text from "@/refresh-components/Text";
 import { DragEndEvent } from "@dnd-kit/core";
 import {
   DndContext,
@@ -28,24 +28,24 @@ import SvgMoreHorizontal from "@/icons/more-horizontal";
 import SvgLightbulbSimple from "@/icons/lightbulb-simple";
 import Settings from "@/sections/sidebar/Settings";
 import { SidebarSection } from "@/sections/sidebar/components";
-import NavigationTab from "@/components-2/buttons/NavigationTab";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import AgentsModal from "@/sections/AgentsModal";
-import { useChatContext } from "@/components-2/context/ChatContext";
+import { useChatContext } from "@/refresh-components/context/ChatContext";
 import SvgBubbleText from "@/icons/bubble-text";
 import { deleteChatSession, renameChatSession } from "@/app/chat/services/lib";
-import { useAgentsContext } from "@/components-2/context/AgentsContext";
-import { useAppSidebarContext } from "@/components-2/context/AppSidebarContext";
-import { ModalIds, useModal } from "@/components-2/context/ModalContext";
+import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
+import { useAppSidebarContext } from "@/refresh-components/context/AppSidebarContext";
+import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
 import { ChatSession } from "@/app/chat/interfaces";
-import ConfirmationModal from "@/components-2/modals/ConfirmationModal";
+import ConfirmationModal from "@/refresh-components/modals/ConfirmationModal";
 import SvgTrash from "@/icons/trash";
 import SvgShare from "@/icons/share";
 import SvgEdit from "@/icons/edit";
-import Button from "@/components-2/buttons/Button";
+import Button from "@/refresh-components/buttons/Button";
 import SvgPin from "@/icons/pin";
 import { cn, noProp } from "@/lib/utils";
 import { PopoverMenu } from "@/components/ui/popover";
-import IconButton from "@/components-2/buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgFolderPlus from "@/icons/folder-plus";
 import SvgOnyxOctagon from "@/icons/onyx-octagon";
 import Projects from "@/components/sidebar/Projects";
@@ -560,14 +560,14 @@ function AppSidebarInner() {
                     className="hidden group-hover/AppSidebar:flex"
                   />
                   <OnyxIcon
-                    size={24}
+                    size={28}
                     className="visible group-hover/AppSidebar:hidden"
                   />
                 </>
               </div>
             ) : (
               <>
-                <OnyxLogoTypeIcon size={88} />
+                <OnyxLogoTypeIcon size={100} />
                 <IconButton
                   icon={SvgSidebar}
                   tertiary

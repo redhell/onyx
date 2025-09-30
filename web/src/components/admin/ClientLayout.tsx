@@ -34,7 +34,7 @@ import { useContext, useState } from "react";
 import { MdOutlineCreditCard } from "react-icons/md";
 import { UserSettingsModal } from "@/app/chat/components/modal/UserSettingsModal";
 import { usePopup } from "./connectors/Popup";
-import { useChatContext } from "../../components-2/context/ChatContext";
+import { useChatContext } from "../../refresh-components/context/ChatContext";
 import {
   ApplicationStatus,
   CombinedSettings,
