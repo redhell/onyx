@@ -157,7 +157,7 @@ export default function FilePicker({
             ) : (
               <IconButton
                 icon={SvgPlusCircle}
-                tooltip="Upload files and attach user files"
+                tooltip="Attach Files"
                 tertiary
               />
             )}

@@ -797,7 +797,7 @@ export function ActionToggle({
               icon={SvgSliders}
               tertiary
               data-testid="action-management-toggle"
-              tooltip="Configure Actions"
+              tooltip="Manage Actions"
             />
           </div>
         </PopoverTrigger>
