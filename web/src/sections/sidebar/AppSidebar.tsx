@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState, memo, useMemo } from "react";
+import React, { useCallback, useState, memo, useMemo, useEffect } from "react";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
 import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
@@ -52,9 +52,21 @@ import Projects from "@/components/sidebar/Projects";
 import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
-import { Project } from "@/app/chat/projects/projectsService";
+import {
+  Project,
+  moveChatSession,
+  removeChatSessionFromProject,
+} from "@/app/chat/projects/projectsService";
 import { useSearchParams } from "next/navigation";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
+import SvgFolderIn from "@/icons/folder-in";
+import SvgFolder from "@/icons/folder";
+import SvgChevronLeft from "@/icons/chevron-left";
+import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
+
+// Constants
+const DEFAULT_PERSONA_ID = 0;
+const LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY = "onyx:hideMoveCustomAgentModal";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -72,6 +84,58 @@ function buildVisibleAgents(
   return [visibleAgents, currentAgentIsPinned];
 }
 
+export interface PopoverSearchInputProps {
+  setShowMoveOptions: (show: boolean) => void;
+  onSearch: (term: string) => void;
+}
+
+export function PopoverSearchInput({
+  setShowMoveOptions,
+  onSearch,
+}: PopoverSearchInputProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    onSearch(value);
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setShowMoveOptions(false);
+    }
+  };
+
+  const handleClickBackButton = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setShowMoveOptions(false);
+    setSearchTerm("");
+  };
+
+  return (
+    <div className="flex flex-row justify-center items-center p-spacing-inline gap-spacing-inline rounded-08 bg-transparent w-full">
+      <div className="flex-1 h-[1.8rem] flex flex-row items-center gap-spacing-interline">
+        <button
+          className="w-[1.2rem] h-[1.2rem] flex items-center justify-center"
+          onClick={handleClickBackButton}
+        >
+          <SvgChevronLeft className="h-[1.2rem] w-[1.2rem] stroke-text-02 hover:stroke-text-03" />
+        </button>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Search Projects"
+          className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full text-text-03 placeholder-text-02"
+          onClick={noProp()}
+          autoFocus
+        />
+      </div>
+    </div>
+  );
+}
+
 interface ChatButtonProps {
   chatSession: ChatSession;
   project?: Project;
@@ -84,8 +148,32 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   const [renaming, setRenaming] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
+  const [showMoveOptions, setShowMoveOptions] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [popoverItems, setPopoverItems] = useState<React.ReactNode[]>([]);
   const { refreshChatSessions } = useChatContext();
-  const { refreshCurrentProjectDetails } = useProjectsContext();
+  const {
+    refreshCurrentProjectDetails,
+    projects,
+    fetchProjects,
+    currentProjectId,
+  } = useProjectsContext();
+
+  const [pendingMoveProjectId, setPendingMoveProjectId] = useState<
+    number | null
+  >(null);
+  const [showMoveCustomAgentModal, setShowMoveCustomAgentModal] =
+    useState(false);
+  const isChatUsingDefaultAssistant =
+    chatSession.persona_id === DEFAULT_PERSONA_ID;
+
+  const filteredProjects = useMemo(() => {
+    if (!searchTerm) return projects;
+    const term = searchTerm.toLowerCase();
+    return projects.filter((project) =>
+      project.name.toLowerCase().includes(term)
+    );
+  }, [projects, searchTerm]);
 
   async function submitRename(renamingValue: string) {
     const newName = renamingValue.trim();
@@ -100,20 +188,137 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
     }
   }
 
+  useEffect(() => {
+    if (!showMoveOptions) {
+      const popoverItems = [
+        <NavigationTab key="share" icon={SvgShare} onClick={noProp()}>
+          Share
+        </NavigationTab>,
+        <NavigationTab
+          key="rename"
+          icon={SvgEdit}
+          onClick={noProp(() => setRenaming(true))}
+        >
+          Rename
+        </NavigationTab>,
+        <NavigationTab
+          key="move"
+          icon={SvgFolderIn}
+          onClick={noProp(() => setShowMoveOptions(true))}
+        >
+          Move to Project
+        </NavigationTab>,
+        project && (
+          <NavigationTab
+            key="remove"
+            icon={SvgFolder}
+            onClick={noProp(() => handleRemoveFromProject())}
+          >
+            {`Remove from ${project.name}`}
+          </NavigationTab>
+        ),
+        null,
+        <NavigationTab
+          key="delete"
+          icon={SvgTrash}
+          onClick={noProp(() => setDeleteConfirmationModalOpen(true))}
+          danger
+        >
+          Delete
+        </NavigationTab>,
+      ];
+      setPopoverItems(popoverItems);
+    } else {
+      const popoverItems = [
+        <PopoverSearchInput
+          key="search"
+          setShowMoveOptions={setShowMoveOptions}
+          onSearch={setSearchTerm}
+        />,
+        ...filteredProjects
+          .filter((candidateProject) => candidateProject.id !== project?.id)
+          .map((targetProject) => (
+            <NavigationTab
+              key={targetProject.id}
+              icon={SvgFolder}
+              onClick={noProp(() => handleChatMove(targetProject))}
+            >
+              {targetProject.name}
+            </NavigationTab>
+          )),
+      ];
+      setPopoverItems(popoverItems);
+    }
+  }, [
+    showMoveOptions,
+    filteredProjects,
+    refreshChatSessions,
+    fetchProjects,
+    currentProjectId,
+    refreshCurrentProjectDetails,
+    project,
+    chatSession.id,
+  ]);
+
   async function handleChatDelete() {
     try {
       await deleteChatSession(chatSession.id);
 
       if (project) {
-        console.log(0);
+        await fetchProjects();
         await refreshCurrentProjectDetails();
-        route({ projectId: project.id });
-      } else {
-        console.log(1);
-        await refreshChatSessions();
+
+        // Only route if the deleted chat is the currently opened chat session
+        if (params(SEARCH_PARAM_NAMES.CHAT_ID) == chatSession.id) {
+          route({ projectId: project.id });
+        }
       }
+      await refreshChatSessions();
     } catch (error) {
       console.error("Failed to delete chat:", error);
+    }
+  }
+
+  async function performMove(targetProjectId: number) {
+    try {
+      await moveChatSession(targetProjectId, chatSession.id);
+      const projectRefreshPromise = currentProjectId
+        ? refreshCurrentProjectDetails()
+        : fetchProjects();
+      await Promise.all([refreshChatSessions(), projectRefreshPromise]);
+      setShowMoveOptions(false);
+      setSearchTerm("");
+    } catch (error) {
+      console.error("Failed to move chat:", error);
+    }
+  }
+
+  async function handleChatMove(targetProject: Project) {
+    const hideModal =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY) ===
+        "true";
+
+    if (!isChatUsingDefaultAssistant && !hideModal) {
+      setPendingMoveProjectId(targetProject.id);
+      setShowMoveCustomAgentModal(true);
+      return;
+    }
+
+    await performMove(targetProject.id);
+  }
+
+  async function handleRemoveFromProject() {
+    try {
+      await removeChatSessionFromProject(chatSession.id);
+      const projectRefreshPromise = currentProjectId
+        ? refreshCurrentProjectDetails()
+        : fetchProjects();
+      await Promise.all([refreshChatSessions(), projectRefreshPromise]);
+      setShowMoveOptions(false);
+      setSearchTerm("");
+    } catch (error) {
+      console.error("Failed to remove chat from project:", error);
     }
   }
 
@@ -146,35 +351,33 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
         </ConfirmationModal>
       )}
 
+      <MoveCustomAgentChatModal
+        isOpen={showMoveCustomAgentModal}
+        onCancel={() => {
+          setShowMoveCustomAgentModal(false);
+          setPendingMoveProjectId(null);
+        }}
+        onConfirm={async (doNotShowAgain: boolean) => {
+          if (doNotShowAgain && typeof window !== "undefined") {
+            window.localStorage.setItem(
+              LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY,
+              "true"
+            );
+          }
+          const target = pendingMoveProjectId;
+          setShowMoveCustomAgentModal(false);
+          setPendingMoveProjectId(null);
+          if (target != null) {
+            await performMove(target);
+          }
+        }}
+      />
+
       <NavigationTab
         icon={project ? () => <></> : SvgBubbleText}
         onClick={() => route({ chatSessionId: chatSession.id })}
         active={params(SEARCH_PARAM_NAMES.CHAT_ID) === chatSession.id}
-        popover={
-          <PopoverMenu>
-            {[
-              <NavigationTab key="share" icon={SvgShare} onClick={noProp()}>
-                Share
-              </NavigationTab>,
-              <NavigationTab
-                key="rename"
-                icon={SvgEdit}
-                onClick={noProp(() => setRenaming(true))}
-              >
-                Rename
-              </NavigationTab>,
-              null,
-              <NavigationTab
-                key="delete"
-                icon={SvgTrash}
-                onClick={noProp(() => setDeleteConfirmationModalOpen(true))}
-                danger
-              >
-                Delete
-              </NavigationTab>,
-            ]}
-          </PopoverMenu>
-        }
+        popover={<PopoverMenu>{popoverItems}</PopoverMenu>}
         renaming={renaming}
         setRenaming={setRenaming}
         submitRename={submitRename}
