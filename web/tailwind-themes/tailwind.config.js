@@ -185,6 +185,8 @@ module.exports = {
         // "non-selectable": "var(--non-selectable)",
       },
       boxShadow: {
+        "01": "0px 2px 8px 0px var(--shadow-02)",
+
         // light
         "tremor-input": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
         "tremor-card":

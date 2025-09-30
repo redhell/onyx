@@ -384,7 +384,7 @@ function ChatInputBarInner({
 
       <UnconfiguredLlmProviderText showConfigureAPIKey={showConfigureAPIKey} />
 
-      <div className="w-full h-full flex flex-col shadow-xl bg-background-neutral-00 rounded-16">
+      <div className="w-full h-full flex flex-col shadow-01 bg-background-neutral-00 rounded-16">
         {currentMessageFiles.length > 0 && (
           <div className="px-4 pt-4">
             <div className="flex flex-wrap gap-2">
