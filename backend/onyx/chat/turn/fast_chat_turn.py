@@ -48,24 +48,11 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
 
     bridge = OnyxRunner().run_streamed(agent, messages, context=ctx, max_turns=100)
     for ev in bridge.events():
-        # TODO: Wrap in some cancellation handler and figure out a clearner way to generate
-        # the packets for cancellation
-        # since you don't need to emit the cancelled message if we're in the middle of an existing message
         if not is_connected(
             dependencies.dependencies_to_maybe_remove.chat_session_id,
             dependencies.redis_client,
         ):
-            dependencies.emitter.emit(
-                Packet(
-                    ind=ctx.current_run_step,
-                    obj=MessageStart(
-                        type="message_start", content="Cancelled", final_documents=None
-                    ),
-                )
-            )
-            dependencies.emitter.emit(
-                Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
-            )
+            _emit_clean_up_packets(dependencies, ctx)
             bridge.cancel()
             break
         ctx.current_run_step
@@ -85,4 +72,21 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
     )
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
+    )
+
+
+# TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
+def _emit_clean_up_packets(dependencies: RunDependencies, ctx: MyContext) -> None:
+    # Tool call / reasoning cancelled
+    if dependencies.emitter.packet_history[-1].obj.type != "message_delta":
+        dependencies.emitter.emit(
+            Packet(
+                ind=ctx.current_run_step,
+                obj=MessageStart(
+                    type="message_start", content="Cancelled", final_documents=None
+                ),
+            )
+        )
+    dependencies.emitter.emit(
+        Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
     )
