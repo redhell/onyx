@@ -26,6 +26,7 @@ import IconButton from "@/components-2/buttons/IconButton";
 import Truncated from "@/components-2/Truncated";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { useBoundingBox } from "@/hooks/useBoundingBox";
 
 const textClasses = (active: boolean | undefined) =>
   ({
@@ -103,40 +104,31 @@ export default function NavigationTab({
   submitRename,
   children,
 }: NavigationTabProps) {
-  // This is used to determine if the `PopoverTrigger` should be shown or not.
-  // Do NOT use it for background colours.
-  const [hovered, setHovered] = useState(false);
+  const { ref, inside } = useBoundingBox();
   const [kebabMenuOpen, setKebabMenuOpen] = useState(false);
-  const [renamingValue, setRenamingValue] = useState<string | undefined>(
-    renaming ? children : undefined
-  );
+  const [renamingValue, setRenamingValue] = useState<string>(children ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!inputRef.current) return;
+
+    setKebabMenuOpen(false);
     if (renaming) {
+      setRenamingValue(children ?? "");
       inputRef.current.focus();
       inputRef.current.select();
-      setRenamingValue(children);
     } else {
-      setRenamingValue(undefined);
+      setRenamingValue("");
     }
   }, [renaming, inputRef]);
-  useClickOutside(
-    inputRef,
-    () => {
-      setRenamingValue(undefined);
-      setRenaming?.(false);
-    },
-    !!renamingValue
-  );
-  useKeyPress(() => setRenaming?.(false), "Escape", !!renamingValue);
+  useClickOutside(inputRef, () => setRenaming?.(false), renaming);
+  useKeyPress(() => setRenaming?.(false), "Escape", renaming);
   useKeyPress(
     () => {
       setRenaming?.(false);
       if (renamingValue) submitRename?.(renamingValue);
     },
     "Enter",
-    !!renamingValue
+    renaming
   );
 
   const variant = danger
@@ -155,10 +147,8 @@ export default function NavigationTab({
         renaming && "border-[0.125rem] border-text-04",
         className
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseOver={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={href ? undefined : onClick}
+      ref={ref}
     >
       <div
         className={cn(
@@ -182,6 +172,7 @@ export default function NavigationTab({
                 value={renamingValue}
                 onChange={(event) => setRenamingValue(event.target.value)}
                 className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full"
+                autoFocus
               />
             </div>
           ) : typeof children === "string" ? (
@@ -196,14 +187,16 @@ export default function NavigationTab({
             children
           ))}
       </div>
-      {!folded && popover && (active || hovered || kebabMenuOpen) && (
+      {!folded && popover && (active || inside || kebabMenuOpen) && (
         <Popover onOpenChange={setKebabMenuOpen}>
           <PopoverTrigger asChild onClick={(event) => event.stopPropagation()}>
-            <IconButton
-              icon={SvgMoreHorizontal}
-              internal
-              active={kebabMenuOpen}
-            />
+            <div>
+              <IconButton
+                icon={SvgMoreHorizontal}
+                internal
+                active={kebabMenuOpen}
+              />
+            </div>
           </PopoverTrigger>
           <PopoverContent
             align="end"

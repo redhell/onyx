@@ -53,6 +53,8 @@ import CreateProjectModal from "@/components/modals/CreateProjectModal";
 import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 import { Project } from "@/app/chat/projects/projectsService";
+import { useSearchParams } from "next/navigation";
+import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -78,12 +80,12 @@ interface ChatButtonProps {
 function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   const route = useAppRouter();
   const params = useAppParams();
-
   const [name, setName] = useState(chatSession.name);
   const [renaming, setRenaming] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
   const { refreshChatSessions } = useChatContext();
+  const { refreshCurrentProjectDetails } = useProjectsContext();
 
   async function submitRename(renamingValue: string) {
     const newName = renamingValue.trim();
@@ -101,7 +103,15 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   async function handleChatDelete() {
     try {
       await deleteChatSession(chatSession.id);
-      await refreshChatSessions();
+
+      if (project) {
+        console.log(0);
+        await refreshCurrentProjectDetails();
+        route({ projectId: project.id });
+      } else {
+        console.log(1);
+        await refreshChatSessions();
+      }
     } catch (error) {
       console.error("Failed to delete chat:", error);
     }
@@ -252,7 +262,7 @@ function SortableItem({ id, children }: SortableItemProps) {
 
 function AppSidebarInner() {
   const route = useAppRouter();
-  const params = useAppParams();
+  const searchParams = useSearchParams();
   const { pinnedAgents, setPinnedAgents, currentAgent } = useAgentsContext();
   const { folded, setFolded } = useAppSidebarContext();
   const { toggleModal } = useModal();
@@ -369,7 +379,7 @@ function AppSidebarInner() {
               className="!w-full"
               folded={folded}
               onClick={() => route({})}
-              active={!!params()}
+              active={searchParams.size === 0}
               tooltip
             >
               New Session

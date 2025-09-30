@@ -120,6 +120,7 @@ export const ProjectsProvider: React.FC<ProjectsProviderProps> = ({
   const refreshCurrentProjectDetails = useCallback(async () => {
     if (currentProjectId) {
       const details = await svcGetProjectDetails(currentProjectId);
+      await fetchProjects();
       setCurrentProjectDetails(details);
     }
   }, [currentProjectId, setCurrentProjectDetails]);

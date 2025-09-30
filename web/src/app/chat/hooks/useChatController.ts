@@ -72,6 +72,7 @@ import { useAssistantsContext } from "@/components/context/AssistantsContext";
 import { Klee_One } from "next/font/google";
 import { ProjectFile, useProjectsContext } from "../projects/ProjectsContext";
 import { CategorizedFiles, UserFileStatus } from "../projects/projectsService";
+import { useAppParams } from "@/hooks/appNavigation";
 
 const TEMP_USER_MESSAGE_ID = -1;
 const TEMP_ASSISTANT_MESSAGE_ID = -2;
@@ -136,6 +137,7 @@ export function useChatController({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useAppParams();
   const { refreshChatSessions, llmProviders } = useChatContext();
   const { assistantPreferences, forcedToolIds } = useAssistantsContext();
   const { fetchProjects, uploadFiles, setCurrentMessageFiles } =
@@ -326,11 +328,11 @@ export function useChatController({
       regenerationRequest,
       overrideFileDescriptors,
     }: OnSubmitProps) => {
-      const projectId = searchParams?.get("projectid");
+      const projectId = params(SEARCH_PARAM_NAMES.PROJECT_ID);
       {
         const params = new URLSearchParams(searchParams?.toString() || "");
-        if (params.has("projectid")) {
-          params.delete("projectid");
+        if (params.has(SEARCH_PARAM_NAMES.PROJECT_ID)) {
+          params.delete(SEARCH_PARAM_NAMES.PROJECT_ID);
           const newUrl = params.toString()
             ? `${pathname}?${params.toString()}`
             : pathname;
