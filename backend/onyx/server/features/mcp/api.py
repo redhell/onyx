@@ -14,6 +14,7 @@ from urllib.parse import urlunsplit
 
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
 from mcp.client.auth import OAuthClientProvider
@@ -1629,3 +1630,19 @@ def delete_mcp_server_admin(
     except Exception as e:
         logger.error(f"Failed to delete MCP server {server_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete MCP server")
+
+
+# ============================================================================
+# MCP Server Endpoint - Streamable HTTP Protocol
+# ============================================================================
+
+from onyx.server.features.mcp.mcp_server import get_mcp_server
+
+
+def mount_mcp_server(app: FastAPI) -> None:
+    """Mount the MCP server at /mcp endpoint."""
+    mcp = get_mcp_server()
+    mcp_app = mcp.http_app()
+    
+    # Mount the MCP server without the global prefix
+    app.mount("/mcp", mcp_app)

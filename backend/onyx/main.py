@@ -72,6 +72,7 @@ from onyx.server.features.input_prompt.api import (
     basic_router as input_prompt_router,
 )
 from onyx.server.features.mcp.api import admin_router as mcp_admin_router
+from onyx.server.features.mcp.api import mount_mcp_server
 from onyx.server.features.mcp.api import router as mcp_router
 from onyx.server.features.notifications.api import router as notification_router
 from onyx.server.features.password.api import router as password_router
@@ -386,6 +387,9 @@ def get_application(lifespan_override: Lifespan | None = None) -> FastAPI:
     include_router_with_global_prefix_prepended(application, federated_router)
     include_router_with_global_prefix_prepended(application, mcp_router)
     include_router_with_global_prefix_prepended(application, mcp_admin_router)
+
+    # Mount the MCP server endpoint
+    mount_mcp_server(application)
 
     if AUTH_TYPE == AuthType.DISABLED:
         # Server logs this during auth setup verification step
