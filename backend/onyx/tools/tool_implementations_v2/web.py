@@ -14,6 +14,7 @@ from onyx.agents.agent_search.dr.sub_agents.web_search.utils import (
 )
 from onyx.chat.turn.models import MyContext
 from onyx.configs.constants import DocumentSource
+from onyx.server.query_and_chat.streaming_models import FetchToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
@@ -151,11 +152,49 @@ def web_fetch(run_context: RunContextWrapper[MyContext], urls: List[str]) -> str
 
     Use this tool after identifying relevant URLs (for example from
     `web_search`) to read the full content. It returns the cleaned page
-    text and metadata.
+    text and metadata. Bias towards fetching multiple URLs at once instead of
+    one at a time.
 
     Args:
         urls: The full URLs of the pages to retrieve.
     """
+    # TODO: Find better way to track index that isn't so implicit
+    # based on number of tool calls
+    index = run_context.context.current_run_step + 1
+
+    # Create SavedSearchDoc objects from URLs for the FetchToolStart event
+    saved_search_docs = [
+        SavedSearchDoc(
+            db_doc_id=0,
+            document_id=url,
+            chunk_ind=0,
+            semantic_identifier=url,
+            link=url,
+            blurb="",  # Will be populated after fetching
+            source_type=DocumentSource.WEB,
+            boost=1,
+            hidden=False,
+            metadata={},
+            score=0.0,
+            is_relevant=None,
+            relevance_explanation=None,
+            match_highlights=[],
+            updated_at=None,
+            primary_owners=None,
+            secondary_owners=None,
+            is_internet=True,
+        )
+        for url in urls
+    ]
+
+    # Emit FetchToolStart event
+    run_context.context.run_dependencies.emitter.emit(
+        Packet(
+            ind=index,
+            obj=FetchToolStart(type="fetch_tool_start", documents=saved_search_docs),
+        )
+    )
+
     search_provider = get_default_provider()
     docs = search_provider.contents(urls)
     out = []
@@ -171,5 +210,16 @@ def web_fetch(run_context: RunContextWrapper[MyContext], urls: List[str]) -> str
                 ),
             }
         )
-    # TODO: Emit event for web search "reading" URL
+
+    # Emit SectionEnd event
+    run_context.context.run_dependencies.emitter.emit(
+        Packet(
+            ind=index,
+            obj=SectionEnd(
+                type="section_end",
+            ),
+        )
+    )
+
+    run_context.context.current_run_step = index + 1
     return json.dumps({"results": out})

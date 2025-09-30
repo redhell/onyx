@@ -97,6 +97,12 @@ class CustomToolDelta(BaseObj):
     file_ids: list[str] | None = None
 
 
+class FetchToolStart(BaseObj):
+    type: Literal["fetch_tool_start"] = "fetch_tool_start"
+
+    documents: list[SavedSearchDoc]
+
+
 """Reasoning Packets"""
 
 
@@ -185,6 +191,7 @@ PacketObj = Annotated[
         ImageGenerationToolHeartbeat,
         CustomToolStart,
         CustomToolDelta,
+        FetchToolStart,
         ReasoningStart,
         ReasoningDelta,
         CitationStart,
@@ -217,3 +224,4 @@ class StreamingType(Enum):
     CITATION_DELTA = "citation_delta"
     CUSTOM_TOOL_START = "custom_tool_start"
     CUSTOM_TOOL_DELTA = "custom_tool_delta"
+    FETCH_TOOL_START = "fetch_tool_start"
