@@ -39,3 +39,4 @@ class MyContext:
     # TODO: Figure out a cleaner way to persist information.
     aggregated_context: AggregatedDRContext | None = None
     iteration_instructions: list[IterationInstructions] | None = None
+    web_fetch_results: list[dict] | None = None

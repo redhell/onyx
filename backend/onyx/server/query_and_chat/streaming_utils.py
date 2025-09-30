@@ -10,6 +10,7 @@ from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.sub_agents.image_generation.models import (
     GeneratedImage,
 )
+from onyx.configs.constants import DocumentSource
 from onyx.configs.constants import MessageType
 from onyx.context.search.models import SavedSearchDoc
 from onyx.db.chat import get_db_search_doc_by_document_id
@@ -23,6 +24,7 @@ from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import EndStepPacketList
+from onyx.server.query_and_chat.streaming_models import FetchToolStart
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolDelta
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolStart
 from onyx.server.query_and_chat.streaming_models import MessageDelta
@@ -378,6 +380,63 @@ def translate_db_message_to_packets(
                                 sub_step.generated_images.images, step_nr
                             )
                         )
+                        step_nr += 1
+
+                    elif tool_name == "web_fetch":
+                        # Handle web_fetch tool calls
+                        # Extract URLs from the tool arguments or sub_answer
+                        urls = []
+                        if (
+                            hasattr(sub_step, "sub_step_instructions")
+                            and sub_step.sub_step_instructions
+                        ):
+                            # Try to extract URLs from the instructions
+                            import re
+
+                            url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
+                            urls = re.findall(
+                                url_pattern, sub_step.sub_step_instructions
+                            )
+
+                        if urls:
+                            # Create SavedSearchDoc objects from URLs
+                            saved_search_docs = [
+                                SavedSearchDoc(
+                                    db_doc_id=0,
+                                    document_id=url,
+                                    chunk_ind=0,
+                                    semantic_identifier=url,
+                                    link=url,
+                                    blurb="",
+                                    source_type=DocumentSource.WEB,
+                                    boost=1,
+                                    hidden=False,
+                                    metadata={},
+                                    score=0.0,
+                                    is_relevant=None,
+                                    relevance_explanation=None,
+                                    match_highlights=[],
+                                    updated_at=None,
+                                    primary_owners=None,
+                                    secondary_owners=None,
+                                    is_internet=True,
+                                )
+                                for url in urls
+                            ]
+
+                            # Create FetchToolStart packet
+                            packet_list.append(
+                                Packet(
+                                    ind=step_nr,
+                                    obj=FetchToolStart(
+                                        type="fetch_tool_start",
+                                        documents=saved_search_docs,
+                                    ),
+                                )
+                            )
+                            packet_list.append(
+                                Packet(ind=step_nr, obj=SectionEnd(type="section_end"))
+                            )
                         step_nr += 1
 
                     elif tool_name == OktaProfileTool.__name__:

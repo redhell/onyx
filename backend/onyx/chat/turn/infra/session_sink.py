@@ -113,6 +113,27 @@ def save_iteration(
         )
         db_session.add(research_agent_iteration_sub_step)
 
+    # Create ResearchAgentIterationSubSteps for web_fetch calls
+    if ctx.web_fetch_results:
+        for web_fetch_result in ctx.web_fetch_results:
+            research_agent_iteration_sub_step = ResearchAgentIterationSubStep(
+                primary_question_id=message_id,
+                iteration_nr=web_fetch_result["iteration_nr"],
+                iteration_sub_step_nr=0,  # web_fetch doesn't have parallelization
+                sub_step_instructions=f"Fetch content from URLs: {', '.join(web_fetch_result['urls'])}",
+                sub_step_tool_id=None,  # web_fetch tool ID not tracked in current system
+                sub_answer=f"Successfully fetched {len(web_fetch_result['results'])} documents",
+                reasoning="Fetching web content for analysis",
+                claims=None,
+                cited_doc_results=web_fetch_result["results"],
+                generated_images=None,
+                additional_data={
+                    "urls": web_fetch_result["urls"],
+                    "fetch_timestamp": web_fetch_result["timestamp"],
+                },
+            )
+            db_session.add(research_agent_iteration_sub_step)
+
     db_session.commit()
 
 

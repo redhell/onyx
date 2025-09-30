@@ -211,6 +211,18 @@ def web_fetch(run_context: RunContextWrapper[MyContext], urls: List[str]) -> str
             }
         )
 
+    # Track web fetch results in MyContext
+    if run_context.context.web_fetch_results is None:
+        run_context.context.web_fetch_results = []
+
+    web_fetch_result = {
+        "iteration_nr": index,
+        "urls": urls,
+        "results": out,
+        "timestamp": run_context.context.current_run_step,
+    }
+    run_context.context.web_fetch_results.append(web_fetch_result)
+
     # Emit SectionEnd event
     run_context.context.run_dependencies.emitter.emit(
         Packet(
