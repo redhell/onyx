@@ -110,6 +110,7 @@ export default function AgentCard({
                     <PopoverMenu>
                       {[
                         <NavigationTab
+                          key="edit"
                           icon={SvgEditBig}
                           onClick={() =>
                             router.push(`/assistants/edit/${agent.id}`)
@@ -119,6 +120,7 @@ export default function AgentCard({
                         </NavigationTab>,
                         isPaidEnterpriseFeaturesEnabled ? (
                           <NavigationTab
+                            key="stats"
                             icon={SvgBarChart}
                             onClick={() =>
                               router.push(`/assistants/stats/${agent.id}`)
@@ -129,6 +131,7 @@ export default function AgentCard({
                         ) : undefined,
                         null,
                         <NavigationTab
+                          key="delete"
                           icon={SvgTrash}
                           onClick={() => {
                             setKebabMenuOpen(false);
