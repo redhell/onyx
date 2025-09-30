@@ -12,10 +12,35 @@ async function handleSamlCallback(
   // Wrapper around the FastAPI endpoint /auth/saml/callback,
   // which adds back a redirect to the main app.
   const url = new URL(buildUrl("/auth/saml/callback"));
-  url.search = request.nextUrl.search;
+
+  // OneLogin python toolkit only supports HTTP-POST binding for SAMLResponse.
+  // If the IdP returned SAMLResponse via query parameters (GET), convert to POST.
+  let actualMethod = method;
+  let body: FormData | undefined;
+
+  if (method === "GET") {
+    const samlResponse = request.nextUrl.searchParams.get("SAMLResponse");
+    const relayState = request.nextUrl.searchParams.get("RelayState");
+    if (samlResponse) {
+      // Convert GET with query params to POST with form data
+      const formData = new FormData();
+      formData.set("SAMLResponse", samlResponse);
+      if (relayState) {
+        formData.set("RelayState", relayState);
+      }
+      actualMethod = "POST";
+      body = formData;
+      // Don't copy query params to backend URL since we're sending as POST
+    } else {
+      // No SAMLResponse in query, copy query params as normal GET
+      url.search = request.nextUrl.search;
+    }
+  } else if (method === "POST") {
+    body = await request.formData();
+  }
 
   const fetchOptions: RequestInit = {
-    method,
+    method: actualMethod,
     headers: {
       "X-Forwarded-Host":
         request.headers.get("X-Forwarded-Host") ||
@@ -28,27 +53,8 @@ async function handleSamlCallback(
     },
   };
 
-  // For POST requests, include form data
-  if (method === "POST") {
-    fetchOptions.body = await request.formData();
-  }
-
-  // OneLogin python toolkit only supports HTTP-POST binding for SAMLResponse.
-  // If the IdP returned SAMLResponse via query parameters (GET), convert to POST.
-  if (method === "GET") {
-    const samlResponse = request.nextUrl.searchParams.get("SAMLResponse");
-    const relayState = request.nextUrl.searchParams.get("RelayState");
-    if (samlResponse) {
-      const formData = new FormData();
-      formData.set("SAMLResponse", samlResponse);
-      if (relayState) {
-        formData.set("RelayState", relayState);
-      }
-      // Clear query on backend URL and send as POST with form body
-      url.search = "";
-      fetchOptions.method = "POST";
-      fetchOptions.body = formData;
-    }
+  if (body) {
+    fetchOptions.body = body;
   }
 
   const response = await fetch(url.toString(), fetchOptions);
