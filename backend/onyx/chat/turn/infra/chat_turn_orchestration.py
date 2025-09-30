@@ -11,6 +11,7 @@ from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import PacketException
 from onyx.utils.threadpool_concurrency import run_in_background
+from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 def unified_event_stream(
@@ -44,7 +45,7 @@ def unified_event_stream(
                     Packet(ind=0, obj=PacketException(type="error", exception=e))
                 )
 
-        run_in_background(run_with_exception_capture)
+        thread = run_in_background(run_with_exception_capture)
         while True:
             pkt: Packet = emitter.bus.get()
             if pkt.obj == OverallStop(type="stop"):
@@ -54,6 +55,6 @@ def unified_event_stream(
                 raise pkt.obj.exception
             else:
                 yield pkt
-        # wait_on_background(thread)
+        wait_on_background(thread)
 
     return wrapper
