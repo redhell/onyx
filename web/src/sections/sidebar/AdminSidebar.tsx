@@ -27,7 +27,7 @@ interface AdminSidebarProps {
   collections: Collection[];
 }
 
-export function AdminSidebar({ collections }: AdminSidebarProps) {
+export default function AdminSidebar({ collections }: AdminSidebarProps) {
   const combinedSettings = useContext(SettingsContext);
   const pathname = usePathname() ?? "";
   if (!combinedSettings) {
