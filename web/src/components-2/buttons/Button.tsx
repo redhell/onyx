@@ -115,8 +115,8 @@ export default function Button({
     <button
       className={cn(
         "p-spacing-interline rounded-08 group",
-        variantClasses(active)[variant][subvariant]
-        // className,
+        variantClasses(active)[variant][subvariant],
+        className
       )}
       {...props}
     >
