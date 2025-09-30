@@ -6,7 +6,7 @@ from typing import Dict
 from typing import List
 
 from onyx.chat.turn.infra.chat_turn_event_stream import Emitter
-from onyx.chat.turn.models import RunDependencies
+from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import PacketException
@@ -15,8 +15,8 @@ from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 def unified_event_stream(
-    turn_func: Callable[[List[Dict[str, Any]], RunDependencies], None],
-) -> Callable[[List[Dict[str, Any]], RunDependencies], Generator[Packet, None]]:
+    turn_func: Callable[[List[Dict[str, Any]], ChatTurnDependencies], None],
+) -> Callable[[List[Dict[str, Any]], ChatTurnDependencies], Generator[Packet, None]]:
     """
     Decorator that wraps a turn_func to provide event streaming capabilities.
 
@@ -31,7 +31,7 @@ def unified_event_stream(
     """
 
     def wrapper(
-        messages: List[Dict[str, Any]], dependencies: RunDependencies
+        messages: List[Dict[str, Any]], dependencies: ChatTurnDependencies
     ) -> Generator[Packet, None]:
         bus: Queue = Queue()
         emitter = Emitter(bus)

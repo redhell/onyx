@@ -7,6 +7,7 @@ from typing import cast
 from typing import Protocol
 from uuid import UUID
 
+from agents import FunctionTool
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -32,8 +33,8 @@ from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.chat.stop_signal_checker import reset
 from onyx.chat.turn import fast_chat_turn
+from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.chat.turn.models import DependenciesToMaybeRemove
-from onyx.chat.turn.models import RunDependencies
 from onyx.chat.user_files.parse_user_files import parse_user_files
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import DISABLE_LLM_CHOOSE_SEARCH
@@ -91,8 +92,9 @@ from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.utils import get_json_line
+from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
 from onyx.tools.force import ForceUseTool
-from onyx.tools.models import SearchToolOverrideKwargs
+from onyx.tools.models import SearchPipelineOverrideKwargs
 from onyx.tools.tool import Tool
 from onyx.tools.tool_constructor import construct_tools
 from onyx.tools.tool_constructor import CustomToolConfig
@@ -201,7 +203,7 @@ def _translate_citations(
 def _get_force_search_settings(
     new_msg_req: CreateChatMessageRequest,
     tools: list[Tool],
-    search_tool_override_kwargs: SearchToolOverrideKwargs | None,
+    search_tool_override_kwargs: SearchPipelineOverrideKwargs | None,
 ) -> ForceUseTool:
     if new_msg_req.forced_tool_ids:
         forced_tools = [
@@ -794,11 +796,20 @@ def stream_chat_message_objects(
             for message in answer.graph_inputs.prompt_builder.build()
             if message.type != "system"
         ]
+        onyx_tools: list[list[FunctionTool]] = [
+            BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
+            for tool in tools
+            if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
+        ]
+        flattened_tools: list[FunctionTool] = [
+            onyx_tool for sublist in onyx_tools for onyx_tool in sublist
+        ]
         yield from fast_chat_turn.fast_chat_turn(
             messages=other_messages,
-            dependencies=RunDependencies(
+            dependencies=ChatTurnDependencies(
                 llm=answer.graph_tooling.primary_llm,
-                search_tool=answer.graph_tooling.search_tool,
+                tools=flattened_tools,
+                search_pipeline=answer.graph_tooling.search_tool,
                 db_session=db_session,
                 redis_client=redis_client,
                 dependencies_to_maybe_remove=DependenciesToMaybeRemove(

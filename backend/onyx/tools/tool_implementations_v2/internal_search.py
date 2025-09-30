@@ -13,7 +13,7 @@ from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
 from onyx.server.query_and_chat.streaming_models import SectionEnd
-from onyx.tools.models import SearchToolOverrideKwargs
+from onyx.tools.models import SearchPipelineOverrideKwargs
 from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_RESPONSE_SUMMARY_ID,
 )
@@ -21,7 +21,7 @@ from onyx.tools.tool_implementations.search.search_tool import SearchResponseSum
 
 
 @function_tool
-def internal_search(run_context: RunContextWrapper[MyContext], query: str) -> str:
+def internal_search_tool(run_context: RunContextWrapper[MyContext], query: str) -> str:
     """
     Search the internal knowledge base and documents.
 
@@ -32,8 +32,8 @@ def internal_search(run_context: RunContextWrapper[MyContext], query: str) -> st
     Args:
         query: The natural-language search query.
     """
-    search_tool = run_context.context.run_dependencies.search_tool
-    if search_tool is None:
+    search_pipeline = run_context.context.run_dependencies.search_pipeline
+    if search_pipeline is None:
         raise RuntimeError("Search tool not available in context")
 
     index = run_context.context.current_run_step + 1
@@ -63,9 +63,9 @@ def internal_search(run_context: RunContextWrapper[MyContext], query: str) -> st
     )
 
     with get_session_with_current_tenant() as search_db_session:
-        for tool_response in search_tool.run(
+        for tool_response in search_pipeline.run(
             query=query,
-            override_kwargs=SearchToolOverrideKwargs(
+            override_kwargs=SearchPipelineOverrideKwargs(
                 force_no_rerank=True,
                 alternate_db_session=search_db_session,
                 skip_query_analysis=True,

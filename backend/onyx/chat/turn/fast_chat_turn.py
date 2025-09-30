@@ -9,20 +9,17 @@ from onyx.chat.turn.infra.chat_turn_orchestration import unified_event_stream
 from onyx.chat.turn.infra.packet_translation import default_packet_translation
 from onyx.chat.turn.infra.session_sink import extract_final_answer_from_packets
 from onyx.chat.turn.infra.session_sink import save_iteration
+from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.chat.turn.models import MyContext
-from onyx.chat.turn.models import RunDependencies
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
-from onyx.tools.tool_implementations_v2.internal_search import internal_search
-from onyx.tools.tool_implementations_v2.web import web_fetch
-from onyx.tools.tool_implementations_v2.web import web_search
 from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 @unified_event_stream
-def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
+def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
     ctx = MyContext(
         run_dependencies=dependencies,
         aggregated_context=AggregatedDRContext(
@@ -39,7 +36,7 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
             model=dependencies.llm.config.model_name,
             api_key=dependencies.llm.config.api_key,
         ),
-        tools=[web_search, web_fetch, internal_search],
+        tools=dependencies.tools,
         model_settings=ModelSettings(
             temperature=0.0,
             include_usage=True,
@@ -79,7 +76,7 @@ def fast_chat_turn(messages: list[dict], dependencies: RunDependencies) -> None:
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
-def _emit_clean_up_packets(dependencies: RunDependencies, ctx: MyContext) -> None:
+def _emit_clean_up_packets(dependencies: ChatTurnDependencies, ctx: MyContext) -> None:
     # Tool call / reasoning cancelled
     if dependencies.emitter.packet_history[-1].obj.type != "message_delta":
         dependencies.emitter.emit(

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from agents import FunctionTool
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -20,12 +21,13 @@ class DependenciesToMaybeRemove:
 
 
 @dataclass
-class RunDependencies:
+class ChatTurnDependencies:
     llm: LLM
     db_session: Session
+    tools: list[FunctionTool]
     redis_client: Redis | None = None
     emitter: Emitter | None = None
-    search_tool: SearchTool | None = None
+    search_pipeline: SearchTool | None = None
     dependencies_to_maybe_remove: DependenciesToMaybeRemove | None = None
 
 
@@ -33,7 +35,7 @@ class RunDependencies:
 class MyContext:
     """Context class to hold search tool and other dependencies"""
 
-    run_dependencies: RunDependencies | None = None
+    run_dependencies: ChatTurnDependencies | None = None
     needs_compaction: bool = False
     current_run_step: int = 0
     # TODO: Figure out a cleaner way to persist information.

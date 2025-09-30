@@ -27,7 +27,7 @@ def short_tag(link: str, i: int) -> str:
 
 
 @function_tool
-def web_search(run_context: RunContextWrapper[MyContext], query: str) -> str:
+def web_search_tool(run_context: RunContextWrapper[MyContext], query: str) -> str:
     """
     Perform a live search on the public internet.
 
@@ -146,7 +146,7 @@ def web_search(run_context: RunContextWrapper[MyContext], query: str) -> str:
 
 
 @function_tool
-def web_fetch(run_context: RunContextWrapper[MyContext], urls: List[str]) -> str:
+def web_fetch_tool(run_context: RunContextWrapper[MyContext], urls: List[str]) -> str:
     """
     Fetch and extract the text content from a specific web page.
 
