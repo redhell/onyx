@@ -169,6 +169,8 @@ class Emitter:
 
     def __init__(self, bus: Queue):
         self.bus = bus
+        self.packet_history: list[Packet] = []
 
     def emit(self, packet: Packet) -> None:
         self.bus.put(packet)
+        self.packet_history.append(packet)

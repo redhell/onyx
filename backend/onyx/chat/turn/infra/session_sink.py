@@ -20,6 +20,9 @@ from onyx.db.chat import update_db_session_with_messages
 from onyx.db.models import ChatMessage__SearchDoc
 from onyx.db.models import ResearchAgentIteration
 from onyx.db.models import ResearchAgentIterationSubStep
+from onyx.server.query_and_chat.streaming_models import MessageDelta
+from onyx.server.query_and_chat.streaming_models import MessageStart
+from onyx.server.query_and_chat.streaming_models import Packet
 
 
 def save_iteration(
@@ -147,3 +150,12 @@ def _extract_citation_numbers(text: str) -> list[int]:
         cited_numbers.extend(numbers)
 
     return list(set(cited_numbers))  # Return unique numbers
+
+
+def extract_final_answer_from_packets(packet_history: list[Packet]) -> str:
+    """Extract the final answer by concatenating all MessageDelta content."""
+    final_answer = ""
+    for packet in packet_history:
+        if isinstance(packet.obj, MessageDelta) or isinstance(packet.obj, MessageStart):
+            final_answer += packet.obj.content
+    return final_answer
