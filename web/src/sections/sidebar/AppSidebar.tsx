@@ -379,7 +379,7 @@ function AppSidebarInner() {
               className="!w-full"
               folded={folded}
               onClick={() => route({})}
-              active={searchParams.size === 0}
+              active={Array.from(searchParams).length === 0}
               tooltip
             >
               New Session

@@ -143,7 +143,6 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
           return (
             <div id={messageReactComponentKey} key={messageReactComponentKey}>
               <MemoizedHumanMessage
-                setPresentingDocument={setPresentingDocument}
                 disableSwitchingForStreaming={
                   (nextMessage && nextMessage.is_generating) || false
                 }
