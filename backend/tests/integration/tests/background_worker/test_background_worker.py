@@ -12,6 +12,7 @@ from celery.result import AsyncResult
 
 from onyx.background.celery.tasks.monitoring.tasks import monitor_celery_queues
 from onyx.background.celery.tasks.pruning.tasks import check_for_pruning
+from shared_configs.contextvars import CURRENT_TENANT_ID_CONTEXTVAR
 from tests.integration.common_utils.reset import reset_all
 
 
@@ -23,9 +24,14 @@ def reset_for_test() -> None:
 
 def test_background_worker_can_execute_monitoring_tasks() -> None:
     """Test that monitoring tasks (from old monitoring worker) can execute."""
+    # Get tenant_id from context
+    tenant_id = CURRENT_TENANT_ID_CONTEXTVAR.get()
+
     # Try to execute a monitoring task
     # This task monitors celery queue lengths - safe to call
-    result: AsyncResult = monitor_celery_queues.apply_async()
+    result: AsyncResult = monitor_celery_queues.apply_async(
+        kwargs={"tenant_id": tenant_id}
+    )
 
     # Wait for task to complete (with timeout)
     timeout = 30
@@ -44,9 +50,12 @@ def test_background_worker_can_execute_monitoring_tasks() -> None:
 
 def test_background_worker_can_execute_pruning_tasks() -> None:
     """Test that pruning tasks (from old heavy worker) can execute."""
+    # Get tenant_id from context
+    tenant_id = CURRENT_TENANT_ID_CONTEXTVAR.get()
+
     # Try to execute a pruning check task
     # This task checks if pruning is needed - safe to call even if nothing to prune
-    result: AsyncResult = check_for_pruning.apply_async()
+    result: AsyncResult = check_for_pruning.apply_async(kwargs={"tenant_id": tenant_id})
 
     # Wait for task to complete (with timeout)
     timeout = 30
@@ -70,14 +79,19 @@ def test_background_worker_handles_all_queue_types() -> None:
     This is a smoke test that verifies the worker can be started and is
     listening to the correct queues.
     """
+    # Get tenant_id from context
+    tenant_id = CURRENT_TENANT_ID_CONTEXTVAR.get()
+
     # In integration tests, the actual Celery workers are running
     # We can verify by executing tasks that route to different queues
 
     # Execute a monitoring task (routes to 'monitoring' queue)
-    monitoring_result = monitor_celery_queues.apply_async()
+    monitoring_result = monitor_celery_queues.apply_async(
+        kwargs={"tenant_id": tenant_id}
+    )
 
     # Execute a pruning task (routes to 'connector_pruning' queue)
-    pruning_result = check_for_pruning.apply_async()
+    pruning_result = check_for_pruning.apply_async(kwargs={"tenant_id": tenant_id})
 
     # Both should be accepted by the background worker
     timeout = 30
