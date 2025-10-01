@@ -259,7 +259,6 @@ const AdvancedEmbeddingFormPage = forwardRef<
                     )}
                     <Button
                       leftIcon={SvgPlusCircle}
-                      type="button"
                       onClick={() => push("")}
                       className="bg-rose-500 hover:bg-rose-600"
                     >
