@@ -9,6 +9,7 @@ from onyx.configs.chat_configs import EXA_API_KEY
 from onyx.configs.chat_configs import FIRECRAWL_API_KEY
 from onyx.configs.chat_configs import GOOGLE_SEARCH_API_KEY
 from onyx.configs.chat_configs import GOOGLE_SEARCH_CX
+from onyx.configs.chat_configs import SERPER_API_KEY
 from onyx.llm.interfaces import LLM
 from onyx.llm.models import PreviousMessage
 from onyx.tools.message import ToolCallSummary
@@ -52,9 +53,11 @@ class WebSearchTool(Tool[None]):
     @override
     @classmethod
     def is_available(cls, db_session: Session) -> bool:
-        """Available only if EXA API key is configured."""
-        return bool(EXA_API_KEY) or bool(
-            FIRECRAWL_API_KEY and GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX
+        """Available only if EXA or SERPER API key or GOOGLE + FIRECRAWL is configured."""
+        return (
+            bool(EXA_API_KEY)
+            or bool(SERPER_API_KEY)
+            or bool(FIRECRAWL_API_KEY and GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX)
         )
 
     def tool_definition(self) -> dict:

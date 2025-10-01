@@ -94,6 +94,7 @@ FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY") or None
 
 GOOGLE_SEARCH_API_KEY = os.environ.get("GOOGLE_SEARCH_API_KEY") or None
 GOOGLE_SEARCH_CX = os.environ.get("GOOGLE_SEARCH_CX") or None
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY") or None
 
 NUM_INTERNET_SEARCH_RESULTS = int(os.environ.get("NUM_INTERNET_SEARCH_RESULTS") or 10)
 NUM_INTERNET_SEARCH_CHUNKS = int(os.environ.get("NUM_INTERNET_SEARCH_CHUNKS") or 50)
