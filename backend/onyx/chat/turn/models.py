@@ -10,6 +10,12 @@ from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.infra.chat_turn_event_stream import Emitter
+from onyx.tools.tool_implementations.images.image_generation_tool import (
+    ImageGenerationTool,
+)
+from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
+    OktaProfileTool,
+)
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
@@ -28,6 +34,8 @@ class ChatTurnDependencies:
     redis_client: Redis | None = None
     emitter: Emitter | None = None
     search_pipeline: SearchTool | None = None
+    image_generation_tool: ImageGenerationTool | None = None
+    okta_profile_tool: OktaProfileTool | None = None
     dependencies_to_maybe_remove: DependenciesToMaybeRemove | None = None
 
 

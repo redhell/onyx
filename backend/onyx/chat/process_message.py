@@ -805,6 +805,23 @@ def stream_chat_message_objects(
         flattened_tools: list[FunctionTool] = [
             onyx_tool for sublist in onyx_tools for onyx_tool in sublist
         ]
+
+        # Extract specific tool instances for dependency injection
+        from onyx.tools.tool_implementations.images.image_generation_tool import (
+            ImageGenerationTool,
+        )
+        from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
+            OktaProfileTool,
+        )
+
+        image_generation_tool_instance = None
+        okta_profile_tool_instance = None
+        for tool in tools:
+            if isinstance(tool, ImageGenerationTool):
+                image_generation_tool_instance = tool
+            elif isinstance(tool, OktaProfileTool):
+                okta_profile_tool_instance = tool
+
         yield from fast_chat_turn.fast_chat_turn(
             messages=other_messages,
             dependencies=ChatTurnDependencies(
@@ -816,6 +833,8 @@ def stream_chat_message_objects(
                 ),
                 tools=flattened_tools,
                 search_pipeline=answer.graph_tooling.search_tool,
+                image_generation_tool=image_generation_tool_instance,
+                okta_profile_tool=okta_profile_tool_instance,
                 db_session=db_session,
                 redis_client=redis_client,
                 dependencies_to_maybe_remove=DependenciesToMaybeRemove(
