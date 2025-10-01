@@ -7,6 +7,7 @@ from celery import Task
 from celery.apps.worker import Worker
 from celery.signals import celeryd_init
 from celery.signals import worker_init
+from celery.signals import worker_process_init
 from celery.signals import worker_ready
 from celery.signals import worker_shutdown
 
@@ -89,6 +90,11 @@ def on_setup_logging(
     loglevel: Any, logfile: Any, format: Any, colorize: Any, **kwargs: Any
 ) -> None:
     app_base.on_setup_logging(loglevel, logfile, format, colorize, **kwargs)
+
+
+@worker_process_init.connect
+def init_worker(**kwargs: Any) -> None:
+    SqlEngine.reset_engine()
 
 
 base_bootsteps = app_base.get_bootsteps()
