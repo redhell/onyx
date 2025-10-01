@@ -44,11 +44,16 @@ export const processContent = (content: string): string => {
  */
 export const useMarkdownComponents = (
   state: FullChatState | undefined,
-  processedContent: string
+  processedContent: string,
+  className?: string
 ) => {
   const paragraphCallback = useCallback(
-    (props: any) => <MemoizedParagraph>{props.children}</MemoizedParagraph>,
-    []
+    (props: any) => (
+      <MemoizedParagraph className={className}>
+        {props.children}
+      </MemoizedParagraph>
+    ),
+    [className]
   );
 
   const anchorCallback = useCallback(
@@ -118,7 +123,11 @@ export const useMarkdownRenderer = (
   textSize: string = "text-base"
 ) => {
   const processedContent = useMemo(() => processContent(content), [content]);
-  const markdownComponents = useMarkdownComponents(state, processedContent);
+  const markdownComponents = useMarkdownComponents(
+    state,
+    processedContent,
+    textSize
+  );
 
   const renderedContent = useMemo(
     () => renderMarkdown(processedContent, markdownComponents, textSize),

@@ -11,6 +11,8 @@ import { RendererComponent } from "./renderMessageComponent";
 import { isToolPacket } from "../../services/packetUtils";
 import { useToolDisplayTiming } from "./hooks/useToolDisplayTiming";
 import { STANDARD_TEXT_COLOR } from "./constants";
+import Text from "@/refresh-components/Text";
+import SvgChevronDownSmall from "@/icons/chevron-down-small";
 
 // Shared component for expanded tool rendering
 function ExpandedToolItem({
@@ -43,7 +45,7 @@ function ExpandedToolItem({
       {/* Connector line */}
       {!isLastItem && (
         <div
-          className="absolute w-px bg-background-300 z-0"
+          className="absolute w-px bg-background-tint-04 z-0"
           style={{
             left: "10px",
             top: "20px",
@@ -269,32 +271,26 @@ function MultiToolRenderer({
     <div className="relative pb-1">
       {/* Summary header - clickable */}
       <div
-        className="cursor-pointer transition-colors rounded-md p-1 -m-1"
+        className="flex flex-row w-fit items-center group/StepsButton select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center text-text-700 hover:text-text-900">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{toolGroups.length} steps</span>
-          </div>
-          <div className="transition-transform duration-300 ease-in-out">
-            {isExpanded ? (
-              <FiChevronDown size={16} />
-            ) : (
-              <FiChevronRight size={16} />
-            )}
-          </div>
-        </div>
+        <Text text03 className="group-hover/StepsButton:text-text-04">
+          {toolGroups.length} steps
+        </Text>
+        <SvgChevronDownSmall
+          className={`w-[1rem] h-[1rem] stroke-text-03 group-hover/StepsButton:stroke-text-04 transition-transform duration-150 ease-in-out ${!isExpanded ? "rotate-[-90deg]" : ""}`}
+        />
       </div>
 
       {/* Expanded content */}
       <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`transition-all duration-300 ease-in-out ${
           isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div
           className={`p-4 transition-transform duration-300 ease-in-out ${
-            isExpanded ? "transform translate-y-0" : "transform -translate-y-2"
+            isExpanded ? "transform translate-y-0" : "transform "
           }`}
         >
           <div>
@@ -324,7 +320,7 @@ function MultiToolRenderer({
                       content={content}
                       status={status}
                       isLastItem={isLastItem}
-                      defaultIconColor="text-text-500"
+                      defaultIconColor="text-text-03"
                       expandedText={expandedText}
                     />
                   )}

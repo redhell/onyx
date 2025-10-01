@@ -194,7 +194,7 @@ export const MemoizedLink = memo(
     return (
       <a
         onMouseDown={handleMouseDown}
-        className="cursor-pointer text-link hover:text-link-hover dbg-blue"
+        className="cursor-pointer text-link hover:text-link-hover"
       >
         {rest.children}
       </a>
@@ -203,8 +203,8 @@ export const MemoizedLink = memo(
 );
 
 export const MemoizedParagraph = memo(
-  function MemoizedParagraph({ children }: any) {
-    return <Text>{children}</Text>;
+  function MemoizedParagraph({ className, children }: any) {
+    return <Text className={className}>{children}</Text>;
   },
   (prevProps, nextProps) => {
     const areEqual = isEqual(prevProps.children, nextProps.children);
