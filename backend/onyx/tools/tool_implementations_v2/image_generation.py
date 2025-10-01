@@ -6,6 +6,7 @@ from agents import function_tool
 from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import GeneratedImage
+from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.chat.turn.models import MyContext
 from onyx.file_store.utils import build_frontend_file_url
 from onyx.file_store.utils import save_files
@@ -39,101 +40,125 @@ def image_generation_tool(
         prompt: The text description of the image to generate
         shape: The desired image shape - 'square', 'portrait', or 'landscape'
     """
-    # Get the image generation tool from context
-    image_generation_tool = run_context.context.run_dependencies.image_generation_tool
-    if image_generation_tool is None:
-        raise RuntimeError("Image generation tool not available in context")
-
-    index = run_context.context.current_run_step + 1
-    emitter = run_context.context.run_dependencies.emitter
-
-    # Emit start event
-    emitter.emit(
-        Packet(
-            ind=index,
-            obj=ImageGenerationToolStart(type="image_generation_tool_start"),
+    try:
+        # Get the image generation tool from context
+        image_generation_tool = (
+            run_context.context.run_dependencies.image_generation_tool
         )
-    )
+        if image_generation_tool is None:
+            raise RuntimeError("Image generation tool not available in context")
 
-    # Prepare tool arguments
-    tool_args = {"prompt": prompt}
-    if shape != "square":  # Only include shape if it's not the default
-        tool_args["shape"] = shape
+        index = run_context.context.current_run_step + 1
+        emitter = run_context.context.run_dependencies.emitter
 
-    # Run the actual image generation tool with heartbeat handling
-    generated_images = []
-    heartbeat_count = 0
+        # Emit start event
+        emitter.emit(
+            Packet(
+                ind=index,
+                obj=ImageGenerationToolStart(type="image_generation_tool_start"),
+            )
+        )
 
-    for tool_response in image_generation_tool.run(**tool_args):
-        # Handle heartbeat responses
-        if tool_response.id == "image_generation_heartbeat":
-            # Emit heartbeat event for every iteration
-            emitter.emit(
-                Packet(
-                    ind=index,
-                    obj=ImageGenerationToolHeartbeat(
-                        type="image_generation_tool_heartbeat"
-                    ),
+        # Prepare tool arguments
+        tool_args = {"prompt": prompt}
+        if shape != "square":  # Only include shape if it's not the default
+            tool_args["shape"] = shape
+
+        # Run the actual image generation tool with heartbeat handling
+        generated_images = []
+        heartbeat_count = 0
+
+        for tool_response in image_generation_tool.run(**tool_args):
+            # Handle heartbeat responses
+            if tool_response.id == "image_generation_heartbeat":
+                # Emit heartbeat event for every iteration
+                emitter.emit(
+                    Packet(
+                        ind=index,
+                        obj=ImageGenerationToolHeartbeat(
+                            type="image_generation_tool_heartbeat"
+                        ),
+                    )
                 )
-            )
-            heartbeat_count += 1
-            logger.debug(f"Image generation heartbeat #{heartbeat_count}")
-            continue
+                heartbeat_count += 1
+                logger.debug(f"Image generation heartbeat #{heartbeat_count}")
+                continue
 
-        # Process the tool response to get the generated images
-        if tool_response.id == "image_generation_response":
-            image_generation_responses = cast(
-                list[ImageGenerationResponse], tool_response.response
-            )
-            file_ids = save_files(
-                urls=[img.url for img in image_generation_responses if img.url],
-                base64_files=[
-                    img.image_data
-                    for img in image_generation_responses
-                    if img.image_data
-                ],
-            )
-            generated_images = [
-                GeneratedImage(
-                    file_id=file_id,
-                    url=img.url if img.url else build_frontend_file_url(file_id),
-                    revised_prompt=img.revised_prompt,
+            # Process the tool response to get the generated images
+            if tool_response.id == "image_generation_response":
+                image_generation_responses = cast(
+                    list[ImageGenerationResponse], tool_response.response
                 )
-                for img, file_id in zip(image_generation_responses, file_ids)
-            ]
-            break
+                file_ids = save_files(
+                    urls=[img.url for img in image_generation_responses if img.url],
+                    base64_files=[
+                        img.image_data
+                        for img in image_generation_responses
+                        if img.image_data
+                    ],
+                )
+                generated_images = [
+                    GeneratedImage(
+                        file_id=file_id,
+                        url=img.url if img.url else build_frontend_file_url(file_id),
+                        revised_prompt=img.revised_prompt,
+                    )
+                    for img, file_id in zip(image_generation_responses, file_ids)
+                ]
+                break
 
-    if not generated_images:
-        raise RuntimeError("No images were generated")
+        if not generated_images:
+            raise RuntimeError("No images were generated")
 
-    # Emit final result
-    emitter.emit(
-        Packet(
-            ind=index,
-            obj=ImageGenerationToolDelta(
-                type="image_generation_tool_delta", images=generated_images
-            ),
+        run_context.context.aggregated_context.global_iteration_responses.append(
+            IterationAnswer(
+                tool="image_generation_tool",
+                tool_id=2,
+                iteration_nr=run_context.context.current_run_step,
+                parallelization_nr=0,
+                question=prompt,
+                answer=generated_images[0].url,
+                reasoning="",
+                claims=[],
+                generated_images=generated_images,
+                additional_data={},
+                response_type=None,
+                data=None,
+                file_ids=None,
+                cited_documents={},
+            )
         )
-    )
-
-    # Emit section end
-    emitter.emit(
-        Packet(
-            ind=index,
-            obj=SectionEnd(
-                type="section_end",
-            ),
+        # Emit final result
+        emitter.emit(
+            Packet(
+                ind=index,
+                obj=ImageGenerationToolDelta(
+                    type="image_generation_tool_delta", images=generated_images
+                ),
+            )
         )
-    )
 
-    run_context.context.current_run_step = index + 1
+        # Emit section end
+        emitter.emit(
+            Packet(
+                ind=index,
+                obj=SectionEnd(
+                    type="section_end",
+                ),
+            )
+        )
 
-    # Return the first generated image data
-    first_image = generated_images[0]
-    return json.dumps(
-        {
-            "file_id": first_image.file_id,
-            "revised_prompt": first_image.revised_prompt,
-            "url": first_image.url,
-        }
-    )
+        run_context.context.current_run_step = index + 1
+
+        # Return the first generated image data
+        first_image = generated_images[0]
+        return json.dumps(
+            {
+                "file_id": first_image.file_id,
+                "revised_prompt": first_image.revised_prompt,
+                "url": first_image.url,
+            }
+        )
+    except Exception as e:
+        run_context.context.current_run_step = index + 1
+        raise e

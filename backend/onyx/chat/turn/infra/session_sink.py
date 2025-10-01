@@ -76,6 +76,8 @@ def save_iteration(
         token_count=0,
     )
 
+    # TODO: I don't think this is the ideal schema for all use cases
+    # find a better schema to store tool and reasoning calls
     for iteration_preparation in ctx.iteration_instructions:
         research_agent_iteration_step = ResearchAgentIteration(
             primary_question_id=message_id,
