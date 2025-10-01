@@ -40,6 +40,7 @@ class FirecrawlContentClient(InternetContentInterface):
                     link=url,
                     full_content="",
                     published_date=None,
+                    scrape_successful=False,
                 )
                 for url in failed_urls
             ]
