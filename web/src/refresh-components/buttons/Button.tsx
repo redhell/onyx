@@ -4,6 +4,7 @@ import React from "react";
 import Text from "@/refresh-components/Text";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { SvgProps } from "@/icons";
 
 const variantClasses = (active: boolean | undefined) =>
   ({
@@ -77,6 +78,10 @@ interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
   // Button states:
   active?: boolean;
 
+  // Icons:
+  leftIcon?: React.FunctionComponent<SvgProps>;
+  rightIcon?: React.FunctionComponent<SvgProps>;
+
   href?: string;
 }
 
@@ -91,6 +96,9 @@ export default function Button({
   disabled,
 
   active,
+
+  leftIcon: LeftIcon,
+  rightIcon: RightIcon,
 
   href,
   children,
@@ -118,18 +126,28 @@ export default function Button({
   const content = (
     <button
       className={cn(
-        "p-spacing-interline rounded-08 group w-fit flex flex-row items-center justify-center",
+        "p-spacing-interline h-fit rounded-12 group w-fit flex flex-row items-center justify-center gap-spacing-inline",
         variantClasses(active)[variant][subvariant],
         className
       )}
       {...props}
     >
+      {LeftIcon && (
+        <div className="w-[1rem] h-[1rem] flex flex-col items-center justify-center">
+          <LeftIcon className="w-[1rem] h-[1rem] stroke-text-inverted-05" />
+        </div>
+      )}
       {typeof children === "string" ? (
         <Text className={cn(textClasses(active)[variant][subvariant])}>
           {children}
         </Text>
       ) : (
         children
+      )}
+      {RightIcon && (
+        <div className="w-[1rem] h-[1rem]">
+          <RightIcon className="w-[1rem] h-[1rem] stroke-text-inverted-05" />
+        </div>
       )}
     </button>
   );

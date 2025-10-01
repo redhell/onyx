@@ -1,11 +1,7 @@
 "use client";
 
 import { redirect, useRouter, useSearchParams } from "next/navigation";
-import {
-  ChatSession,
-  ChatSessionSharedStatus,
-  Message,
-} from "@/app/chat/interfaces";
+import { ChatSession, ChatSessionSharedStatus } from "@/app/chat/interfaces";
 import { HealthCheckBanner } from "@/components/health/healthcheck";
 import {
   personaIncludesRetrieval,
@@ -86,7 +82,6 @@ import {
 } from "@/app/chat/projects/projectsService";
 import ProjectChatSessionList from "@/app/chat/components/projects/ProjectChatSessionList";
 import { cn } from "@/lib/utils";
-import { OnyxIcon } from "@/components/icons/icons";
 import { Suggestions } from "@/sections/Suggestions";
 
 interface ChatPageProps {
