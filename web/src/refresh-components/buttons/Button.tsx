@@ -118,7 +118,7 @@ export default function Button({
   const content = (
     <button
       className={cn(
-        "p-spacing-interline rounded-08 group w-fit",
+        "p-spacing-interline rounded-08 group w-fit flex flex-row items-center justify-center",
         variantClasses(active)[variant][subvariant],
         className
       )}
