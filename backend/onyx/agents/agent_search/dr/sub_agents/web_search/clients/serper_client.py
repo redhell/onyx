@@ -59,8 +59,22 @@ class SerperClient(InternetSearchProvider):
         if not urls:
             return []
 
+        # Serper can responds with 500s regularly. We want to retry,
+        # but in the event of failure, return an unsuccesful scrape.
+        def safe_get_webpage_content(url: str) -> InternetContent:
+            try:
+                return self._get_webpage_content(url)
+            except Exception:
+                return InternetContent(
+                    title="",
+                    link=url,
+                    full_content="",
+                    published_date=None,
+                    scrape_successful=False,
+                )
+
         with ThreadPoolExecutor(max_workers=min(8, len(urls))) as e:
-            return list(e.map(self._get_webpage_content, urls))
+            return list(e.map(safe_get_webpage_content, urls))
 
     @retry_builder(tries=3, delay=1, backoff=2)
     def _get_webpage_content(self, url: str) -> InternetContent:
