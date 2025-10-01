@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
 import { WelcomeModal } from "@/components/initialSetup/welcome/WelcomeModalWrapper";
 import { cookies } from "next/headers";
-import { ChatProvider } from "@/refresh-components/context/ChatContext";
+import { ChatProvider } from "@/refresh-components/contexts/ChatContext";
 import { AssistantStats } from "./AssistantStats";
 import { BackButton } from "@/components/BackButton";
 

@@ -14,7 +14,7 @@ import {
   PopoverMenu,
 } from "@/components/ui/popover";
 import { FiMoreHorizontal } from "react-icons/fi";
-import { useChatContext } from "@/refresh-components/context/ChatContext";
+import { useChatContext } from "@/refresh-components/contexts/ChatContext";
 import { useCallback, useState, useMemo } from "react";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
 // PopoverMenu already imported above

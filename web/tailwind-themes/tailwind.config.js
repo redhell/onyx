@@ -224,7 +224,9 @@ module.exports = {
         "token-italic": "italic",
       },
       spacing: {
+        "spacing-inline-mini": "var(--spacing-inline-mini)",
         "spacing-inline": "var(--spacing-inline)",
+        "spacing-interline-mini": "var(--spacing-interline-mini)",
         "spacing-interline": "var(--spacing-interline)",
         "spacing-paragraph": "var(--spacing-paragraph)",
         "spacing-headline": "var(--spacing-headline)",

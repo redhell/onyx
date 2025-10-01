@@ -8,10 +8,10 @@ import { AssistantsProvider } from "./AssistantsContext";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import { User } from "@/lib/types";
 import { ModalProvider } from "./ModalContext";
-import { ModalProvider as NewModalProvider } from "@/refresh-components/context/ModalContext";
+import { ModalProvider as NewModalProvider } from "@/refresh-components/contexts/ModalContext";
 import { AuthTypeMetadata } from "@/lib/userSS";
-import { AgentsProvider } from "@/refresh-components/context/AgentsContext";
-import { AppSidebarProvider } from "@/refresh-components/context/AppSidebarContext";
+import { AgentsProvider } from "@/refresh-components/contexts/AgentsContext";
+import { AppSidebarProvider } from "@/refresh-components/contexts/AppSidebarContext";
 
 interface AppProviderProps {
   children: React.ReactNode;

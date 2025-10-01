@@ -2,7 +2,7 @@
 
 import { OnSubmitProps } from "@/app/chat/hooks/useChatController";
 import LineItem from "@/refresh-components/buttons/LineItem";
-import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
+import { useAgentsContext } from "@/refresh-components/contexts/AgentsContext";
 import { cn } from "@/lib/utils";
 
 interface SuggestionsProps {

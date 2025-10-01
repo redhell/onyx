@@ -12,7 +12,7 @@ import {
 } from "@/lib/constants";
 import { AnnouncementBanner } from "../header/AnnouncementBanner";
 import { fetchChatData } from "@/lib/chat/fetchChatData";
-import { ChatProvider } from "../../refresh-components/context/ChatContext";
+import { ChatProvider } from "../../refresh-components/contexts/ChatContext";
 
 export async function Layout({ children }: { children: React.ReactNode }) {
   const tasks = [getAuthTypeMetadataSS(), getCurrentUserSS()];

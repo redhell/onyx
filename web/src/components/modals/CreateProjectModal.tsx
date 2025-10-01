@@ -4,10 +4,10 @@ import { useRef } from "react";
 import Button from "@/refresh-components/buttons/Button";
 import SvgFolderPlus from "@/icons/folder-plus";
 import Modal from "@/refresh-components/modals/Modal";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import FieldInput from "@/refresh-components/FieldInput";
+import FieldInput from "@/refresh-components/inputs/FieldInput";
 import { useAppRouter } from "@/hooks/appNavigation";
 
 export default function CreateProjectModal() {

@@ -5,11 +5,11 @@ import { FeedbackType } from "@/app/chat/interfaces";
 import Modal from "@/refresh-components/modals/Modal";
 import { FilledLikeIcon } from "@/components/icons/icons";
 import { handleChatFeedback } from "../../services/lib";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
 import Button from "@/refresh-components/buttons/Button";
-import FieldInput from "@/refresh-components/FieldInput";
+import FieldInput from "@/refresh-components/inputs/FieldInput";
 import LineItem from "@/refresh-components/buttons/LineItem";
 import { useKeyPress } from "@/hooks/useKeyPress";
 

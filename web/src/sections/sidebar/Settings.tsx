@@ -22,7 +22,7 @@ import SvgBell from "@/icons/bell";
 import SvgX from "@/icons/x";
 import { useRouter } from "next/navigation";
 import Modal from "@/refresh-components/modals/Modal";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import SvgUser from "@/icons/user";
 import { UserSettings } from "@/app/chat/components/modal/UserSettingsModal";
 import { cn } from "@/lib/utils";

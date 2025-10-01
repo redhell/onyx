@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import Text from "@/refresh-components/Text";
 import SvgX from "@/icons/x";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import IconButton from "@/refresh-components/buttons/IconButton";
 import { cn } from "@/lib/utils";
 import { SvgProps } from "@/icons";

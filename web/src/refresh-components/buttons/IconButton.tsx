@@ -51,7 +51,10 @@ const iconClasses = (active: boolean | undefined) =>
       disabled: ["stroke-text-inverted-05"],
     },
     secondary: {
-      main: [active ? "stroke-text-05" : "stroke-text-03"],
+      main: [
+        active ? "stroke-text-05" : "stroke-text-03",
+        "group-hover/IconButton:stroke-text-04",
+      ],
       disabled: ["stroke-text-01"],
     },
     tertiary: {

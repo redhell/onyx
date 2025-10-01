@@ -13,7 +13,7 @@ import { checkUserOwnsAssistant as checkUserOwnsAgent } from "@/lib/assistants/u
 import { deletePersona } from "@/app/admin/assistants/lib";
 import { usePaidEnterpriseFeaturesEnabled } from "@/components/settings/usePaidEnterpriseFeaturesEnabled";
 import { usePopup } from "@/components/admin/connectors/Popup";
-import { useAgentsContext } from "@/refresh-components/context/AgentsContext";
+import { useAgentsContext } from "@/refresh-components/contexts/AgentsContext";
 import Text from "@/refresh-components/Text";
 import Truncated from "@/refresh-components/Truncated";
 import NavigationTab from "@/refresh-components/buttons/NavigationTab";

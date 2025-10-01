@@ -158,7 +158,7 @@ export default function NavigationTab({
     >
       <div
         className={cn(
-          "flex-1 h-[1.5rem] flex flex-row items-center px-spacing-inline py-spacing-mini gap-spacing-interline",
+          "flex-1 h-[1.5rem] flex flex-row items-center px-spacing-inline py-spacing-inline-mini gap-spacing-interline",
           folded ? "justify-center" : "justify-start"
         )}
       >

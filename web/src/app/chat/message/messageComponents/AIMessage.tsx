@@ -37,7 +37,7 @@ import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgCopy from "@/icons/copy";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 
 export interface AIMessageProps {
   rawPackets: Packet[];

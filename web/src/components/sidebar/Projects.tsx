@@ -15,7 +15,7 @@ import Button from "@/refresh-components/buttons/Button";
 import { ChatButton } from "@/sections/sidebar/AppSidebar";
 import { useAppParams, useAppRouter } from "@/hooks/appNavigation";
 import SvgFolderPlus from "@/icons/folder-plus";
-import { ModalIds, useModal } from "@/refresh-components/context/ModalContext";
+import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import { SEARCH_PARAM_NAMES } from "@/app/chat/services/searchParams";
 import { noProp } from "@/lib/utils";
 

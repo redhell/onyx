@@ -25,12 +25,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiTrash2, FiExternalLink } from "react-icons/fi";
 import { deleteAllChatSessions } from "@/app/chat/services/lib";
-import { useChatContext } from "@/refresh-components/context/ChatContext";
+import { useChatContext } from "@/refresh-components/contexts/ChatContext";
 import { FederatedConnectorOAuthStatus } from "@/components/chat/FederatedOAuthModal";
 import { SourceIcon } from "@/components/SourceIcon";
 import { ValidSources, CCPairBasicInfo } from "@/lib/types";
 import { getSourceMetadata } from "@/lib/sources";
-import { ModalIds } from "@/refresh-components/context/ModalContext";
+import { ModalIds } from "@/refresh-components/contexts/ModalContext";
 import SvgSettings from "@/icons/settings";
 
 type SettingsSection = "settings" | "password" | "connectors";
