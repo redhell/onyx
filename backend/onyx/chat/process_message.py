@@ -2,6 +2,7 @@ import re
 import time
 import traceback
 from collections.abc import Callable
+from collections.abc import Generator
 from collections.abc import Iterator
 from typing import cast
 from typing import Protocol
@@ -29,6 +30,9 @@ from onyx.chat.models import PromptConfig
 from onyx.chat.models import QADocsResponse
 from onyx.chat.models import StreamingError
 from onyx.chat.models import UserKnowledgeFilePacket
+from onyx.chat.packet_proccessing.process_streamed_packets import (
+    process_streamed_packets,
+)
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
@@ -786,64 +790,19 @@ def stream_chat_message_objects(
             skip_gen_ai_answer_generation=new_msg_req.skip_gen_ai_answer_generation,
             project_instructions=project_instructions,
         )
-        type_to_role = {
-            "human": "user",
-            "assistant": "assistant",
-            "system": "system",
-            "function": "function",
-        }
-        other_messages = [
-            {"role": type_to_role[message.type], "content": message.content}
-            for message in answer.graph_inputs.prompt_builder.build()
-            if message.type != "system"
-        ]
-        onyx_tools: list[list[FunctionTool]] = [
-            BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
-            for tool in tools
-            if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
-        ]
-        flattened_tools: list[FunctionTool] = [
-            onyx_tool for sublist in onyx_tools for onyx_tool in sublist
-        ]
-
-        # Extract specific tool instances for dependency injection
-        from onyx.tools.tool_implementations.images.image_generation_tool import (
-            ImageGenerationTool,
-        )
-        from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
-            OktaProfileTool,
-        )
-
-        image_generation_tool_instance = None
-        okta_profile_tool_instance = None
-        for tool in tools:
-            if isinstance(tool, ImageGenerationTool):
-                image_generation_tool_instance = tool
-            elif isinstance(tool, OktaProfileTool):
-                okta_profile_tool_instance = tool
-
-        yield from fast_chat_turn.fast_chat_turn(
-            messages=other_messages,
-            dependencies=ChatTurnDependencies(
-                # TODO: Dependency inject this higher up?
-                llm_model=LitellmModel(
-                    model=answer.graph_tooling.primary_llm.config.model_name,
-                    base_url=answer.graph_tooling.primary_llm.config.api_base,
-                    api_key=answer.graph_tooling.primary_llm.config.api_key,
-                ),
-                tools=flattened_tools,
-                search_pipeline=answer.graph_tooling.search_tool,
-                image_generation_tool=image_generation_tool_instance,
-                okta_profile_tool=okta_profile_tool_instance,
-                db_session=db_session,
-                redis_client=redis_client,
-                dependencies_to_maybe_remove=DependenciesToMaybeRemove(
-                    chat_session_id=chat_session_id,
-                    message_id=reserved_message_id,
-                    research_type=answer.graph_config.behavior.research_type,
-                ),
-            ),
-        )
+        if new_msg_req.use_agentic_search:
+            yield from process_streamed_packets(
+                answer_processed_output=answer.processed_streamed_output,
+            )
+        else:
+            yield from fast_message_stream(
+                answer,
+                tools,
+                db_session,
+                redis_client,
+                chat_session_id,
+                reserved_message_id,
+            )
 
     except ValueError as e:
         logger.exception("Failed to process chat message.")
@@ -878,6 +837,74 @@ def stream_chat_message_objects(
 
         db_session.rollback()
         return
+
+
+def fast_message_stream(
+    answer: Answer,
+    tools: list[Tool],
+    db_session: Session,
+    redis_client: Redis,
+    chat_session_id: str,
+    reserved_message_id: str,
+) -> Generator[Packet, None, None]:
+    type_to_role = {
+        "human": "user",
+        "assistant": "assistant",
+        "system": "system",
+        "function": "function",
+    }
+    other_messages = [
+        {"role": type_to_role[message.type], "content": message.content}
+        for message in answer.graph_inputs.prompt_builder.build()
+        if message.type != "system"
+    ]
+    onyx_tools: list[list[FunctionTool]] = [
+        BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
+        for tool in tools
+        if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
+    ]
+    flattened_tools: list[FunctionTool] = [
+        onyx_tool for sublist in onyx_tools for onyx_tool in sublist
+    ]
+
+    # Extract specific tool instances for dependency injection
+    from onyx.tools.tool_implementations.images.image_generation_tool import (
+        ImageGenerationTool,
+    )
+    from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
+        OktaProfileTool,
+    )
+
+    image_generation_tool_instance = None
+    okta_profile_tool_instance = None
+    for tool in tools:
+        if isinstance(tool, ImageGenerationTool):
+            image_generation_tool_instance = tool
+        elif isinstance(tool, OktaProfileTool):
+            okta_profile_tool_instance = tool
+
+    return fast_chat_turn.fast_chat_turn(
+        messages=other_messages,
+        dependencies=ChatTurnDependencies(
+            # TODO: Dependency inject this higher up?
+            llm_model=LitellmModel(
+                model=answer.graph_tooling.primary_llm.config.model_name,
+                base_url=answer.graph_tooling.primary_llm.config.api_base,
+                api_key=answer.graph_tooling.primary_llm.config.api_key,
+            ),
+            tools=flattened_tools,
+            search_pipeline=answer.graph_tooling.search_tool,
+            image_generation_tool=image_generation_tool_instance,
+            okta_profile_tool=okta_profile_tool_instance,
+            db_session=db_session,
+            redis_client=redis_client,
+            dependencies_to_maybe_remove=DependenciesToMaybeRemove(
+                chat_session_id=chat_session_id,
+                message_id=reserved_message_id,
+                research_type=answer.graph_config.behavior.research_type,
+            ),
+        ),
+    )
 
 
 @log_generator_function_time()
