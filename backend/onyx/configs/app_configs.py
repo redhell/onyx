@@ -359,7 +359,6 @@ CELERY_WORKER_PRIMARY_POOL_OVERFLOW = int(
     os.environ.get("CELERY_WORKER_PRIMARY_POOL_OVERFLOW") or 4
 )
 
-# Consolidated background worker (merges heavy, kg_processing, monitoring, user_file_processing)
 CELERY_WORKER_BACKGROUND_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_BACKGROUND_CONCURRENCY") or 6
 )
