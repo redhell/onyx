@@ -1,6 +1,5 @@
 from agents import Agent
 from agents import ModelSettings
-from agents.extensions.models.litellm_model import LitellmModel
 
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.chat.stop_signal_checker import is_connected
@@ -32,10 +31,7 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
     )
     agent = Agent(
         name="Assistant",
-        model=LitellmModel(
-            model=dependencies.llm.config.model_name,
-            api_key=dependencies.llm.config.api_key,
-        ),
+        model=dependencies.llm_model,
         tools=dependencies.tools,
         model_settings=ModelSettings(
             temperature=0.0,

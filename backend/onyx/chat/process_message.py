@@ -8,6 +8,7 @@ from typing import Protocol
 from uuid import UUID
 
 from agents import FunctionTool
+from agents.extensions.models.litellm_model import LitellmModel
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -807,7 +808,12 @@ def stream_chat_message_objects(
         yield from fast_chat_turn.fast_chat_turn(
             messages=other_messages,
             dependencies=ChatTurnDependencies(
-                llm=answer.graph_tooling.primary_llm,
+                # TODO: Dependency inject this higher up?
+                llm_model=LitellmModel(
+                    model=answer.graph_tooling.primary_llm.config.model_name,
+                    base_url=answer.graph_tooling.primary_llm.config.api_base,
+                    api_key=answer.graph_tooling.primary_llm.config.api_key,
+                ),
                 tools=flattened_tools,
                 search_pipeline=answer.graph_tooling.search_tool,
                 db_session=db_session,

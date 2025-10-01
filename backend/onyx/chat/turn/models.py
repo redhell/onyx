@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from agents import FunctionTool
+from agents import Model
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -9,7 +10,6 @@ from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.infra.chat_turn_event_stream import Emitter
-from onyx.llm.interfaces import LLM
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
@@ -22,7 +22,7 @@ class DependenciesToMaybeRemove:
 
 @dataclass
 class ChatTurnDependencies:
-    llm: LLM
+    llm_model: Model
     db_session: Session
     tools: list[FunctionTool]
     redis_client: Redis | None = None
