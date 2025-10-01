@@ -82,7 +82,7 @@ function InputTypeInInner(
     <div
       ref={boundingBoxRef}
       className={cn(
-        "flex flex-row items-center justify-between w-full h-full p-spacing-interline-mini rounded-08 bg-background-neutral-00 relative",
+        "flex flex-row items-center justify-between w-full h-fit p-spacing-interline-mini rounded-08 bg-background-neutral-00 relative",
         divClasses(localActive, hovered)[state],
         className
       )}

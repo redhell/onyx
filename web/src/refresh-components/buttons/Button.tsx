@@ -3,6 +3,7 @@
 import React from "react";
 import Text from "@/refresh-components/Text";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const variantClasses = (active: boolean | undefined) =>
   ({
@@ -75,6 +76,8 @@ interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
 
   // Button states:
   active?: boolean;
+
+  href?: string;
 }
 
 export default function Button({
@@ -89,6 +92,7 @@ export default function Button({
 
   active,
 
+  href,
   children,
   className,
   ...props
@@ -111,7 +115,7 @@ export default function Button({
           ? "disabled"
           : "main";
 
-  return (
+  const content = (
     <button
       className={cn(
         "p-spacing-interline rounded-08 group w-fit",
@@ -129,4 +133,8 @@ export default function Button({
       )}
     </button>
   );
+
+  if (!href) return content;
+
+  return <Link href={href}>{content}</Link>;
 }
