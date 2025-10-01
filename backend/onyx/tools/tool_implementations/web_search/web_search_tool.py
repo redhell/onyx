@@ -6,6 +6,9 @@ from typing_extensions import override
 
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.configs.chat_configs import EXA_API_KEY
+from onyx.configs.chat_configs import FIRECRAWL_API_KEY
+from onyx.configs.chat_configs import GOOGLE_SEARCH_API_KEY
+from onyx.configs.chat_configs import GOOGLE_SEARCH_CX
 from onyx.llm.interfaces import LLM
 from onyx.llm.models import PreviousMessage
 from onyx.tools.message import ToolCallSummary
@@ -50,7 +53,9 @@ class WebSearchTool(Tool[None]):
     @classmethod
     def is_available(cls, db_session: Session) -> bool:
         """Available only if EXA API key is configured."""
-        return bool(EXA_API_KEY)
+        return bool(EXA_API_KEY) or bool(
+            FIRECRAWL_API_KEY and GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX
+        )
 
     def tool_definition(self) -> dict:
         return {
