@@ -19,7 +19,6 @@ postgresql:
     storage:
       size: 10Gi
       storageClass: ""
-    # Uncomment to set resource limits:
     resources:
       limits:
         cpu: 2000m
