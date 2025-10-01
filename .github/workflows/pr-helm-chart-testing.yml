@@ -41,7 +41,16 @@ jobs:
 #     - name: Force run chart-testing (list-changed)
 #       id: list-changed
 #       run: echo "changed=true" >> $GITHUB_OUTPUT
-        
+
+    - name: Add Helm repositories and update
+      if: steps.list-changed.outputs.changed == 'true'
+      run: |
+        echo "=== Adding Helm repositories ==="
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo add cnpg https://cloudnative-pg.github.io/charts
+        helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
+        helm repo update
+
     # lint all charts if any changes were detected
     - name: Run chart-testing (lint)
       if: steps.list-changed.outputs.changed == 'true'
@@ -60,15 +69,6 @@ jobs:
         kubectl get nodes -o wide
         kubectl get pods --all-namespaces
         kubectl get storageclass
-
-    - name: Add Helm repositories and update
-      if: steps.list-changed.outputs.changed == 'true'
-      run: |
-        echo "=== Adding Helm repositories ==="
-        helm repo add bitnami https://charts.bitnami.com/bitnami
-        helm repo add cnpg https://cloudnative-pg.github.io/charts
-        helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
-        helm repo update
 
     - name: Pre-pull critical images
       if: steps.list-changed.outputs.changed == 'true'
