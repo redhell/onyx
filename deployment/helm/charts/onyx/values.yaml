@@ -19,7 +19,6 @@ postgresql:
     storage:
       size: 10Gi
       storageClass: ""
-    resources: {}
     # Uncomment to set resource limits:
     resources:
       limits:
