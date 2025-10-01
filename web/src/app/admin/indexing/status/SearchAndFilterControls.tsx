@@ -51,10 +51,6 @@ export function SearchAndFilterControls({
     setLocalSearchValue(searchQuery);
   }, [searchQuery]);
 
-  const handleClearSearch = () => {
-    setLocalSearchValue("");
-  };
-
   return (
     <div className="flex items-center gap-x-2">
       <InputTypeIn
