@@ -6,76 +6,213 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { SvgProps } from "@/icons";
 
-const variantClasses = (active: boolean | undefined) =>
+const variantClasses = (active?: boolean) =>
   ({
-    primary: {
-      main: [
-        active ? "bg-theme-primary-06" : "bg-theme-primary-05",
-        "hover:bg-theme-primary-04",
-      ],
-      secondary: [
-        active ? "bg-background-tint-00" : "bg-background-tint-01",
-        "hover:bg-background-tint-02",
-        "border",
-      ],
-      tertiary: [],
-      disabled: [],
+    defaulted: {
+      primary: {
+        enabled: [
+          active ? "bg-theme-primary-06" : "bg-theme-primary-05",
+          "hover:bg-theme-primary-04",
+        ],
+        disabled: ["bg-background-neutral-04"],
+      },
+      secondary: {
+        enabled: [
+          active ? "bg-background-tint-00" : "bg-background-tint-01",
+          "hover:bg-background-tint-02",
+          "border",
+        ],
+        disabled: ["bg-background-tint-00", "border"],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
     action: {
-      main: [],
-      secondary: [],
-      tertiary: [],
-      disabled: [],
+      primary: {
+        enabled: [
+          active ? "bg-action-link-06" : "bg-action-link-05",
+          "hover:bg-action-link-04",
+        ],
+        disabled: ["bg-action-link-02"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
     danger: {
-      main: [
-        active ? "bg-action-danger-06" : "bg-action-danger-05",
-        "hover:bg-action-danger-04",
-      ],
-      secondary: [],
-      tertiary: [],
-      disabled: [],
+      primary: {
+        enabled: [
+          active ? "bg-action-danger-06" : "bg-action-danger-05",
+          "hover:bg-action-danger-04",
+        ],
+        disabled: ["bg-action-danger-02"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
   }) as const;
 
-const textClasses = (active: boolean | undefined) =>
+const textClasses = (active?: boolean) =>
   ({
-    primary: {
-      main: ["text-text-inverted-05"],
-      secondary: [
-        active ? "text-text-05" : "text-text-03",
-        "group-hover:text-text-04",
-      ],
-      tertiary: [],
-      disabled: ["text-text-01"],
+    defaulted: {
+      primary: {
+        enabled: ["text-text-inverted-05"],
+        disabled: ["text-text-inverted-04"],
+      },
+      secondary: {
+        enabled: [
+          active ? "text-text-05" : "text-text-03",
+          "group-hover/Button:text-text-04",
+        ],
+        disabled: ["text-text-01"],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
     action: {
-      main: ["text-text-inverted-05"],
-      secondary: [],
-      tertiary: [],
-      disabled: [],
+      primary: {
+        enabled: ["text-text-light-05"],
+        disabled: ["text-text-light-05"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
     danger: {
-      main: ["text-text-05"],
-      secondary: [],
-      tertiary: [],
-      disabled: [],
+      primary: {
+        enabled: ["text-text-light-05"],
+        disabled: ["text-text-light-05"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
+    },
+  }) as const;
+
+const iconClasses = (active?: boolean) =>
+  ({
+    defaulted: {
+      primary: {
+        enabled: ["stroke-text-inverted-05"],
+        disabled: ["stroke-text-inverted-04"],
+      },
+      secondary: {
+        enabled: [
+          active ? "stroke-text-05" : "stroke-text-03",
+          "group-hover/Button:stroke-text-04",
+        ],
+        disabled: ["stroke-text-01"],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
+    },
+    action: {
+      primary: {
+        enabled: ["stroke-text-light-05"],
+        disabled: ["stroke-text-light-05"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
+    },
+    danger: {
+      primary: {
+        enabled: ["stroke-text-light-05"],
+        disabled: ["stroke-text-light-05"],
+      },
+      secondary: {
+        enabled: [],
+        disabled: [],
+      },
+      tertiary: {
+        enabled: [],
+        disabled: [],
+      },
+      internal: {
+        enabled: [],
+        disabled: [],
+      },
     },
   }) as const;
 
 interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
   // Button variants:
-  primary?: boolean;
+  defaulted?: boolean;
   action?: boolean;
   danger?: boolean;
 
   // Button subvariants:
-  main?: boolean;
+  primary?: boolean;
   secondary?: boolean;
   tertiary?: boolean;
-  disabled?: boolean;
+  internal?: boolean;
 
   // Button states:
+  disabled?: boolean;
   active?: boolean;
 
   // Icons:
@@ -86,15 +223,16 @@ interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
 }
 
 export default function Button({
-  primary,
+  defaulted,
   action,
   danger,
 
-  main,
+  primary,
   secondary,
   tertiary,
-  disabled,
+  internal,
 
+  disabled,
   active,
 
   leftIcon: LeftIcon,
@@ -105,40 +243,48 @@ export default function Button({
   className,
   ...props
 }: ButtonProps) {
-  const variant = primary
-    ? "primary"
+  const variant = defaulted
+    ? "defaulted"
     : action
       ? "action"
       : danger
         ? "danger"
-        : "primary";
+        : "defaulted";
 
-  const subvariant = main
-    ? "main"
+  const subvariant = primary
+    ? "primary"
     : secondary
       ? "secondary"
       : tertiary
         ? "tertiary"
-        : disabled
-          ? "disabled"
-          : "main";
+        : internal
+          ? "internal"
+          : "primary";
+
+  const abled = disabled ? "disabled" : "enabled";
 
   const content = (
     <button
       className={cn(
-        "p-spacing-interline h-fit rounded-12 group w-fit flex flex-row items-center justify-center gap-spacing-inline",
-        variantClasses(active)[variant][subvariant],
+        "p-spacing-interline h-fit rounded-12 group/Button w-fit flex flex-row items-center justify-center gap-spacing-inline",
+        variantClasses(active)[variant][subvariant][abled],
         className
       )}
+      disabled={disabled}
       {...props}
     >
       {LeftIcon && (
         <div className="w-[1rem] h-[1rem] flex flex-col items-center justify-center">
-          <LeftIcon className="w-[1rem] h-[1rem] stroke-text-inverted-05" />
+          <LeftIcon
+            className={cn(
+              "w-[1rem] h-[1rem]",
+              iconClasses(active)[variant][subvariant][abled]
+            )}
+          />
         </div>
       )}
       {typeof children === "string" ? (
-        <Text className={cn(textClasses(active)[variant][subvariant])}>
+        <Text className={cn(textClasses(active)[variant][subvariant][abled])}>
           {children}
         </Text>
       ) : (
@@ -146,7 +292,12 @@ export default function Button({
       )}
       {RightIcon && (
         <div className="w-[1rem] h-[1rem]">
-          <RightIcon className="w-[1rem] h-[1rem] stroke-text-inverted-05" />
+          <RightIcon
+            className={cn(
+              "w-[1rem] h-[1rem]",
+              iconClasses(active)[variant][subvariant][abled]
+            )}
+          />
         </div>
       )}
     </button>
