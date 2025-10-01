@@ -74,6 +74,9 @@ export interface NavigationTabProps {
 
   // Button properties:
   onClick?: React.MouseEventHandler<HTMLDivElement>;
+  onIconClick?: React.MouseEventHandler<HTMLDivElement>;
+  onIconHover?: (isHovering: boolean) => void;
+  onTextClick?: React.MouseEventHandler<HTMLDivElement>;
   href?: string;
   tooltip?: boolean;
   popover?: React.ReactNode;
@@ -95,6 +98,9 @@ export default function NavigationTab({
   lowlight,
 
   onClick,
+  onIconClick,
+  onIconHover,
+  onTextClick,
   href,
   tooltip,
   popover,
@@ -162,9 +168,23 @@ export default function NavigationTab({
           folded ? "justify-center" : "justify-start"
         )}
       >
-        <div className="w-[1rem] h-[1rem]">
+        <div
+          className="w-[1rem] h-[1rem]"
+          onClick={(e) => {
+            if (onIconClick) {
+              e.stopPropagation();
+              onIconClick(e);
+            }
+          }}
+          onMouseEnter={() => onIconHover?.(true)}
+          onMouseLeave={() => onIconHover?.(false)}
+        >
           <Icon
-            className={cn("h-[1rem] w-[1rem]", iconClasses(active)[variant])}
+            className={cn(
+              "h-[1rem] w-[1rem] transition-all duration-200 ease-in-out",
+              iconClasses(active)[variant],
+              onIconClick && "cursor-pointer"
+            )}
           />
         </div>
         {!folded &&
@@ -187,7 +207,13 @@ export default function NavigationTab({
               offset={!!popover ? 40 : 0}
               className={cn("text-left", textClasses(active)[variant])}
             >
-              {children}
+              <Truncated
+                side="right"
+                offset={40}
+                className={cn("text-left", textClasses(active)[variant])}
+              >
+                {children}
+              </Truncated>
             </Truncated>
           ) : (
             children
