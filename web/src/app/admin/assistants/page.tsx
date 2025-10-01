@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { AssistantsIcon } from "@/components/icons/icons";
 import { AdminPageTitle } from "@/components/admin/Title";
 import { SubLabel } from "@/components/Field";
-import CreateButton from "@/components/ui/createButton";
+import CreateButton from "@/refresh-components/buttons/CreateButton";
 import { useAdminPersonas } from "./hooks";
 import { Persona } from "./interfaces";
 import { ThreeDotsLoader } from "@/components/Loading";

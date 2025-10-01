@@ -8,7 +8,7 @@ import { SourceIcon } from "@/components/SourceIcon";
 import { SlackBotTable } from "./SlackBotTable";
 import { useSlackBots } from "./[bot-id]/hooks";
 import { ValidSources } from "@/lib/types";
-import CreateButton from "@/components/ui/createButton";
+import CreateButton from "@/refresh-components/buttons/CreateButton";
 
 const Main = () => {
   const {

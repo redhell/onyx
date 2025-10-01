@@ -7,7 +7,7 @@ import { fetchSS } from "@/lib/utilsSS";
 import { ErrorCallout } from "@/components/ErrorCallout";
 import { AdminPageTitle } from "@/components/admin/Title";
 import { ToolIcon } from "@/components/icons/icons";
-import CreateButton from "@/components/ui/createButton";
+import CreateButton from "@/refresh-components/buttons/CreateButton";
 import { FiPlusCircle, FiHelpCircle } from "react-icons/fi";
 import {
   Tooltip,
@@ -70,16 +70,8 @@ export default async function Page() {
 
         <Title>Create Actions</Title>
         <div className="flex gap-4 mt-2 items-center">
-          <CreateButton
-            href="/admin/actions/new"
-            text="From OpenAPI schema"
-            icon={<FiPlusCircle />}
-          />
-          <CreateButton
-            href="/admin/actions/edit-mcp"
-            text="From MCP server"
-            icon={<FiPlusCircle />}
-          />
+          <CreateButton href="/admin/actions/new" text="From OpenAPI schema" />
+          <CreateButton href="/admin/actions/edit-mcp" text="From MCP server" />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
