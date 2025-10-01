@@ -1,3 +1,8 @@
+"""
+EE extensions for the consolidated background worker.
+Merges EE tasks from heavy and monitoring workers.
+"""
+
 import csv
 import io
 from datetime import datetime
@@ -8,7 +13,7 @@ from celery import Task
 from ee.onyx.server.query_history.api import fetch_and_process_chat_session_history
 from ee.onyx.server.query_history.api import ONYX_ANONYMIZED_EMAIL
 from ee.onyx.server.query_history.models import QuestionAnswerPairSnapshot
-from onyx.background.celery.apps.heavy import celery_app
+from onyx.background.celery.apps.background import celery_app
 from onyx.background.task_utils import construct_query_history_report_name
 from onyx.configs.app_configs import JOB_TIMEOUT
 from onyx.configs.app_configs import ONYX_QUERY_HISTORY_TYPE
@@ -120,10 +125,14 @@ def export_query_history_task(
             raise
 
 
+# Autodiscover EE tasks for the consolidated background worker
 celery_app.autodiscover_tasks(
     [
+        # From EE heavy worker
         "ee.onyx.background.celery.tasks.doc_permission_syncing",
         "ee.onyx.background.celery.tasks.external_group_syncing",
         "ee.onyx.background.celery.tasks.cleanup",
+        # From EE monitoring worker
+        "ee.onyx.background.celery.tasks.tenant_provisioning",
     ]
 )
