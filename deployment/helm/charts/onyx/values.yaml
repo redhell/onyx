@@ -418,11 +418,11 @@ celery_worker_background:
     app: celery-worker-background
   resources:
     requests:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 2000m
+      memory: 6Gi
     limits:
-      cpu: 2500m
-      memory: 3Gi
+      cpu: 4000m
+      memory: 12Gi
   volumes: []  # Additional volumes on the output Deployment definition.
   volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
   nodeSelector: {}
