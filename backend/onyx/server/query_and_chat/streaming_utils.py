@@ -300,13 +300,20 @@ def translate_db_message_to_packets(
                 chat_message.research_iterations, key=lambda x: x.iteration_nr
             )
             for research_iteration in research_iterations:
-                if research_iteration.iteration_nr > 1 and research_iteration.reasoning:
+                if (
+                    research_iteration.iteration_nr > 1
+                    and research_iteration.reasoning
+                    and chat_message.research_type != ResearchType.FAST
+                ):
                     packet_list.extend(
                         create_reasoning_packets(research_iteration.reasoning, step_nr)
                     )
                     step_nr += 1
 
-                if research_iteration.purpose:
+                if (
+                    research_iteration.purpose
+                    and chat_message.research_type != ResearchType.FAST
+                ):
                     packet_list.extend(
                         create_reasoning_packets(research_iteration.purpose, step_nr)
                     )
@@ -346,11 +353,12 @@ def translate_db_message_to_packets(
 
                         cited_docs.extend(sub_step_saved_search_docs)
                     else:
-                        packet_list.extend(
-                            create_reasoning_packets(
-                                _CANNOT_SHOW_STEP_RESULTS_STR, step_nr
+                        if chat_message.research_type != ResearchType.FAST:
+                            packet_list.extend(
+                                create_reasoning_packets(
+                                    _CANNOT_SHOW_STEP_RESULTS_STR, step_nr
+                                )
                             )
-                        )
                     step_nr += 1
 
                     if sub_step.claims == ["web_fetch"]:
@@ -358,9 +366,12 @@ def translate_db_message_to_packets(
                         fetches.append(sub_step_saved_search_docs)
 
                 if len(set(tool_call_ids)) > 1:
-                    packet_list.extend(
-                        create_reasoning_packets(_CANNOT_SHOW_STEP_RESULTS_STR, step_nr)
-                    )
+                    if chat_message.research_type != ResearchType.FAST:
+                        packet_list.extend(
+                            create_reasoning_packets(
+                                _CANNOT_SHOW_STEP_RESULTS_STR, step_nr
+                            )
+                        )
                     step_nr += 1
 
                 elif len(sub_steps) == 0:
