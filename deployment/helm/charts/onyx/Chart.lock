@@ -1,7 +1,7 @@
 dependencies:
-- name: postgresql
-  repository: https://charts.bitnami.com/bitnami
-  version: 14.3.1
+- name: cluster
+  repository: https://cloudnative-pg.github.io/charts
+  version: 0.3.1
 - name: vespa
   repository: https://onyx-dot-app.github.io/vespa-helm-charts
   version: 0.2.24
@@ -14,5 +14,5 @@ dependencies:
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.4
-digest: sha256:dddd687525764f5698adc339a11d268b0ee9c3ca81f8d46c9e65a6bf2c21cf25
-generated: "2025-09-24T12:16:33.661608-07:00"
+digest: sha256:27667f497bb881db08f1e6905707b71a9117af115876273f9ecb66cf99a798ba
+generated: "2025-10-01T16:07:10.523724-07:00"

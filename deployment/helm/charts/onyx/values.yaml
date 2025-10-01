@@ -9,19 +9,29 @@ global:
   pullPolicy: "IfNotPresent"
 
 postgresql:
-  primary:
-    persistence:
-      storageClass: ""
-      size: 10Gi
-    shmVolume:
-      enabled: true
-      sizeLimit: 2Gi
   enabled: true
-  auth:
-    existingSecret: onyx-postgresql
-    secretKeys:
-      # overwriting as postgres typically expects 'postgres-password'
-      adminPasswordKey: postgres_password
+  type: postgresql
+  version:
+    postgresql: "16"
+  mode: standalone
+  cluster:
+    instances: 1
+    storage:
+      size: 10Gi
+      storageClass: ""
+    resources: {}
+    # Uncomment to set resource limits:
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+  # Use existing secret for superuser password
+  # CloudNativePG expects a secret with keys: username, password
+  superuserSecret: onyx-postgresql
+  enableSuperuserAccess: true
 
 vespa:
   name: da-vespa-0

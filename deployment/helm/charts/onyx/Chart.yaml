@@ -18,10 +18,11 @@ annotations:
     - name: vespa
       image: vespaengine/vespa:8.526.15
 dependencies:
-  - name: postgresql
-    version: 14.3.1
-    repository: https://charts.bitnami.com/bitnami
+  - name: cluster
+    version: 0.3.1
+    repository: https://cloudnative-pg.github.io/charts
     condition: postgresql.enabled
+    alias: postgresql
   - name: vespa
     version: 0.2.24
     repository: https://onyx-dot-app.github.io/vespa-helm-charts

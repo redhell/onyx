@@ -66,6 +66,7 @@ jobs:
       run: |
         echo "=== Adding Helm repositories ==="
         helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo add cnpg https://cloudnative-pg.github.io/charts
         helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
         helm repo update
 
@@ -94,6 +95,20 @@ jobs:
         
         echo "=== Images loaded into Kind cluster ==="
         docker exec $KIND_CLUSTER-control-plane crictl images | grep -E "(postgres|redis|onyx)" || echo "Some images may still be loading..."
+
+    - name: Install CloudNativePG Operator
+      if: steps.list-changed.outputs.changed == 'true'
+      run: |
+        echo "=== Installing CloudNativePG Operator ==="
+        helm upgrade --install cnpg \
+          --namespace cnpg-system \
+          --create-namespace \
+          cnpg/cloudnative-pg \
+          --wait --timeout 300s
+
+        echo "=== Verifying operator installation ==="
+        kubectl get pods -n cnpg-system
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cloudnative-pg -n cnpg-system --timeout=300s
 
     - name: Validate chart dependencies
       if: steps.list-changed.outputs.changed == 'true'
@@ -156,8 +171,10 @@ jobs:
             --set=vespa.enabled=false \
             --set=slackbot.enabled=false \
             --set=postgresql.enabled=true \
-            --set=postgresql.primary.persistence.enabled=false \
+            --set=postgresql.cluster.instances=1 \
+            --set=postgresql.cluster.storage.size=1Gi \
             --set=redis.enabled=true \
+            --set=redis.image.tag=7.4.2-debian-12-r5 \
             --set=webserver.replicaCount=1 \
             --set=api.replicaCount=0 \
             --set=inferenceCapability.replicaCount=0 \
