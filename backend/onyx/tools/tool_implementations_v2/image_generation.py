@@ -1,16 +1,22 @@
 import json
 from enum import Enum
+from typing import cast
 
 from agents import function_tool
 from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import GeneratedImage
 from onyx.chat.turn.models import MyContext
+from onyx.file_store.utils import build_frontend_file_url
+from onyx.file_store.utils import save_files
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolDelta
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolHeartbeat
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations.images.image_generation_tool import (
+    ImageGenerationResponse,
+)
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -76,14 +82,24 @@ def image_generation_tool(
 
         # Process the tool response to get the generated images
         if tool_response.id == "image_generation_response":
-            image_generation_responses = tool_response.response
+            image_generation_responses = cast(
+                list[ImageGenerationResponse], tool_response.response
+            )
+            file_ids = save_files(
+                urls=[img.url for img in image_generation_responses if img.url],
+                base64_files=[
+                    img.image_data
+                    for img in image_generation_responses
+                    if img.image_data
+                ],
+            )
             generated_images = [
                 GeneratedImage(
+                    file_id=file_id,
+                    url=img.url if img.url else build_frontend_file_url(file_id),
                     revised_prompt=img.revised_prompt,
-                    url=img.url,
-                    image_data=img.image_data,
                 )
-                for img in image_generation_responses
+                for img, file_id in zip(image_generation_responses, file_ids)
             ]
             break
 
@@ -116,8 +132,8 @@ def image_generation_tool(
     first_image = generated_images[0]
     return json.dumps(
         {
+            "file_id": first_image.file_id,
             "revised_prompt": first_image.revised_prompt,
             "url": first_image.url,
-            "image_data": first_image.image_data,
         }
     )
