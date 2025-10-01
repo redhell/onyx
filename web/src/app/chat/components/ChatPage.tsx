@@ -76,7 +76,6 @@ import {
   useHasSentLocalUserMessage,
 } from "@/app/chat/stores/useChatSessionStore";
 import { FederatedOAuthModal } from "@/components/chat/FederatedOAuthModal";
-import { StarterMessageDisplay } from "@/app/chat/components/starterMessages/StarterMessageDisplay";
 import { MessagesDisplay } from "@/app/chat/components/MessagesDisplay";
 import { WelcomeMessage } from "@/app/chat/components/WelcomeMessage";
 import ProjectContextPanel from "@/app/chat/components/projects/ProjectContextPanel";
@@ -88,6 +87,7 @@ import {
 import ProjectChatSessionList from "@/app/chat/components/projects/ProjectChatSessionList";
 import { cn } from "@/lib/utils";
 import { OnyxIcon } from "@/components/icons/icons";
+import { Suggestions } from "@/sections/Suggestions";
 
 interface ChatPageProps {
   documentSidebarInitialWidth?: number;
@@ -958,7 +958,7 @@ export function ChatPage({
 
                     <div
                       className={cn(
-                        "pointer-events-auto w-[95%] mx-auto relative text-text-04",
+                        "pointer-events-auto w-[95%] mx-auto relative text-text-04 justify-center",
                         showCenteredHero
                           ? "h-full grid grid-rows-[0.85fr_auto_1.15fr]"
                           : "mb-8"
@@ -1018,17 +1018,8 @@ export function ChatPage({
                         liveAssistant.starter_messages.length > 0 &&
                         messageHistory.length === 0 &&
                         showCenteredHero && (
-                          <div className="mt-6 row-start-3">
-                            <StarterMessageDisplay
-                              starterMessages={liveAssistant.starter_messages}
-                              onSelectStarterMessage={(message) => {
-                                onSubmit({
-                                  message: message,
-                                  currentMessageFiles: currentMessageFiles,
-                                  useAgentSearch: deepResearchEnabled,
-                                });
-                              }}
-                            />
+                          <div className="mt-6 row-start-3 max-w-[50rem]">
+                            <Suggestions onSubmit={onSubmit} />
                           </div>
                         )}
                       {enterpriseSettings &&
