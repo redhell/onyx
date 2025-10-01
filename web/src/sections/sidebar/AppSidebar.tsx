@@ -64,6 +64,7 @@ import SvgFolder from "@/icons/folder";
 import SvgChevronLeft from "@/icons/chevron-left";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
 import { UNNAMED_CHAT } from "@/lib/constants";
+import SidebarWrapper from "@/sections/sidebar/SidebarWrapper";
 
 // Constants
 const DEFAULT_PERSONA_ID = 0;
@@ -537,83 +538,77 @@ function AppSidebarInner() {
       <AgentsModal />
       <CreateProjectModal />
 
-      <div
-        className={cn(
-          "h-full flex flex-col bg-background-tint-02 p-padding-button justify-between group/AppSidebar",
-          folded ? "w-[4rem]" : "w-[15rem]"
-        )}
-      >
-        {/* Top */}
-        <div className="flex h-full flex-col gap-padding-content">
-          <div
-            className={cn(
-              "flex flex-row items-center px-spacing-interline py-spacing-inline flex-shrink-0",
-              folded ? "justify-center" : "justify-between"
-            )}
-          >
-            {folded ? (
-              <div className="h-[2rem] flex flex-col justify-center items-center">
-                <>
-                  <IconButton
-                    icon={SvgSidebar}
-                    tertiary
-                    onClick={() => setFolded(false)}
-                    className="hidden group-hover/AppSidebar:flex"
-                  />
-                  <OnyxIcon
-                    size={28}
-                    className="visible group-hover/AppSidebar:hidden"
-                  />
-                </>
-              </div>
-            ) : (
+      <SidebarWrapper folded={folded} className="group/AppSidebar">
+        <div
+          className={cn(
+            "flex flex-row items-center px-spacing-interline py-spacing-inline flex-shrink-0",
+            folded ? "justify-center" : "justify-between"
+          )}
+        >
+          {folded ? (
+            <div className="h-[2rem] flex flex-col justify-center items-center">
               <>
-                <OnyxLogoTypeIcon size={100} />
                 <IconButton
                   icon={SvgSidebar}
                   tertiary
-                  onClick={() => setFolded(true)}
+                  onClick={() => setFolded(false)}
+                  className="hidden group-hover/AppSidebar:flex"
+                />
+                <OnyxIcon
+                  size={24}
+                  className="visible group-hover/AppSidebar:hidden"
                 />
               </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <OnyxLogoTypeIcon size={88} />
+              <IconButton
+                icon={SvgSidebar}
+                tertiary
+                onClick={() => setFolded(true)}
+              />
+            </>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-spacing-interline">
-            <NavigationTab
-              icon={SvgEditBig}
-              className="!w-full"
-              folded={folded}
-              onClick={() => route({})}
-              active={Array.from(searchParams).length === 0}
-              tooltip
-            >
-              New Session
-            </NavigationTab>
+        <div className="flex flex-col gap-spacing-interline">
+          <NavigationTab
+            icon={SvgEditBig}
+            className="!w-full"
+            folded={folded}
+            onClick={() => route({})}
+            active={Array.from(searchParams).length === 0}
+            tooltip
+          >
+            New Session
+          </NavigationTab>
 
-            {folded && (
-              <>
-                <NavigationTab
-                  icon={SvgOnyxOctagon}
-                  folded
-                  tooltip
-                  onClick={() => toggleModal(ModalIds.AgentsModal, true)}
-                >
-                  Agents
-                </NavigationTab>
-                <NavigationTab
-                  icon={SvgFolderPlus}
-                  folded
-                  tooltip
-                  onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
-                >
-                  New Project
-                </NavigationTab>
-              </>
-            )}
-          </div>
+          {folded && (
+            <>
+              <NavigationTab
+                icon={SvgOnyxOctagon}
+                folded
+                tooltip
+                onClick={() => toggleModal(ModalIds.AgentsModal, true)}
+              >
+                Agents
+              </NavigationTab>
+              <NavigationTab
+                icon={SvgFolderPlus}
+                folded
+                tooltip
+                onClick={() => toggleModal(ModalIds.CreateProjectModal, true)}
+              >
+                New Project
+              </NavigationTab>
+            </>
+          )}
+        </div>
 
+        <div className="flex flex-col gap-padding-content flex-1 overflow-y-scroll">
           {!folded && (
-            <div className="flex flex-col gap-padding-content flex-1 overflow-y-scroll">
+            <>
               {/* Agents */}
               <SidebarSection title="Agents">
                 <DndContext
@@ -661,7 +656,7 @@ function AppSidebarInner() {
                   ))
                 )}
               </SidebarSection>
-            </div>
+            </>
           )}
         </div>
 
@@ -669,7 +664,7 @@ function AppSidebarInner() {
         <div className="flex flex-col">
           <Settings folded={folded} />
         </div>
-      </div>
+      </SidebarWrapper>
     </>
   );
 }

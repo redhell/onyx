@@ -25,7 +25,7 @@ export default function StepSidebar({
   const enterpriseSettings = combinedSettings.enterpriseSettings;
 
   return (
-    <div className="flex flex-col h-screen w-[15rem] bg-background-tint-02 py-padding-content px-padding-button gap-padding-content">
+    <div className="fixed left-0 top-0 flex flex-col h-screen w-[15rem] bg-background-tint-02 py-padding-content px-padding-button gap-padding-content z-10">
       <div className="flex flex-col items-start justify-center">
         <LogoComponent enterpriseSettings={enterpriseSettings} />
       </div>
@@ -39,7 +39,7 @@ export default function StepSidebar({
       </NavigationTab>
 
       <div className="h-full flex">
-        <div className="w-full max-w-2xl px-2">{children}</div>
+        <div className="w-full px-2">{children}</div>
       </div>
     </div>
   );

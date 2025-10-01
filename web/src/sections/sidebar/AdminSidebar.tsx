@@ -9,7 +9,7 @@ import Text from "@/refresh-components/Text";
 import { SidebarSection } from "@/sections/sidebar/components";
 import Settings from "@/sections/sidebar/Settings";
 import NavigationTab from "@/refresh-components/buttons/NavigationTab";
-import { cn } from "@/lib/utils";
+import SidebarWrapper from "@/sections/sidebar/SidebarWrapper";
 
 interface Item {
   name: string;
@@ -35,7 +35,7 @@ export default function AdminSidebar({ collections }: AdminSidebarProps) {
   }
 
   return (
-    <div className="flex flex-col justify-between h-full w-[15rem] p-padding-button bg-background-tint-02 gap-padding-content">
+    <SidebarWrapper>
       <LogoComponent
         show={true}
         enterpriseSettings={combinedSettings.enterpriseSettings!}
@@ -52,7 +52,7 @@ export default function AdminSidebar({ collections }: AdminSidebarProps) {
         Exit Admin
       </NavigationTab>
 
-      <div className="relative flex flex-col flex-1 overflow-y-auto gap-padding-content">
+      <div className="flex flex-col flex-1 overflow-y-auto gap-padding-content">
         {collections.map((collection, index) => (
           <SidebarSection key={index} title={collection.name}>
             <div className="flex flex-col w-full">
@@ -80,6 +80,6 @@ export default function AdminSidebar({ collections }: AdminSidebarProps) {
         )}
         <Settings removeAdminPanelLink />
       </div>
-    </div>
+    </SidebarWrapper>
   );
 }
