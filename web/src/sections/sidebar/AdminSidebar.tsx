@@ -35,7 +35,7 @@ export default function AdminSidebar({ collections }: AdminSidebarProps) {
   }
 
   return (
-    <div className="flex flex-col justify-between h-full !min-w-[15rem] py-padding-content px-padding-button bg-background-tint-02 gap-padding-content">
+    <div className="flex flex-col justify-between h-full w-[15rem] p-padding-button bg-background-tint-02 gap-padding-content">
       <LogoComponent
         show={true}
         enterpriseSettings={combinedSettings.enterpriseSettings!}
@@ -73,12 +73,12 @@ export default function AdminSidebar({ collections }: AdminSidebarProps) {
         ))}
       </div>
       <div className="flex flex-col gap-spacing-interline">
-        <Settings removeAdminPanelLink />
         {combinedSettings.webVersion && (
           <Text text02 secondaryBody className="px-spacing-interline">
             Onyx version: {combinedSettings.webVersion}
           </Text>
         )}
+        <Settings removeAdminPanelLink />
       </div>
     </div>
   );

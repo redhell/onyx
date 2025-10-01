@@ -538,7 +538,7 @@ function AppSidebarInner() {
 
       <div
         className={cn(
-          "h-full flex flex-col bg-background-tint-02 py-padding-content px-padding-button justify-between group/AppSidebar",
+          "h-full flex flex-col bg-background-tint-02 p-padding-button justify-between group/AppSidebar",
           folded ? "w-[4rem]" : "w-[15rem]"
         )}
       >

@@ -1,7 +1,7 @@
 import { ActionsTable } from "./ActionTable";
 import { ToolSnapshot, MCPServersResponse } from "@/lib/tools/interfaces";
 import { Separator } from "@/components/ui/separator";
-import Text from "@/components/ui/text";
+import Text from "@/refresh-components/Text";
 import Title from "@/components/ui/title";
 import { fetchSS } from "@/lib/utilsSS";
 import { ErrorCallout } from "@/components/ErrorCallout";
@@ -86,12 +86,12 @@ export default async function Page() {
                 <FiHelpCircle className="h-4 w-4 text-subtle hover:text-emphasis cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
-                <p className="max-w-xs">
+                <Text inverted>
                   MCP (Model Context Protocol) servers provide structured ways
                   for AI models to interact with external systems and data
                   sources. They offer a standardized interface for tools and
                   resources.
-                </p>
+                </Text>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
