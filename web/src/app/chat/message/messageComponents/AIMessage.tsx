@@ -7,7 +7,7 @@ import {
 } from "@/app/chat/services/streamingModels";
 import { FullChatState } from "@/app/chat/message/messageComponents/interfaces";
 import { OnyxDocument } from "@/lib/search/interfaces";
-import { CitedSourcesToggle } from "@/app/chat/message/messageComponents/CitedSourcesToggle";
+import CitedSourcesToggle from "@/app/chat/message/messageComponents/CitedSourcesToggle";
 import {
   CustomTooltip,
   TooltipGroup,
@@ -393,44 +393,29 @@ export default function AIMessage({
 
                           {nodeId &&
                             (citations.length > 0 || documentMap.size > 0) && (
-                              <>
-                                {chatState.regenerate && (
-                                  <div className="h-4 w-px bg-border mx-2" />
-                                )}
-                                <CustomTooltip
-                                  showTick
-                                  line
-                                  content={`${uniqueSourceCount} Sources`}
-                                >
-                                  <CitedSourcesToggle
-                                    citations={citations}
-                                    documentMap={documentMap}
-                                    nodeId={nodeId}
-                                    onToggle={(toggledNodeId) => {
-                                      // Toggle sidebar if clicking on the same message
-                                      if (
-                                        selectedMessageForDocDisplay ===
-                                          toggledNodeId &&
-                                        documentSidebarVisible
-                                      ) {
-                                        updateCurrentDocumentSidebarVisible(
-                                          false
-                                        );
-                                        updateCurrentSelectedNodeForDocDisplay(
-                                          null
-                                        );
-                                      } else {
-                                        updateCurrentSelectedNodeForDocDisplay(
-                                          toggledNodeId
-                                        );
-                                        updateCurrentDocumentSidebarVisible(
-                                          true
-                                        );
-                                      }
-                                    }}
-                                  />
-                                </CustomTooltip>
-                              </>
+                              <CitedSourcesToggle
+                                citations={citations}
+                                documentMap={documentMap}
+                                nodeId={nodeId}
+                                onToggle={(toggledNodeId) => {
+                                  // Toggle sidebar if clicking on the same message
+                                  if (
+                                    selectedMessageForDocDisplay ===
+                                      toggledNodeId &&
+                                    documentSidebarVisible
+                                  ) {
+                                    updateCurrentDocumentSidebarVisible(false);
+                                    updateCurrentSelectedNodeForDocDisplay(
+                                      null
+                                    );
+                                  } else {
+                                    updateCurrentSelectedNodeForDocDisplay(
+                                      toggledNodeId
+                                    );
+                                    updateCurrentDocumentSidebarVisible(true);
+                                  }
+                                }}
+                              />
                             )}
                         </div>
                       </TooltipGroup>
