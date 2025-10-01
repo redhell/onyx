@@ -32,8 +32,8 @@ dependencies:
     repository: oci://registry-1.docker.io/bitnamicharts
     condition: nginx.enabled
   - name: redis
-    version: 20.1.0
-    repository: https://charts.bitnami.com/bitnami
+    version: 0.16.6
+    repository: https://ot-container-kit.github.io/helm-charts/
     condition: redis.enabled
   - name: minio
     version: 17.0.4

@@ -48,6 +48,7 @@ jobs:
         echo "=== Adding Helm repositories ==="
         helm repo add bitnami https://charts.bitnami.com/bitnami
         helm repo add cnpg https://cloudnative-pg.github.io/charts
+        helm repo add ot-helm https://ot-container-kit.github.io/helm-charts/
         helm repo add vespa https://onyx-dot-app.github.io/vespa-helm-charts
         helm repo update
 
@@ -109,6 +110,20 @@ jobs:
         echo "=== Verifying operator installation ==="
         kubectl get pods -n cnpg-system
         kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cloudnative-pg -n cnpg-system --timeout=300s
+
+    - name: Install OpsTree Redis Operator
+      if: steps.list-changed.outputs.changed == 'true'
+      run: |
+        echo "=== Installing OpsTree Redis Operator ==="
+        helm upgrade --install redis-operator \
+          --namespace ot-operators \
+          --create-namespace \
+          ot-helm/redis-operator \
+          --wait --timeout 300s
+
+        echo "=== Verifying Redis operator installation ==="
+        kubectl get pods -n ot-operators
+        kubectl wait --for=condition=ready pod -l control-plane=redis-operator -n ot-operators --timeout=300s || true
 
     - name: Validate chart dependencies
       if: steps.list-changed.outputs.changed == 'true'
@@ -174,7 +189,7 @@ jobs:
             --set=postgresql.cluster.instances=1 \
             --set=postgresql.cluster.storage.size=1Gi \
             --set=redis.enabled=true \
-            --set=redis.image.tag=7.4.2-debian-12-r5 \
+            --set=redis.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=1Gi \
             --set=webserver.replicaCount=1 \
             --set=api.replicaCount=0 \
             --set=inferenceCapability.replicaCount=0 \

@@ -9,10 +9,10 @@ dependencies:
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 15.14.0
 - name: redis
-  repository: https://charts.bitnami.com/bitnami
-  version: 20.1.0
+  repository: https://ot-container-kit.github.io/helm-charts/
+  version: 0.16.6
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.4
-digest: sha256:27667f497bb881db08f1e6905707b71a9117af115876273f9ecb66cf99a798ba
-generated: "2025-10-01T16:07:10.523724-07:00"
+digest: sha256:3e6840437b1b880cd11ebec7c967535f26f3fe9f1ae1f1817f1a448401859fe3
+generated: "2025-10-01T16:47:26.518909-07:00"
