@@ -83,6 +83,7 @@ def dr_graph_builder() -> StateGraph:
     graph.add_edge(start_key=DRPath.GENERIC_INTERNAL_TOOL, end_key=DRPath.ORCHESTRATOR)
 
     graph.add_conditional_edges(DRPath.CLOSER, completeness_router)
+    graph.add_edge(start_key=DRPath.REWRITER, end_key=DRPath.LOGGER)
     graph.add_edge(start_key=DRPath.LOGGER, end_key=END)
 
     return graph
