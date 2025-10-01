@@ -63,6 +63,7 @@ import SvgFolderIn from "@/icons/folder-in";
 import SvgFolder from "@/icons/folder";
 import SvgChevronLeft from "@/icons/chevron-left";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
+import { UNNAMED_CHAT } from "@/lib/constants";
 
 // Constants
 const DEFAULT_PERSONA_ID = 0;
@@ -144,7 +145,7 @@ interface ChatButtonProps {
 function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   const route = useAppRouter();
   const params = useAppParams();
-  const [name, setName] = useState(chatSession.name);
+  const [name, setName] = useState(chatSession.name || UNNAMED_CHAT);
   const [renaming, setRenaming] = useState(false);
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
