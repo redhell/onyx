@@ -10,6 +10,7 @@ from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.infra.chat_turn_event_stream import Emitter
+from onyx.llm.interfaces import LLM
 from onyx.tools.tool_implementations.images.image_generation_tool import (
     ImageGenerationTool,
 )
@@ -29,6 +30,7 @@ class DependenciesToMaybeRemove:
 @dataclass
 class ChatTurnDependencies:
     llm_model: Model
+    llm: LLM
     db_session: Session
     tools: list[FunctionTool]
     redis_client: Redis | None = None

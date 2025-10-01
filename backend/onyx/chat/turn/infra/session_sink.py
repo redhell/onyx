@@ -20,6 +20,7 @@ from onyx.db.chat import update_db_session_with_messages
 from onyx.db.models import ChatMessage__SearchDoc
 from onyx.db.models import ResearchAgentIteration
 from onyx.db.models import ResearchAgentIterationSubStep
+from onyx.natural_language_processing.utils import get_tokenizer
 from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -59,7 +60,11 @@ def save_iteration(
     if search_docs:
         for cited_doc_nr in cited_doc_nrs:
             citation_dict[cited_doc_nr] = search_docs[cited_doc_nr - 1].id
-
+    llm_tokenizer = get_tokenizer(
+        model_name=ctx.run_dependencies.llm.config.model_name,
+        provider_type=ctx.run_dependencies.llm.config.model_provider,
+    )
+    num_tokens = len(llm_tokenizer.encode(final_answer or ""))
     # Update the chat message and its parent message in database
     update_db_session_with_messages(
         db_session=db_session,
@@ -73,7 +78,7 @@ def save_iteration(
         final_documents=search_docs,
         update_parent_message=True,
         research_answer_purpose=ResearchAnswerPurpose.ANSWER,
-        token_count=0,
+        token_count=num_tokens,
     )
 
     # TODO: I don't think this is the ideal schema for all use cases

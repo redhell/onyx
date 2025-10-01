@@ -847,17 +847,6 @@ def fast_message_stream(
     chat_session_id: str,
     reserved_message_id: str,
 ) -> Generator[Packet, None, None]:
-    type_to_role = {
-        "human": "user",
-        "assistant": "assistant",
-        "system": "system",
-        "function": "function",
-    }
-    other_messages = [
-        {"role": type_to_role[message.type], "content": message.content}
-        for message in answer.graph_inputs.prompt_builder.build()
-        if message.type != "system"
-    ]
     onyx_tools: list[list[FunctionTool]] = [
         BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
         for tool in tools
@@ -882,9 +871,15 @@ def fast_message_stream(
             image_generation_tool_instance = tool
         elif isinstance(tool, OktaProfileTool):
             okta_profile_tool_instance = tool
-
+    # TODO: Rework how sessions handle this
+    converted_message_history = [
+        PreviousMessage.from_langchain_msg(message, 0).to_agent_sdk_msg()
+        for message in answer.graph_inputs.prompt_builder.build()
+        if message.type != "system"
+    ]
     return fast_chat_turn.fast_chat_turn(
-        messages=other_messages,
+        # TODO: Use OpenAI SDK managed sessions
+        messages=converted_message_history,
         dependencies=ChatTurnDependencies(
             # TODO: Dependency inject this higher up?
             llm_model=LitellmModel(
@@ -892,6 +887,7 @@ def fast_message_stream(
                 base_url=answer.graph_tooling.primary_llm.config.api_base,
                 api_key=answer.graph_tooling.primary_llm.config.api_key,
             ),
+            llm=answer.graph_tooling.primary_llm,
             tools=flattened_tools,
             search_pipeline=answer.graph_tooling.search_tool,
             image_generation_tool=image_generation_tool_instance,

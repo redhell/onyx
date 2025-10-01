@@ -38,7 +38,6 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
             include_usage=True,
         ),
     )
-
     bridge, thread = OnyxRunner().run_streamed_in_background(
         agent, messages, context=ctx, max_turns=100
     )
