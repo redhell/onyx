@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
+import Button from "@/refresh-components/buttons/Button";
 import { Input } from "@/components/ui/input";
 import { FiTrash2, FiExternalLink } from "react-icons/fi";
 import { deleteAllChatSessions } from "@/app/chat/services/lib";
@@ -32,6 +32,8 @@ import { ValidSources, CCPairBasicInfo } from "@/lib/types";
 import { getSourceMetadata } from "@/lib/sources";
 import { ModalIds } from "@/refresh-components/contexts/ModalContext";
 import SvgSettings from "@/icons/settings";
+import SvgTrash from "@/icons/trash";
+import SvgExternalLink from "@/icons/external-link";
 
 type SettingsSection = "settings" | "password" | "connectors";
 
@@ -451,11 +453,10 @@ export function UserSettings({
                     cannot be undone.
                   </p>
                   <Button
-                    variant="destructive"
-                    className="w-full flex items-center justify-center"
+                    danger
                     onClick={() => setShowDeleteConfirmation(true)}
+                    leftIcon={SvgTrash}
                   >
-                    <FiTrash2 className="mr-2" size={14} />
                     Delete All Chats
                   </Button>
                 </div>
@@ -466,17 +467,14 @@ export function UserSettings({
                   </p>
                   <div className="flex gap-2">
                     <Button
-                      type="button"
-                      variant="destructive"
-                      className="flex-1 flex items-center justify-center"
+                      danger
                       onClick={handleDeleteAllChats}
                       disabled={isDeleteAllLoading}
                     >
                       {isDeleteAllLoading ? "Deleting..." : "Yes, Delete All"}
                     </Button>
                     <Button
-                      variant="outline"
-                      className="flex-1"
+                      secondary
                       onClick={() => setShowDeleteConfirmation(false)}
                       disabled={isDeleteAllLoading}
                     >
@@ -537,7 +535,7 @@ export function UserSettings({
                   className="w-full"
                 />
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full">
+              <Button disabled={isLoading}>
                 {isLoading ? "Changing..." : "Change Password"}
               </Button>
             </form>
@@ -668,8 +666,7 @@ export function UserSettings({
                           <div>
                             {connector.has_oauth_token ? (
                               <Button
-                                variant="outline"
-                                size="sm"
+                                secondary
                                 onClick={() =>
                                   handleDisconnectOAuth(
                                     connector.federated_connector_id
@@ -687,15 +684,14 @@ export function UserSettings({
                               </Button>
                             ) : (
                               <Button
-                                size="sm"
                                 onClick={() => {
                                   if (connector.authorize_url) {
                                     handleConnectOAuth(connector.authorize_url);
                                   }
                                 }}
                                 disabled={!connector.authorize_url}
+                                leftIcon={SvgExternalLink}
                               >
-                                <FiExternalLink className="mr-2" size={14} />
                                 Connect
                               </Button>
                             )}
