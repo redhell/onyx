@@ -98,7 +98,7 @@ export const renderMarkdown = (
 ): JSX.Element => {
   return (
     <ReactMarkdown
-      className={`prose dark:prose-invert max-w-full ${textSize}`}
+      className={`prose dark:prose-invert font-main-body max-w-full ${textSize}`}
       components={markdownComponents}
       remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }]]}
       rehypePlugins={[[rehypePrism, { ignoreMissing: true }], rehypeKatex]}
