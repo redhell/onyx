@@ -60,6 +60,7 @@ import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { deleteConnector } from "@/lib/connector";
 import ConnectorDocsLink from "@/components/admin/connectors/ConnectorDocsLink";
+import Text from "@/refresh-components/Text";
 
 export interface AdvancedConfig {
   refreshFreq: number;
@@ -516,7 +517,9 @@ export default function AddConnector({
 
           {formStep == 0 && (
             <CardSection>
-              <Title className="mb-2 text-lg">Select a credential</Title>
+              <Text headingH3 className="pb-2">
+                Select a credential
+              </Text>
 
               {connector == ValidSources.Gmail ? (
                 <GmailMain />

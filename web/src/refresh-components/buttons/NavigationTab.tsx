@@ -226,7 +226,12 @@ export default function NavigationTab({
       innerContent
     );
 
-  if (href) return <Link href={href}>{content}</Link>;
+  if (href)
+    return (
+      <Link href={href} className="w-full h-fit">
+        {content}
+      </Link>
+    );
 
   return content;
 }

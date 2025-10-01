@@ -220,7 +220,9 @@ export default function Settings({
                     className
                   )}
                 >
-                  <Text inverted>{username[0]?.toUpperCase()}</Text>
+                  <Text inverted secondaryBody>
+                    {username[0]?.toUpperCase()}
+                  </Text>
                 </Avatar>
               )}
               active={!!popupState}

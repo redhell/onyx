@@ -1,14 +1,13 @@
 import { useFormContext } from "@/components/context/FormContext";
-import { HeaderTitle } from "@/components/header/HeaderTitle";
-
-import { SettingsIcon } from "@/components/icons/icons";
-import { Logo } from "@/components/logo/Logo";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { credentialTemplates } from "@/lib/connectors/credentials";
-import Link from "next/link";
 import { useUser } from "@/components/user/UserProvider";
 import { useContext } from "react";
 import { User } from "@/lib/types";
+import Text from "@/refresh-components/Text";
+import NavigationTab from "@/refresh-components/buttons/NavigationTab";
+import SvgSettings from "@/icons/settings";
+import { LogoComponent } from "@/components/logo/FixedLogo";
 
 function BackButton({
   isAdmin,
@@ -32,15 +31,13 @@ function BackButton({
   }
 
   return (
-    <div className="mx-3 mt-6 flex-col flex items-center">
-      <Link
-        href={"/admin/add-connector"}
-        className="w-full p-2 bg-white border-border border rounded items-center hover:bg-background-200 cursor-pointer transition-all duration-150 flex gap-x-2"
-      >
-        <SettingsIcon className="flex-none " />
-        <p className="my-auto flex items-center text-sm">{buttonText}</p>
-      </Link>
-    </div>
+    <NavigationTab
+      icon={SvgSettings}
+      className="bg-background-tint-00"
+      href="/admin/add-connector"
+    >
+      {buttonText}
+    </NavigationTab>
   );
 }
 
@@ -62,83 +59,54 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="flex flex-none w-[250px] text-default">
-      <div
-        className={`
-                  fixed
-                  bg-background-sidebar
-                  h-screen
-                  transition-all
-                  bg-opacity-80
-                  duration-300
-                  ease-in-out
-                  w-[250px]
-                  `}
-      >
-        <div className="fixed h-full left-0 top-0 w-[250px]">
-          <div className="ml-4 mr-3 flex flex gap-x-1 items-center mt-2 my-auto text-text-700 text-xl">
-            <div className="mr-1 my-auto h-6 w-6">
-              <Logo height={24} width={24} />
-            </div>
+    <div className="flex flex-col h-screen w-[15rem] bg-background-tint-02 py-padding-content px-padding-button gap-padding-content">
+      <div className="flex flex-col items-start justify-center">
+        <LogoComponent enterpriseSettings={enterpriseSettings} />
+      </div>
 
-            <div>
-              {enterpriseSettings && enterpriseSettings.application_name ? (
-                <HeaderTitle>{enterpriseSettings.application_name}</HeaderTitle>
-              ) : (
-                <HeaderTitle>Onyx</HeaderTitle>
-              )}
-            </div>
-          </div>
+      <BackButton isAdmin={isAdmin} isCurator={isCurator} user={user} />
 
-          <BackButton isAdmin={isAdmin} isCurator={isCurator} user={user} />
+      <div className="h-full flex">
+        <div className="mx-auto w-full max-w-2xl px-4 py-8">
+          <div className="relative">
+            {connector != "file" && (
+              <div className="absolute h-[85%] left-[6px] top-[8px] bottom-0 w-0.5 bg-background-tint-04"></div>
+            )}
+            {settingSteps.map((step, index) => {
+              const allowed =
+                (step == "Connector" && allowCreate) ||
+                (step == "Advanced (optional)" && allowAdvanced) ||
+                index <= formStep;
 
-          <div className="h-full flex">
-            <div className="mx-auto w-full max-w-2xl px-4 py-8">
-              <div className="relative">
-                {connector != "file" && (
-                  <div className="absolute h-[85%] left-[6px] top-[8px] bottom-0 w-0.5 bg-background-300"></div>
-                )}
-                {settingSteps.map((step, index) => {
-                  const allowed =
-                    (step == "Connector" && allowCreate) ||
-                    (step == "Advanced (optional)" && allowAdvanced) ||
-                    index <= formStep;
-
-                  return (
+              return (
+                <div
+                  key={index}
+                  className={`flex items-center mb-6 relative ${
+                    !allowed ? "cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                  onClick={() => {
+                    if (allowed) {
+                      setFormStep(index - (noCredential ? 1 : 0));
+                    }
+                  }}
+                >
+                  <div className="flex-shrink-0 mr-4 z-10">
                     <div
-                      key={index}
-                      className={`flex items-center mb-6 relative ${
-                        !allowed ? "cursor-not-allowed" : "cursor-pointer"
+                      className={`rounded-full h-3.5 w-3.5 flex items-center justify-center ${
+                        allowed ? "bg-blue-500" : "bg-background-tint-04"
                       }`}
-                      onClick={() => {
-                        if (allowed) {
-                          setFormStep(index - (noCredential ? 1 : 0));
-                        }
-                      }}
                     >
-                      <div className="flex-shrink-0 mr-4 z-10">
-                        <div
-                          className={`rounded-full h-3.5 w-3.5 flex items-center justify-center ${
-                            allowed ? "bg-blue-500" : "bg-background-300"
-                          }`}
-                        >
-                          {formStep === index && (
-                            <div className="h-2 w-2 rounded-full bg-white"></div>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        className={`${
-                          index <= formStep ? "text-text-800" : "text-text-500"
-                        }`}
-                      >
-                        {step}
-                      </div>
+                      {formStep === index && (
+                        <div className="h-2 w-2 rounded-full bg-white"></div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  </div>
+                  <Text text04={index <= formStep} text02={index > formStep}>
+                    {step}
+                  </Text>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
