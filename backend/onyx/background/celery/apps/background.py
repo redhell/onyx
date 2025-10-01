@@ -85,6 +85,11 @@ def on_worker_shutdown(sender: Any, **kwargs: Any) -> None:
     app_base.on_worker_shutdown(sender, **kwargs)
 
 
+@worker_process_init.connect
+def init_worker(**kwargs: Any) -> None:
+    SqlEngine.reset_engine()
+
+
 @signals.setup_logging.connect
 def on_setup_logging(
     loglevel: Any, logfile: Any, format: Any, colorize: Any, **kwargs: Any
@@ -92,16 +97,10 @@ def on_setup_logging(
     app_base.on_setup_logging(loglevel, logfile, format, colorize, **kwargs)
 
 
-@worker_process_init.connect
-def init_worker(**kwargs: Any) -> None:
-    SqlEngine.reset_engine()
-
-
 base_bootsteps = app_base.get_bootsteps()
 for bootstep in base_bootsteps:
     celery_app.steps["worker"].add(bootstep)
 
-# Autodiscover tasks from all merged workers
 celery_app.autodiscover_tasks(
     [
         "onyx.background.celery.tasks.pruning",
