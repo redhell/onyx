@@ -13,6 +13,7 @@ import { useToolDisplayTiming } from "./hooks/useToolDisplayTiming";
 import { STANDARD_TEXT_COLOR } from "./constants";
 import Text from "@/refresh-components/Text";
 import SvgChevronDownSmall from "@/icons/chevron-down-small";
+import { cn } from "@/lib/utils";
 
 // Shared component for expanded tool rendering
 function ExpandedToolItem({
@@ -37,7 +38,7 @@ function ExpandedToolItem({
   const finalIcon = icon ? (
     icon({ size: 14 })
   ) : (
-    <FiCircle className={`w-2 h-2 fill-current ${defaultIconColor}`} />
+    <FiCircle className={cn("w-2 h-2 fill-current", defaultIconColor)} />
   );
 
   return (
@@ -56,7 +57,11 @@ function ExpandedToolItem({
 
       {/* Main row with icon and content */}
       <div
-        className={`flex items-start gap-2 ${STANDARD_TEXT_COLOR} relative z-10`}
+        className={cn(
+          "flex items-start gap-2",
+          STANDARD_TEXT_COLOR,
+          "relative z-10"
+        )}
       >
         {/* Icon column */}
         <div className="flex flex-col items-center w-5">
@@ -66,15 +71,15 @@ function ExpandedToolItem({
         </div>
 
         {/* Content with padding */}
-        <div className={`flex-1 ${!isLastItem ? "pb-4" : ""}`}>
+        <div className={cn("flex-1", !isLastItem && "pb-4")}>
           {status && !expandedText && (
             <div className="flex">
               <div
-                className={`text-sm flex items-center gap-1 ${
-                  showClickableToggle
-                    ? "cursor-pointer hover:text-text-900 transition-colors"
-                    : ""
-                }`}
+                className={cn(
+                  "text-sm flex items-center gap-1",
+                  showClickableToggle &&
+                    "cursor-pointer hover:text-text-900 transition-colors"
+                )}
                 onClick={showClickableToggle ? onToggleClick : undefined}
               >
                 {status}
@@ -83,7 +88,10 @@ function ExpandedToolItem({
           )}
 
           <div
-            className={`${expandedText ? "text-sm " + STANDARD_TEXT_COLOR : "text-xs text-text-600"}`}
+            className={cn(
+              expandedText ? "text-sm" : "text-xs text-text-600",
+              expandedText && STANDARD_TEXT_COLOR
+            )}
           >
             {expandedText || content}
           </div>
@@ -96,7 +104,7 @@ function ExpandedToolItem({
 // React component wrapper to avoid hook count issues in map loops
 
 // Multi-tool renderer component for grouped tools
-function MultiToolRenderer({
+export default function MultiToolRenderer({
   packetGroups,
   chatState,
   isComplete,
@@ -207,7 +215,7 @@ function MultiToolRenderer({
 
                       // Short renderer style (original streaming view)
                       return (
-                        <div className={`relative ${STANDARD_TEXT_COLOR}`}>
+                        <div className={cn("relative", STANDARD_TEXT_COLOR)}>
                           {/* Connector line for non-last items */}
                           {!isLastItem && isVisible && (
                             <div
@@ -221,11 +229,12 @@ function MultiToolRenderer({
                           )}
 
                           <div
-                            className={`text-base flex items-center gap-1 loading-text mb-2 ${
-                              toolsToDisplay.length > 1 && isLastItem
-                                ? "cursor-pointer hover:text-text-900 transition-colors"
-                                : ""
-                            }`}
+                            className={cn(
+                              "text-base flex items-center gap-1 loading-text mb-2",
+                              toolsToDisplay.length > 1 &&
+                                isLastItem &&
+                                "cursor-pointer hover:text-text-900 transition-colors"
+                            )}
                             onClick={
                               toolsToDisplay.length > 1 && isLastItem
                                 ? () =>
@@ -247,9 +256,10 @@ function MultiToolRenderer({
                           </div>
 
                           <div
-                            className={`relative z-10 text-sm text-text-600 ${
-                              !isLastItem ? "mb-3" : ""
-                            }`}
+                            className={cn(
+                              "relative z-10 text-sm text-text-600",
+                              !isLastItem && "mb-3"
+                            )}
                           >
                             {content}
                           </div>
@@ -268,7 +278,7 @@ function MultiToolRenderer({
 
   // If complete, show summary with toggle
   return (
-    <div className="relative pb-1">
+    <div className="pb-1">
       {/* Summary header - clickable */}
       <div
         className="flex flex-row w-fit items-center group/StepsButton select-none"
@@ -278,20 +288,27 @@ function MultiToolRenderer({
           {toolGroups.length} steps
         </Text>
         <SvgChevronDownSmall
-          className={`w-[1rem] h-[1rem] stroke-text-03 group-hover/StepsButton:stroke-text-04 transition-transform duration-150 ease-in-out ${!isExpanded ? "rotate-[-90deg]" : ""}`}
+          className={cn(
+            "w-[1rem] h-[1rem] stroke-text-03 group-hover/StepsButton:stroke-text-04 transition-transform duration-150 ease-in-out",
+            !isExpanded && "rotate-[-90deg]"
+          )}
         />
       </div>
 
       {/* Expanded content */}
       <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={cn(
+          "transition-all duration-300 ease-in-out",
+          isExpanded
+            ? "max-h-[2000px] opacity-100"
+            : "max-h-0 opacity-0 invisible"
+        )}
       >
         <div
-          className={`p-4 transition-transform duration-300 ease-in-out ${
-            isExpanded ? "transform translate-y-0" : "transform "
-          }`}
+          className={cn(
+            "p-4 transition-transform duration-300 ease-in-out",
+            isExpanded ? "transform translate-y-0" : "transform"
+          )}
         >
           <div>
             {toolGroups.map((toolGroup, index) => {
@@ -343,7 +360,11 @@ function MultiToolRenderer({
 
                 {/* Main row with icon and content */}
                 <div
-                  className={`flex items-start gap-2 ${STANDARD_TEXT_COLOR} relative z-10 pb-3`}
+                  className={cn(
+                    "flex items-start gap-2",
+                    STANDARD_TEXT_COLOR,
+                    "relative z-10 pb-3"
+                  )}
                 >
                   {/* Icon column */}
                   <div className="flex flex-col items-center w-5">
@@ -379,5 +400,3 @@ function MultiToolRenderer({
     </div>
   );
 }
-
-export default MultiToolRenderer;
