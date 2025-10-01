@@ -50,6 +50,7 @@ import { useChatContext } from "@/refresh-components/contexts/ChatContext";
 import { useTheme } from "next-themes";
 import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgSliders from "@/icons/sliders";
+import Text from "@/refresh-components/Text";
 
 // Get source metadata for configured sources - deduplicated by source type
 function getConfiguredSources(
@@ -201,7 +202,7 @@ export function ActionItem({
         </TooltipTrigger>
         {tool?.description && (
           <TooltipContent side="left" width="max-w-xs">
-            <p className="text-wrap">{tool.description}</p>
+            <Text inverted>{tool.description}</Text>
           </TooltipContent>
         )}
       </Tooltip>
