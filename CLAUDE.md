@@ -53,8 +53,7 @@ Onyx uses Celery for asynchronous task processing with multiple specialized work
    - Tasks: vespa operations, document permissions sync, external group sync
    - Higher concurrency for quick tasks (24 threads default)
 
-5. **Background Worker** (`background`) - **Consolidated**
-   - Memory-optimized worker that merges heavy, kg_processing, monitoring, and user_file_processing
+5. **Background Worker** (`background`)
    - Handles all low-volume background tasks:
      - Document pruning operations
      - Knowledge graph processing and clustering

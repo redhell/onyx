@@ -1,14 +1,3 @@
-"""
-Consolidated background worker that merges:
-- Heavy worker (pruning, doc permissions sync, external group sync, CSV generation)
-- KG Processing worker (knowledge graph processing)
-- Monitoring worker (system health monitoring)
-- User File Processing worker (user file uploads and processing)
-
-This consolidation reduces memory footprint while maintaining functionality
-for low-volume background tasks.
-"""
-
 from typing import Any
 from typing import cast
 

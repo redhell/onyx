@@ -1,7 +1,3 @@
-"""Factory stub for the consolidated background worker.
-Merges heavy, kg_processing, monitoring, and user_file_processing workers
-to reduce memory footprint."""
-
 from celery import Celery
 
 from onyx.utils.variable_functionality import fetch_versioned_implementation

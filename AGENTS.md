@@ -51,26 +51,17 @@ Onyx uses Celery for asynchronous task processing with multiple specialized work
 4. **Light Worker** (`light`)
    - Handles lightweight, fast operations
    - Tasks: vespa operations, document permissions sync, external group sync
-   - Higher concurrency for quick tasks
+   - Higher concurrency for quick tasks (24 threads default)
 
-5. **Heavy Worker** (`heavy`)
-   - Handles resource-intensive operations
-   - Primary task: document pruning operations
-   - Runs with 4 threads concurrency
+5. **Background Worker** (`background`) 
+   - Handles all low-volume background tasks:
+     - Document pruning operations
+     - Knowledge graph processing and clustering
+     - System health monitoring and metrics collection
+     - User file processing and project sync
+   - Runs with 6 threads concurrency
 
-6. **KG Processing Worker** (`kg_processing`)
-   - Handles Knowledge Graph processing and clustering
-   - Builds relationships between documents
-   - Runs clustering algorithms
-   - Configurable concurrency
-
-7. **Monitoring Worker** (`monitoring`)
-   - System health monitoring and metrics collection
-   - Monitors Celery queues, process memory, and system status
-   - Single thread (monitoring doesn't need parallelism)
-   - Cloud-specific monitoring tasks
-
-8. **Beat Worker** (`beat`)
+6. **Beat Worker** (`beat`)
    - Celery's scheduler for periodic tasks
    - Uses DynamicTenantScheduler for multi-tenant support
    - Schedules tasks like:
