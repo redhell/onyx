@@ -29,7 +29,7 @@ export interface SelectButtonProps {
   children?: React.ReactNode;
 }
 
-export function SelectButton({
+export default function SelectButton({
   folded,
   active,
   disabled,
