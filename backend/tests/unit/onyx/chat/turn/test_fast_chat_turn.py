@@ -13,11 +13,22 @@ from uuid import uuid4
 import pytest
 from agents import FunctionTool
 from agents import Model
+from agents import ModelResponse
+from agents import ModelSettings
+from agents import ModelTracing
+from agents import Usage
+from agents.items import ResponseOutputMessage
+from agents.items import ResponseOutputText
+from openai.types.responses.response_usage import InputTokensDetails
+from openai.types.responses.response_usage import OutputTokensDetails
 
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.chat.turn.models import DependenciesToMaybeRemove
 from onyx.llm.interfaces import LLM
+from onyx.llm.interfaces import LLMConfig
+from onyx.server.query_and_chat.streaming_models import OverallStop
+from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.tools.tool_implementations.images.image_generation_tool import (
     ImageGenerationTool,
 )
@@ -27,27 +38,171 @@ from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
 from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
-class FakeLLM:
+class FakeLLM(LLM):
     """Simple fake LLM implementation for testing."""
 
     def __init__(self):
-        self.config = None
+        self._config = LLMConfig(
+            model_provider="fake",
+            model_name="fake-model",
+            temperature=0.7,
+            max_input_tokens=4096,
+        )
 
-    def stream(self, messages, **kwargs):
-        """Fake stream method that yields no messages."""
+    @property
+    def config(self) -> LLMConfig:
+        """Return the LLM configuration."""
+        return self._config
+
+    def log_model_configs(self) -> None:
+        """Fake log_model_configs method."""
+
+    def _invoke_implementation(
+        self,
+        prompt,
+        tools=None,
+        tool_choice=None,
+        structured_response_format=None,
+        timeout_override=None,
+        max_tokens=None,
+    ):
+        """Fake _invoke_implementation method."""
+        from langchain_core.messages import AIMessage
+
+        return AIMessage(content="fake response")
+
+    def _stream_implementation(
+        self,
+        prompt,
+        tools=None,
+        tool_choice=None,
+        structured_response_format=None,
+        timeout_override=None,
+        max_tokens=None,
+    ):
+        """Fake _stream_implementation method that yields no messages."""
         return iter([])
 
-    def invoke(self, messages, **kwargs):
-        """Fake invoke method."""
-        return {"content": "fake response"}
 
-
-class FakeModel:
+class FakeModel(Model):
     """Simple fake Model implementation for testing."""
 
     def __init__(self):
         self.name = "fake-model"
         self.provider = "fake-provider"
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: list,
+        output_schema,
+        handoffs: list,
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        """Fake get_response method that returns a simple response."""
+        # Create a simple text response
+        text_content = ResponseOutputText(text="fake response")
+        message = ResponseOutputMessage(role="assistant", content=[text_content])
+
+        # Create usage information
+        usage = Usage(
+            requests=1,
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            input_tokens_details=InputTokensDetails(cached_tokens=0),
+            output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+        )
+
+        return ModelResponse(
+            output=[message], usage=usage, response_id="fake-response-id"
+        )
+
+    async def stream_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: list,
+        output_schema,
+        handoffs: list,
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ):
+        """Fake stream_response method that yields no events."""
+
+        # Return an empty async iterator
+        async def empty_iterator():
+            if False:  # This ensures it's a proper async generator
+                yield
+
+        return empty_iterator()
+
+
+class FakeFailingModel(Model):
+    """Simple fake Model implementation for testing."""
+
+    def __init__(self):
+        self.name = "fake-model"
+        self.provider = "fake-provider"
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: list,
+        output_schema,
+        handoffs: list,
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        """Fake get_response method that returns a simple response."""
+        # Create a simple text response
+        text_content = ResponseOutputText(text="fake response")
+        message = ResponseOutputMessage(role="assistant", content=[text_content])
+
+        # Create usage information
+        usage = Usage(
+            requests=1,
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            input_tokens_details=InputTokensDetails(cached_tokens=0),
+            output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+        )
+
+        return ModelResponse(
+            output=[message], usage=usage, response_id="fake-response-id"
+        )
+
+    async def stream_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: list,
+        output_schema,
+        handoffs: list,
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ):
+        raise Exception("Fake exception")
 
 
 class FakeSession:
@@ -66,6 +221,9 @@ class FakeSession:
     def add(self, instance):
         pass
 
+    def flush(self):
+        pass
+
     def query(self, *args, **kwargs):
         return FakeQuery()
 
@@ -80,7 +238,28 @@ class FakeQuery:
         return self
 
     def first(self):
-        return None
+        # Return a fake chat message to avoid the "Chat message with id not found" error
+        class FakeChatMessage:
+            def __init__(self):
+                self.id = 123
+                self.chat_session_id = "fake-session-id"
+                self.message = "fake message"
+                self.message_type = "user"
+                self.token_count = 0
+                self.rephrased_query = None
+                self.citations = {}
+                self.error = None
+                self.alternate_assistant_id = None
+                self.overridden_model = None
+                self.research_type = "FAST"
+                self.research_plan = {}
+                self.final_documents = []
+                self.research_answer_purpose = "ANSWER"
+                self.parent_message = None
+                self.is_agentic = False
+                self.search_docs = []
+
+        return FakeChatMessage()
 
     def all(self):
         return []
@@ -240,6 +419,11 @@ def chat_turn_dependencies(
 
 
 @pytest.fixture
+def fake_failing_model() -> Model:
+    return FakeFailingModel()
+
+
+@pytest.fixture
 def sample_messages() -> list[dict]:
     """Fixture providing sample messages for testing."""
     return [
@@ -264,52 +448,26 @@ def test_fast_chat_turn_basic(
     # Call the function - it returns a generator due to the unified_event_stream decorator
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
     packets = list(generator)
-    # The emitter is only set when we start consuming the generator
-    # Let's try to get the first packet to trigger the decorator setup
+    assert packets == [Packet(ind=0, obj=OverallStop(type="stop"))]
 
-    # The generator will yield packets as they are produced
-    # In a real scenario, this would stream packets, but with our fake dependencies
-    # it will likely complete quickly or hit an error due to missing external dependencies
-    try:
-        # Try to consume the generator to see what happens
-        # This will trigger the decorator to set up the emitter
-        print("before generator")
-        packets = list(generator)
-        print("rg5")
-        # If we get here, the function completed successfully
-        # Verify that the emitter was set by the decorator
-        assert (
-            chat_turn_dependencies.emitter is not None
-        ), "Emitter should be set by decorator"
 
-        # Verify we got at least one packet (the final OverallStop)
-        assert len(packets) >= 1
+def test_fast_chat_turn_catch_exception(
+    chat_turn_dependencies: ChatTurnDependencies,
+    sample_messages: list[dict],
+    fake_failing_model: Model,
+):
+    """Test that demonstrates calling fast_chat_turn with dependency injection.
 
-        # The last packet should be an OverallStop
-        last_packet = packets[-1]
-        assert last_packet.obj.type == "stop"
+    This test shows how to actually call the fast_chat_turn function using
+    the dependency injection setup. The function will run with fake implementations
+    and the unified_event_stream decorator will handle the emitter creation.
+    """
+    # Import the function
+    from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
-        # Verify that the emitter has packet history
-        assert hasattr(chat_turn_dependencies.emitter, "packet_history")
+    chat_turn_dependencies.llm_model = fake_failing_model
 
-        print(f"Successfully executed fast_chat_turn and got {len(packets)} packets")
-
-    except Exception as e:
-        # If the function fails due to missing external dependencies (like the agents library
-        # or missing external services), that's expected in a unit test environment
-        # The important thing is that the dependency injection worked correctly
-
-        # Log the error for debugging but don't fail the test
-        print(f"Expected error in unit test environment: {e}")
-
-        # Even if the function fails, the emitter should still be set by the decorator
-        # when the generator starts consuming
-        if chat_turn_dependencies.emitter is not None:
-            print("Emitter was set by decorator even though function failed")
-        else:
-            print("Emitter was not set - function failed before decorator setup")
-
-        # Verify that our fake dependencies are still intact
-        assert isinstance(chat_turn_dependencies.llm_model, FakeModel)
-        assert isinstance(chat_turn_dependencies.db_session, FakeSession)
-        assert isinstance(chat_turn_dependencies.redis_client, FakeRedis)
+    # Call the function - it returns a generator due to the unified_event_stream decorator
+    generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+    packets = list(generator)
+    assert packets == [Packet(ind=0, obj=OverallStop(type="stop"))]
