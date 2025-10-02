@@ -1,6 +1,6 @@
 import { useEmbeddingFormContext } from "@/components/context/EmbeddingContext";
 import Text from "@/refresh-components/Text";
-import StepSidebar from "@/refresh-components/StepSidebar";
+import StepSidebar from "@/sections/sidebar/StepSidebar";
 import SvgSettings from "@/icons/settings";
 
 export default function EmbeddingSidebar() {

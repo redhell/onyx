@@ -1,7 +1,7 @@
 import { useFormContext } from "@/components/context/FormContext";
 import { credentialTemplates } from "@/lib/connectors/credentials";
 import Text from "@/refresh-components/Text";
-import StepSidebar from "@/refresh-components/StepSidebar";
+import StepSidebar from "@/sections/sidebar/StepSidebar";
 import SvgSettings from "@/icons/settings";
 import { useUser } from "@/components/user/UserProvider";
 
