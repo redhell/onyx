@@ -46,12 +46,9 @@ OPEN_AI_MODEL_NAMES = [
     "gpt-4-0314",
     "gpt-4-32k-0314",
     "gpt-3.5-turbo",
-    "gpt-3.5-turbo-0125",
-    "gpt-3.5-turbo-1106",
-    "gpt-3.5-turbo-16k",
-    "gpt-3.5-turbo-0613",
-    "gpt-3.5-turbo-16k-0613",
-    "gpt-3.5-turbo-0301",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
 ]
 
 BEDROCK_PROVIDER_NAME = "bedrock"
@@ -61,7 +58,7 @@ BEDROCK_MODEL_NAMES = [
     model
     # bedrock_converse_models are just extensions of the bedrock_models, not sure why
     # litellm has split them into two lists :(
-    for model in litellm.bedrock_models + litellm.bedrock_converse_models
+    for model in list(litellm.bedrock_models.union(litellm.bedrock_converse_models))
     if "/" not in model and "embed" not in model
 ][::-1]
 
