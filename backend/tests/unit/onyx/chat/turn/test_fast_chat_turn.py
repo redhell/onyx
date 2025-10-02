@@ -451,6 +451,7 @@ def test_fast_chat_turn_basic(
     assert packets == [Packet(ind=0, obj=OverallStop(type="stop"))]
 
 
+# TODO: Figure this one out
 def test_fast_chat_turn_catch_exception(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
