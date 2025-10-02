@@ -170,7 +170,7 @@ nginx:
     targetPorts:
       http: http
       onyx: http
-  
+
   # Ingress-nginx controller configuration
   # MIGRATION NOTE: This chart now uses ingress-nginx instead of Bitnami nginx
   # The existingServerBlockConfigmap functionality has been replaced with a custom nginx server block
