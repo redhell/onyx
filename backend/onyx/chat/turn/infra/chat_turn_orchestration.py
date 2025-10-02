@@ -33,7 +33,7 @@ def unified_event_stream(
     def wrapper(
         messages: List[Dict[str, Any]], dependencies: ChatTurnDependencies
     ) -> Generator[Packet, None]:
-        bus: Queue = Queue()
+        bus: Queue[Packet] = Queue()
         emitter = Emitter(bus)
         dependencies.emitter = emitter
 
