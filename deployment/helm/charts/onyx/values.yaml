@@ -157,9 +157,9 @@ serviceAccount:
 
 nginx:
   enabled: true
-  containerPorts:
+  containerPort:
     http: 1024
-  extraEnvVars:
+  extraEnvs:
     - name: DOMAIN
       value: localhost
   service:
@@ -167,11 +167,27 @@ nginx:
     ports:
       http: 80
       onyx: 3000
-    targetPort:
+    targetPorts:
       http: http
       onyx: http
-
-  existingServerBlockConfigmap: onyx-nginx-conf
+  
+  # Ingress-nginx controller configuration
+  # MIGRATION NOTE: This chart now uses ingress-nginx instead of Bitnami nginx
+  # The existingServerBlockConfigmap functionality has been replaced with a custom nginx server block
+  controller:
+    config:
+      # Reference the nginx ConfigMap for server block configuration
+      server-snippet: |
+        include /etc/nginx/conf.d/nginx.conf;
+    # Mount the nginx ConfigMap
+    extraVolumes:
+      - name: nginx-config
+        configMap:
+          name: onyx-nginx-conf
+    extraVolumeMounts:
+      - name: nginx-config
+        mountPath: /etc/nginx/conf.d
+        readOnly: true
 
 webserver:
   replicaCount: 1

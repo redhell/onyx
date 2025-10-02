@@ -1,0 +1,3 @@
+{{- if .Values.nginx.existingServerBlockConfigmap -}}
+{{- fail "BREAKING CHANGE: The 'nginx.existingServerBlockConfigmap' configuration is no longer supported in this version. Please remove this configuration from your values.yaml file. The nginx server block functionality has been migrated to use ingress-nginx controller configuration via server-snippet." -}}
+{{- end -}}
