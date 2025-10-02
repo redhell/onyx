@@ -1,5 +1,5 @@
 import { Modal } from "../Modal";
-import { Button } from "../ui/button";
+import Button from "@/refresh-components/buttons/Button";
 
 export const ConfirmEntityModal = ({
   onClose,
@@ -8,10 +8,9 @@ export const ConfirmEntityModal = ({
   entityName,
   additionalDetails,
   actionButtonText,
-  actionText,
+  action,
   includeCancelButton = true,
   variant = "delete",
-  accent = false,
   removeConfirmationText = false,
 }: {
   entityType: string;
@@ -20,10 +19,9 @@ export const ConfirmEntityModal = ({
   onSubmit: () => void;
   additionalDetails?: string;
   actionButtonText?: string;
-  actionText?: string;
+  action?: string;
   includeCancelButton?: boolean;
   variant?: "delete" | "action";
-  accent?: boolean;
   removeConfirmationText?: boolean;
 }) => {
   const isDeleteVariant = variant === "delete";
@@ -31,8 +29,8 @@ export const ConfirmEntityModal = ({
   const buttonText = actionButtonText || defaultButtonText;
 
   const getActionText = () => {
-    if (actionText) {
-      return actionText;
+    if (action) {
+      return action;
     }
     return isDeleteVariant ? "delete" : "modify";
   };
@@ -53,16 +51,11 @@ export const ConfirmEntityModal = ({
         {additionalDetails && <p className="mb-4">{additionalDetails}</p>}
         <div className="flex justify-end gap-2">
           {includeCancelButton && (
-            <Button onClick={onClose} variant="outline">
+            <Button onClick={onClose} secondary>
               Cancel
             </Button>
           )}
-          <Button
-            onClick={onSubmit}
-            variant={
-              accent ? "agent" : isDeleteVariant ? "destructive" : "default"
-            }
-          >
+          <Button onClick={onSubmit} danger={isDeleteVariant}>
             {buttonText}
           </Button>
         </div>

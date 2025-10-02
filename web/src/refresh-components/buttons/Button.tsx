@@ -284,7 +284,12 @@ export default function Button({
         </div>
       )}
       {typeof children === "string" ? (
-        <Text className={cn(textClasses(active)[variant][subvariant][abled])}>
+        <Text
+          className={cn(
+            "whitespace-nowrap",
+            textClasses(active)[variant][subvariant][abled]
+          )}
+        >
           {children}
         </Text>
       ) : (

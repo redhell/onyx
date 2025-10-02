@@ -176,12 +176,11 @@ export function PersonasTable({
 
       {defaultModalOpen && personaToToggleDefault && (
         <ConfirmEntityModal
-          variant="action"
           entityType="Assistant"
           entityName={personaToToggleDefault.name}
           onClose={closeDefaultModal}
           onSubmit={handleToggleDefault}
-          actionText={
+          action={
             personaToToggleDefault.is_default_persona
               ? "remove the featured status of"
               : "set as featured"

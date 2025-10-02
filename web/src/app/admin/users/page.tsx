@@ -1,12 +1,11 @@
 "use client";
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import InvitedUserTable from "@/components/admin/users/InvitedUserTable";
 import SignedUpUserTable from "@/components/admin/users/SignedUpUserTable";
 
-import { FiPlusSquare } from "react-icons/fi";
 import { Modal } from "@/components/Modal";
 import { ThreeDotsLoader } from "@/components/Loading";
 import { AdminPageTitle } from "@/components/admin/Title";
@@ -18,10 +17,12 @@ import { ErrorCallout } from "@/components/ErrorCallout";
 import BulkAdd from "@/components/admin/users/BulkAdd";
 import Text from "@/components/ui/text";
 import { InvitedUserSnapshot } from "@/lib/types";
-import { SearchBar } from "@/components/search/SearchBar";
 import { ConfirmEntityModal } from "@/components/modals/ConfirmEntityModal";
 import { NEXT_PUBLIC_CLOUD_ENABLED } from "@/lib/constants";
 import PendingUsersTable from "@/components/admin/users/PendingUsersTable";
+import CreateButton from "@/refresh-components/buttons/CreateButton";
+import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
+
 const UsersTables = ({
   q,
   setPopup,
@@ -135,23 +136,20 @@ const UsersTables = ({
 const SearchableTables = () => {
   const { popup, setPopup } = usePopup();
   const [query, setQuery] = useState("");
-  const [q, setQ] = useState("");
 
   return (
     <div>
       {popup}
       <div className="flex flex-col gap-y-4">
-        <div className="flex gap-x-4">
+        <div className="flex flex-row items-center gap-spacing-interline">
+          <InputTypeIn
+            placeholder="Search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
           <AddUserButton setPopup={setPopup} />
-          <div className="flex-grow">
-            <SearchBar
-              query={query}
-              setQuery={setQuery}
-              onSearch={() => setQ(query)}
-            />
-          </div>
         </div>
-        <UsersTables q={q} setPopup={setPopup} />
+        <UsersTables q={query} setPopup={setPopup} />
       </div>
     </div>
   );
@@ -208,12 +206,9 @@ const AddUserButton = ({
 
   return (
     <>
-      <Button className="my-auto w-fit" onClick={handleInviteClick}>
-        <div className="flex">
-          <FiPlusSquare className="my-auto mr-2" />
-          Invite Users
-        </div>
-      </Button>
+      <CreateButton primary onClick={handleInviteClick}>
+        Invite Users
+      </CreateButton>
 
       {showConfirmation && (
         <ConfirmEntityModal
@@ -223,7 +218,6 @@ const AddUserButton = ({
           onSubmit={handleConfirmFirstInvite}
           additionalDetails="After inviting the first user, only invited users will be able to join this platform. This is a security measure to control access to your team."
           actionButtonText="Continue"
-          variant="action"
         />
       )}
 

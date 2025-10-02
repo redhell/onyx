@@ -4,7 +4,7 @@ import Text from "@/refresh-components/Text";
 import SvgX from "@/icons/x";
 import CoreModal from "@/refresh-components/modals/CoreModal";
 import { useEscape } from "@/hooks/useKeyPress";
-import IconButton from "../buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
 
 interface ConfirmationModalProps {
   escapeToClose?: boolean;
@@ -32,7 +32,7 @@ export default function ConfirmationModal({
   return (
     <CoreModal
       className="z-10 w-[27rem] rounded-16 border flex flex-col bg-background-tint-00"
-      onClickOutside={clickOutsideToClose ? () => onClose?.() : undefined}
+      onClickOutside={clickOutsideToClose ? onClose : undefined}
     >
       <div className="flex flex-col items-center justify-center p-spacing-paragraph gap-spacing-inline">
         <div className="h-[1.5rem] flex flex-row justify-between items-center w-full">
