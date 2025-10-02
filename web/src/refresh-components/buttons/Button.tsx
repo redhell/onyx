@@ -25,7 +25,10 @@ const variantClasses = (active?: boolean) =>
         disabled: ["bg-background-tint-00", "border"],
       },
       tertiary: {
-        enabled: [],
+        enabled: [
+          active && "bg-background-tint-00",
+          "hover:bg-background-tint-02",
+        ],
         disabled: [],
       },
       internal: {
@@ -92,8 +95,11 @@ const textClasses = (active?: boolean) =>
         disabled: ["text-text-01"],
       },
       tertiary: {
-        enabled: [],
-        disabled: [],
+        enabled: [
+          active ? "text-text-05" : "text-text-03",
+          "group-hover/Button:text-text-04",
+        ],
+        disabled: ["text-text-01"],
       },
       internal: {
         enabled: [],
@@ -153,8 +159,11 @@ const iconClasses = (active?: boolean) =>
         disabled: ["stroke-text-01"],
       },
       tertiary: {
-        enabled: [],
-        disabled: [],
+        enabled: [
+          active ? "stroke-text-05" : "stroke-text-03",
+          "group-hover/Button:stroke-text-04",
+        ],
+        disabled: ["stroke-text-01"],
       },
       internal: {
         enabled: [],
@@ -243,6 +252,11 @@ export default function Button({
   className,
   ...props
 }: ButtonProps) {
+  if (LeftIcon && RightIcon)
+    throw new Error(
+      "The left and right icons cannot be both specified at the same time"
+    );
+
   const variant = defaulted
     ? "defaulted"
     : action
@@ -263,6 +277,8 @@ export default function Button({
 
   const abled = disabled ? "disabled" : "enabled";
 
+  const spacer = <div className="w-[0.1rem]" />;
+
   const content = (
     <button
       className={cn(
@@ -273,7 +289,7 @@ export default function Button({
       disabled={disabled}
       {...props}
     >
-      {LeftIcon && (
+      {LeftIcon ? (
         <div className="w-[1rem] h-[1rem] flex flex-col items-center justify-center">
           <LeftIcon
             className={cn(
@@ -282,6 +298,8 @@ export default function Button({
             )}
           />
         </div>
+      ) : (
+        spacer
       )}
       {typeof children === "string" ? (
         <Text
@@ -295,7 +313,7 @@ export default function Button({
       ) : (
         children
       )}
-      {RightIcon && (
+      {RightIcon ? (
         <div className="w-[1rem] h-[1rem]">
           <RightIcon
             className={cn(
@@ -304,6 +322,8 @@ export default function Button({
             )}
           />
         </div>
+      ) : (
+        spacer
       )}
     </button>
   );
