@@ -94,6 +94,7 @@ from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.utils import get_json_line
+from onyx.tools.adapter_v1_to_v2 import tool_to_function_tool
 from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
 from onyx.tools.force import ForceUseTool
 from onyx.tools.models import SearchToolOverrideKwargs
@@ -787,7 +788,7 @@ def stream_chat_message_objects(
         )
 
         # TODO: For backwards compatible PR, switch back to the original call
-        yield from fast_message_stream(
+        yield from _fast_message_stream(
             answer,
             tools,
             db_session,
@@ -832,7 +833,7 @@ def stream_chat_message_objects(
 
 
 # TODO: Refactor this to live somewhere else
-def fast_message_stream(
+def _fast_message_stream(
     answer: Answer,
     tools: list[Tool],
     db_session: Session,
@@ -840,21 +841,31 @@ def fast_message_stream(
     chat_session_id: str,
     reserved_message_id: str,
 ) -> Generator[Packet, None, None]:
-    onyx_tools: list[list[FunctionTool]] = [
-        BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
-        for tool in tools
-        if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
-    ]
-    flattened_tools: list[FunctionTool] = [
-        onyx_tool for sublist in onyx_tools for onyx_tool in sublist
-    ]
-
     from onyx.tools.tool_implementations.images.image_generation_tool import (
         ImageGenerationTool,
     )
     from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
         OktaProfileTool,
     )
+    from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
+    from onyx.tools.tool_implementations.custom.custom_tool import CustomTool
+
+    onyx_tools: list[list[FunctionTool]] = [
+        BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
+        for tool in tools
+        if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
+    ]
+    flattened_builtin_tools: list[FunctionTool] = [
+        onyx_tool for sublist in onyx_tools for onyx_tool in sublist
+    ]
+    custom_and_mcp_tools: list[list[FunctionTool]] = [
+        tool_to_function_tool(tool)
+        for tool in tools
+        if isinstance(tool, CustomTool) or isinstance(tool, MCPTool)
+    ]
+    flattened_custom_and_mcp_tools: list[FunctionTool] = [
+        onyx_tool for sublist in custom_and_mcp_tools for onyx_tool in sublist
+    ]
 
     image_generation_tool_instance = None
     okta_profile_tool_instance = None
@@ -877,7 +888,7 @@ def fast_message_stream(
                 api_key=answer.graph_tooling.primary_llm.config.api_key,
             ),
             llm=answer.graph_tooling.primary_llm,
-            tools=flattened_tools,
+            tools=flattened_builtin_tools + flattened_custom_and_mcp_tools,
             search_pipeline=answer.graph_tooling.search_tool,
             image_generation_tool=image_generation_tool_instance,
             okta_profile_tool=okta_profile_tool_instance,
