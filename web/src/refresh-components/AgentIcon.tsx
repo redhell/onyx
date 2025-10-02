@@ -22,34 +22,57 @@ function md5ToBits(str: string): number[] {
   const md5hex = crypto.createHash("md5").update(str).digest("hex");
   const bits: number[] = [];
   for (let i = 0; i < md5hex.length; i += 2) {
-    const hex = md5hex.substr(i, 2);
-    const num = parseInt(hex, 16);
-    for (let j = 7; j >= 0; j--) {
-      bits.push((num >> j) & 1);
+    const byteVal = parseInt(md5hex.substring(i, i + 2), 16);
+    for (let b = 7; b >= 0; b--) {
+      bits.push((byteVal >> b) & 1);
     }
   }
   return bits;
 }
 
-export function generateIdenticon(str: string): JSX.Element {
+export function generateIdenticon(str: string) {
   const bits = md5ToBits(str);
-  const squares = [];
+  const gridSize = 5;
+  const halfCols = 4;
+  const cellSize = SIZE / gridSize;
 
-  for (let i = 0; i < 64; i++) {
-    const bit = bits[i % bits.length];
-    if (bit) {
-      const x = (i % 8) * SIZE;
-      const y = Math.floor(i / 8) * SIZE;
-      squares.push(
-        <rect
-          key={i}
-          x={x}
-          y={y}
-          width={SIZE}
-          height={SIZE}
-          fill="currentColor"
-        />
-      );
+  let bitIndex = 0;
+  const squares: JSX.Element[] = [];
+
+  for (let row = 0; row < gridSize; row++) {
+    for (let col = 0; col < halfCols; col++) {
+      const bit = bits[bitIndex % bits.length];
+      bitIndex++;
+
+      if (bit === 1) {
+        const xPos = col * cellSize;
+        const yPos = row * cellSize;
+        squares.push(
+          <rect
+            key={`${xPos}-${yPos}`}
+            x={xPos - 0.5}
+            y={yPos - 0.5}
+            width={cellSize + 1}
+            height={cellSize + 1}
+            fill="var(--theme-primary-05)"
+          />
+        );
+
+        const mirrorCol = gridSize - 1 - col;
+        if (mirrorCol !== col) {
+          const mirrorX = mirrorCol * cellSize;
+          squares.push(
+            <rect
+              key={`a-${mirrorX}-${yPos}`}
+              x={mirrorX - 0.5}
+              y={yPos - 0.5}
+              width={cellSize + 1}
+              height={cellSize + 1}
+              fill="var(--theme-primary-05)"
+            />
+          );
+        }
+      }
     }
   }
 
@@ -58,7 +81,7 @@ export function generateIdenticon(str: string): JSX.Element {
       width={SIZE}
       height={SIZE}
       viewBox={`0 0 ${SIZE} ${SIZE}`}
-      className="rounded-full"
+      style={{ display: "block" }}
     >
       {squares}
     </svg>

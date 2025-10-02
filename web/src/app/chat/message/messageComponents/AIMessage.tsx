@@ -8,10 +8,7 @@ import {
 import { FullChatState } from "@/app/chat/message/messageComponents/interfaces";
 import { OnyxDocument } from "@/lib/search/interfaces";
 import CitedSourcesToggle from "@/app/chat/message/messageComponents/CitedSourcesToggle";
-import {
-  CustomTooltip,
-  TooltipGroup,
-} from "@/components/tooltip/CustomTooltip";
+import { TooltipGroup } from "@/components/tooltip/CustomTooltip";
 import { useMemo, useRef, useState, useEffect } from "react";
 import {
   useChatSessionStore,
@@ -37,7 +34,7 @@ import SvgCopy from "@/icons/copy";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
 import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
-import LLMPopover from "../../components/input/LLMPopover";
+import LLMPopover from "@/refresh-components/LLMPopover";
 import { parseLlmDescriptor } from "@/lib/llm/utils";
 
 export interface AIMessageProps {

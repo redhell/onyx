@@ -15,7 +15,6 @@ import { Slider } from "@/components/ui/slider";
 import { useUser } from "@/components/user/UserProvider";
 import { useChatContext } from "@/refresh-components/contexts/ChatContext";
 import { useAgentsContext } from "@/refresh-components/contexts/AgentsContext";
-import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgRefreshCw from "@/icons/refresh-cw";
 import SelectButton from "@/refresh-components/buttons/SelectButton";
 import LineItem from "@/refresh-components/buttons/LineItem";
