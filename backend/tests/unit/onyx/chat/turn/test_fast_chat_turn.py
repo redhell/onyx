@@ -202,6 +202,7 @@ class FakeFailingModel(Model):
         conversation_id: str | None = None,
         prompt=None,
     ):
+        print("henlo")
         raise Exception("Fake exception")
 
 

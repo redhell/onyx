@@ -66,9 +66,7 @@ class OnyxRunner:
 
     def events(self) -> Iterator[object]:
         while True:
-            print("rg1")
             ev = self._q.get()
-            print("rg2")
             if ev is self.SENTINEL:
                 break
             yield ev
@@ -86,10 +84,6 @@ class OnyxRunner:
             self._loop.call_soon_threadsafe(_do_cancel)
 
 
-class EmittedException:
-    exception: Exception
-
-
 class Emitter:
     """Use this inside tools to emit arbitrary UI progress."""
 
@@ -97,6 +91,6 @@ class Emitter:
         self.bus = bus
         self.packet_history: list[Packet] = []
 
-    def emit(self, packet: Packet | EmittedException) -> None:
+    def emit(self, packet: Packet) -> None:
         self.bus.put(packet)
         self.packet_history.append(packet)
