@@ -17,7 +17,7 @@ postgresql:
       storageClass: ""
       size: 10Gi
     enableSuperuserAccess: true
-    superuserSecret: onyx-postgresql # keep in sync with auth.postgresql secretName/existingSecret
+    superuserSecret: onyx-postgresql  # keep in sync with auth.postgresql
 
 vespa:
   name: da-vespa-0
@@ -725,7 +725,6 @@ redis:
     data: |
       appendonly no
       save ""
-  # Storage configuration - disabled persistence for simplicity
   storageSpec:
     volumeClaimTemplate:
       spec:
