@@ -39,13 +39,6 @@ from onyx.llm.interfaces import LLM
 from onyx.llm.interfaces import LLMConfig
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.tools.tool_implementations.images.image_generation_tool import (
-    ImageGenerationTool,
-)
-from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
-    OktaProfileTool,
-)
-from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
 class FakeLLM(LLM):
@@ -373,42 +366,6 @@ class FakeRedis:
         return key in self.data
 
 
-class FakeSearchTool:
-    """Simple fake SearchTool for testing."""
-
-    def __init__(self):
-        self.name = "search"
-        self.call_count = 0
-
-    def run(self, *args, **kwargs):
-        self.call_count += 1
-        return []
-
-
-class FakeImageGenerationTool:
-    """Simple fake ImageGenerationTool for testing."""
-
-    def __init__(self):
-        self.name = "image_generation"
-        self.call_count = 0
-
-    def run(self, *args, **kwargs):
-        self.call_count += 1
-        return []
-
-
-class FakeOktaProfileTool:
-    """Simple fake OktaProfileTool for testing."""
-
-    def __init__(self):
-        self.name = "okta_profile"
-        self.call_count = 0
-
-    def run(self, *args, **kwargs):
-        self.call_count += 1
-        return []
-
-
 @pytest.fixture
 def fake_llm() -> LLM:
     """Fixture providing a fake LLM implementation."""
@@ -440,24 +397,6 @@ def fake_tools() -> list[FunctionTool]:
 
 
 @pytest.fixture
-def fake_search_pipeline() -> SearchTool:
-    """Fixture providing a fake search tool."""
-    return FakeSearchTool()
-
-
-@pytest.fixture
-def fake_image_generation_tool() -> ImageGenerationTool:
-    """Fixture providing a fake image generation tool."""
-    return FakeImageGenerationTool()
-
-
-@pytest.fixture
-def fake_okta_profile_tool() -> OktaProfileTool:
-    """Fixture providing a fake Okta profile tool."""
-    return FakeOktaProfileTool()
-
-
-@pytest.fixture
 def dependencies_to_maybe_remove() -> DependenciesToMaybeRemove:
     """Fixture providing dependencies that should be passed in by test writer."""
     return DependenciesToMaybeRemove(
@@ -474,9 +413,6 @@ def chat_turn_dependencies(
     fake_db_session: FakeSession,
     fake_tools: list[FunctionTool],
     fake_redis_client: FakeRedis,
-    fake_search_pipeline: SearchTool,
-    fake_image_generation_tool: ImageGenerationTool,
-    fake_okta_profile_tool: OktaProfileTool,
     dependencies_to_maybe_remove: DependenciesToMaybeRemove,
 ) -> ChatTurnDependencies:
     """Fixture providing a complete ChatTurnDependencies object with fake implementations.
@@ -489,10 +425,7 @@ def chat_turn_dependencies(
         db_session=fake_db_session,
         tools=fake_tools,
         redis_client=fake_redis_client,
-        emitter=None,  # Set by unified_event_stream decorator
-        search_pipeline=fake_search_pipeline,
-        image_generation_tool=fake_image_generation_tool,
-        okta_profile_tool=fake_okta_profile_tool,
+        emitter=None,
         dependencies_to_maybe_remove=dependencies_to_maybe_remove,
     )
 
@@ -515,11 +448,8 @@ def test_fast_chat_turn_basic(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
 ):
-    """Test that demonstrates calling fast_chat_turn with dependency injection.
-
-    This test shows how to actually call the fast_chat_turn function using
-    the dependency injection setup. The function will run with fake implementations
-    and the unified_event_stream decorator will handle the emitter creation.
+    """Test that makes sure basic end to end functionality of our
+    fast agent chat turn works.
     """
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
@@ -535,11 +465,9 @@ def test_fast_chat_turn_catch_exception(
     sample_messages: list[dict],
     fake_failing_model: Model,
 ):
-    """Test that demonstrates calling fast_chat_turn with dependency injection.
-
-    This test shows how to actually call the fast_chat_turn function using
-    the dependency injection setup. The function will run with fake implementations
-    and the unified_event_stream decorator will handle the emitter creation.
+    """Test that makes sure exceptions in our agent background thread are propagated properly.
+    RuntimeWarning: coroutine 'FakeFailingModel.stream_response.<locals>._gen' was never awaited
+    is expected.
     """
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
