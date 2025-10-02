@@ -14,6 +14,7 @@ from agents import TContext
 from agents import TResponseInputItem
 
 from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.utils.threadpool_concurrency import run_async_sync
 from onyx.utils.threadpool_concurrency import run_in_background
 from onyx.utils.threadpool_concurrency import TimeoutThread
 
@@ -43,7 +44,6 @@ class OnyxRunner:
     ) -> tuple[Self, TimeoutThread[None]]:
         def worker() -> None:
             async def run_and_consume():
-                # Create the streamed run *inside* the loop thread
                 self._streamed = Runner.run_streamed(
                     agent,
                     input,
@@ -56,13 +56,7 @@ class OnyxRunner:
                 finally:
                     self._q.put(self.SENTINEL)
 
-            # Each thread needs its own loop
-            self._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._loop)
-            try:
-                self._loop.run_until_complete(run_and_consume())
-            finally:
-                self._loop.close()
+            run_async_sync(run_and_consume())
 
         return self, run_in_background(worker)
 
