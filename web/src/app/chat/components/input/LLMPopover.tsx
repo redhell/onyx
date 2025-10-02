@@ -74,7 +74,7 @@ export default function LLMPopover({
   const triggerContent = useMemo(
     () => (
       <SelectButton
-        icon={
+        leftIcon={
           folded
             ? SvgRefreshCw
             : getProviderIcon(
@@ -85,6 +85,7 @@ export default function LLMPopover({
         onClick={() => setOpen(true)}
         active={open}
         folded={folded}
+        rightChevronIcon
       >
         {getDisplayNameForModel(llmManager.currentLlm.modelName)}
       </SelectButton>

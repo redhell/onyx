@@ -547,7 +547,7 @@ function ChatInputBarInner({
               />
             )}
             <SelectButton
-              icon={SvgHourglass}
+              leftIcon={SvgHourglass}
               active={deepResearchEnabled}
               onClick={toggleDeepResearch}
               folded
@@ -567,7 +567,7 @@ function ChatInputBarInner({
                 return (
                   <SelectButton
                     key={toolId}
-                    icon={getIconForAction(tool)}
+                    leftIcon={getIconForAction(tool)}
                     onClick={() => {
                       setForcedToolIds((prev) =>
                         prev.filter((id) => id !== toolId)

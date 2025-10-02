@@ -6,6 +6,7 @@ import { SvgProps } from "@/icons";
 import Text from "@/refresh-components/Text";
 import IconButton from "./IconButton";
 import SvgX from "@/icons/x";
+import SvgChevronDownSmall from "@/icons/chevron-down-small";
 
 const MARGIN = 5;
 
@@ -59,7 +60,8 @@ export interface SelectButtonProps {
 
   // Content
   children: string;
-  icon: React.FunctionComponent<SvgProps>;
+  leftIcon: React.FunctionComponent<SvgProps>;
+  rightChevronIcon?: boolean;
   onClick?: () => void;
   className?: string;
 }
@@ -70,7 +72,8 @@ export default function SelectButton({
   action,
   folded,
   children,
-  icon: Icon,
+  leftIcon: LeftIcon,
+  rightChevronIcon,
   onClick,
   className,
 }: SelectButtonProps) {
@@ -81,17 +84,9 @@ export default function SelectButton({
   const measureRef = useRef<HTMLDivElement>(null);
   const [foldedContentWidth, setFoldedContentWidth] = useState<number>(0);
   const [hovered, setHovered] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (measureRef.current) {
-      const width = measureRef.current.clientWidth;
-      setFoldedContentWidth(width);
-    }
-  }, [children]);
-
   const content = useMemo(
     () => (
-      <>
+      <div className="flex flex-row items-center justify-center">
         <Text
           className={cn(
             "whitespace-nowrap",
@@ -100,10 +95,26 @@ export default function SelectButton({
         >
           {children}
         </Text>
-      </>
+
+        {rightChevronIcon && (
+          <SvgChevronDownSmall
+            className={cn(
+              "w-[1rem] h-[1rem] transition-all duration-300 ease-in-out",
+              iconClassNames(active)[variant][state],
+              active && "-rotate-180"
+            )}
+          />
+        )}
+      </div>
     ),
-    [active]
+    [active, rightChevronIcon]
   );
+  useEffect(() => {
+    if (measureRef.current) {
+      const width = measureRef.current.clientWidth;
+      setFoldedContentWidth(width);
+    }
+  }, [content]);
 
   return (
     <>
@@ -118,7 +129,7 @@ export default function SelectButton({
       <button
         className={cn(
           baseClassNames(active)[state],
-          "group/SelectButton flex items-center p-spacing-interline-mini rounded-12 h-fit w-fit",
+          "group/SelectButton flex items-center px-spacing-interline py-spacing-interline-mini rounded-12 h-fit w-fit",
           className
         )}
         onClick={disabled ? undefined : onClick}
@@ -128,7 +139,7 @@ export default function SelectButton({
         onMouseLeave={() => setHovered(false)}
       >
         {/* Static icon component */}
-        <Icon
+        <LeftIcon
           className={cn(
             "w-[1rem] h-[1rem]",
             iconClassNames(active)[variant][state]
@@ -153,9 +164,9 @@ export default function SelectButton({
               : `${foldedContentWidth}px`,
             margin: folded
               ? active || hovered
-                ? `0px ${MARGIN}px`
+                ? `0px 0px 0px ${MARGIN}px`
                 : "0px"
-              : `0px ${MARGIN}px`,
+              : `0px 0px 0px ${MARGIN}px`,
           }}
         >
           {content}
