@@ -786,7 +786,7 @@ def stream_chat_message_objects(
             project_instructions=project_instructions,
         )
 
-        # Process streamed packets using the new packet processing module
+        # TODO: For backwards compatible PR, switch back to the original call
         yield from fast_message_stream(
             answer,
             tools,
@@ -849,7 +849,6 @@ def fast_message_stream(
         onyx_tool for sublist in onyx_tools for onyx_tool in sublist
     ]
 
-    # Extract specific tool instances for dependency injection
     from onyx.tools.tool_implementations.images.image_generation_tool import (
         ImageGenerationTool,
     )
@@ -864,11 +863,9 @@ def fast_message_stream(
             image_generation_tool_instance = tool
         elif isinstance(tool, OktaProfileTool):
             okta_profile_tool_instance = tool
-    # TODO: Rework how sessions handle this
     converted_message_history = [
         PreviousMessage.from_langchain_msg(message, 0).to_agent_sdk_msg()
         for message in answer.graph_inputs.prompt_builder.build()
-        if message.type != "system"
     ]
     return fast_chat_turn.fast_chat_turn(
         messages=converted_message_history,
