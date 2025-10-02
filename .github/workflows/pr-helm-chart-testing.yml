@@ -71,16 +71,13 @@ jobs:
         helm repo add ot-container-kit https://ot-container-kit.github.io/helm-charts
         helm repo update
 
-    - name: Install Redis operator and Postgres operator
+    - name: Install Redis operator
       if: steps.list-changed.outputs.changed == 'true'
       shell: bash
       run: |
         echo "=== Installing redis-operator CRDs ==="
         helm upgrade --install redis-operator ot-container-kit/redis-operator \
           --namespace redis-operator --create-namespace --wait --timeout 300s
-        echo "=== Installing cloudnative-pg operator CRDs ==="
-        helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
-          --namespace cnpg-system --create-namespace --wait --timeout 300s
 
     - name: Pre-pull required images
       if: steps.list-changed.outputs.changed == 'true'
@@ -190,6 +187,36 @@ jobs:
         echo "=== Installation completed successfully ==="
         kubectl get pods --all-namespaces
 
+        echo "=== Inspecting CloudNativePG operator pods ==="
+        kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg || true
+        OPERATOR_INFO=$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg \
+          -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+        if [[ -n "$OPERATOR_INFO" ]]; then
+          while IFS=' ' read -r OP_NS OP_POD; do
+            [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
+            echo "--- Describe: $OP_NS/$OP_POD ---"
+            kubectl -n "$OP_NS" describe pod "$OP_POD" || true
+            echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
+            kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
+          done <<< "$OPERATOR_INFO"
+        else
+          echo "No CloudNativePG operator pods detected"
+        fi
+
+        echo "=== Inspecting CloudNativePG managed pods ==="
+        kubectl get pods --all-namespaces -l app.kubernetes.io/managed-by=cloudnative-pg || true
+        mapfile -t CNPG_PODS < <({ kubectl get pods --all-namespaces --no-headers 2>/dev/null || true; } \
+          | awk '/cloudnative-pg/ || /postgresql/ {print $1" "$2}' 2>/dev/null)
+        for entry in "${CNPG_PODS[@]}"; do
+          OP_NS=${entry%% *}
+          OP_POD=${entry#* }
+          [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
+          echo "--- Describe: $OP_NS/$OP_POD ---"
+          kubectl -n "$OP_NS" describe pod "$OP_POD" || true
+          echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
+          kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
+        done
+
     - name: Post-install verification
       if: steps.list-changed.outputs.changed == 'true'
       run: |
@@ -210,8 +237,32 @@ jobs:
         echo "=== Pod descriptions for debugging ==="
         kubectl describe pods --all-namespaces | grep -A 10 -B 3 "Failed\|Error\|Warning\|Pending" || echo "No problematic pods found"
         
-        echo "=== Recent logs for debugging ==="
-        kubectl logs --all-namespaces --tail=50 | grep -i "error\|timeout\|failed\|pull" || echo "No error logs found"
+        echo "=== CloudNativePG diagnostics ==="
+        OPERATOR_INFO=$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg \
+          -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' 2>/dev/null || true)
+        if [[ -n "$OPERATOR_INFO" ]]; then
+          while IFS=' ' read -r OP_NS OP_POD; do
+            [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
+            echo "--- Describe: $OP_NS/$OP_POD ---"
+            kubectl -n "$OP_NS" describe pod "$OP_POD" || true
+            echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
+            kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
+          done <<< "$OPERATOR_INFO"
+        else
+          echo "No CloudNativePG operator pods detected"
+        fi
+
+        mapfile -t CNPG_PODS < <({ kubectl get pods --all-namespaces --no-headers 2>/dev/null || true; } \
+          | awk '/cloudnative-pg/ || /postgresql/ {print $1" "$2}' 2>/dev/null)
+        for entry in "${CNPG_PODS[@]}"; do
+          OP_NS=${entry%% *}
+          OP_POD=${entry#* }
+          [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
+          echo "--- Describe: $OP_NS/$OP_POD ---"
+          kubectl -n "$OP_NS" describe pod "$OP_POD" || true
+          echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
+          kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
+        done
         
         echo "=== Helm releases ==="
         helm list --all-namespaces
