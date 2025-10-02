@@ -8,17 +8,26 @@ injection with simple fake versions of all dependencies except for the emitter
 (which should be passed in by the test writer).
 """
 
+from collections.abc import AsyncIterator
+from typing import List
 from uuid import uuid4
 
 import pytest
+from agents import AgentOutputSchemaBase
 from agents import FunctionTool
+from agents import Handoff
 from agents import Model
 from agents import ModelResponse
 from agents import ModelSettings
 from agents import ModelTracing
+from agents import Tool
 from agents import Usage
 from agents.items import ResponseOutputMessage
 from agents.items import ResponseOutputText
+from openai.types.responses import Response
+from openai.types.responses.response_stream_event import ResponseCompletedEvent
+from openai.types.responses.response_stream_event import ResponseCreatedEvent
+from openai.types.responses.response_stream_event import ResponseTextDeltaEvent
 from openai.types.responses.response_usage import InputTokensDetails
 from openai.types.responses.response_usage import OutputTokensDetails
 
@@ -85,9 +94,9 @@ class FakeLLM(LLM):
 
 
 class FakeModel(Model):
-    """Simple fake Model implementation for testing."""
+    """Simple fake Model implementation for testing Agents SDK."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "fake-model"
         self.provider = "fake-provider"
 
@@ -96,21 +105,20 @@ class FakeModel(Model):
         system_instructions: str | None,
         input: str | list,
         model_settings: ModelSettings,
-        tools: list,
-        output_schema,
-        handoffs: list,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
         tracing: ModelTracing,
         *,
         previous_response_id: str | None = None,
         conversation_id: str | None = None,
         prompt=None,
     ) -> ModelResponse:
-        """Fake get_response method that returns a simple response."""
-        # Create a simple text response
-        text_content = ResponseOutputText(text="fake response")
-        message = ResponseOutputMessage(role="assistant", content=[text_content])
+        # Build a minimal full response (non-streaming path)
+        msg = ResponseOutputMessage(
+            role="assistant", content=[ResponseOutputText(text="fake response")]
+        )
 
-        # Create usage information
         usage = Usage(
             requests=1,
             input_tokens=10,
@@ -120,32 +128,61 @@ class FakeModel(Model):
             output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
         )
 
-        return ModelResponse(
-            output=[message], usage=usage, response_id="fake-response-id"
-        )
+        # The ModelResponse wrapper is what the SDK expects here
+        return ModelResponse(output=[msg], usage=usage, response_id="fake-response-id")
 
-    async def stream_response(
+    def stream_response(
         self,
         system_instructions: str | None,
         input: str | list,
         model_settings: ModelSettings,
-        tools: list,
-        output_schema,
-        handoffs: list,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
         tracing: ModelTracing,
         *,
         previous_response_id: str | None = None,
         conversation_id: str | None = None,
         prompt=None,
-    ):
-        """Fake stream_response method that yields no events."""
+    ) -> AsyncIterator[object]:
+        # Minimal valid sequence of OpenAI Responses stream events.
+        async def _gen() -> AsyncIterator[object]:
+            response_id = "fake-response-id"
 
-        # Return an empty async iterator
-        async def empty_iterator():
-            if False:  # This ensures it's a proper async generator
-                yield
+            # 1) created
+            yield ResponseCreatedEvent(id=response_id)
 
-        return empty_iterator()
+            # 2) stream some text (delta)
+            yield ResponseTextDeltaEvent(delta="fake response")
+
+            # 3) completed with a full Response object
+            msg = ResponseOutputMessage(
+                role="assistant", content=[ResponseOutputText(text="fake response")]
+            )
+
+            usage = Usage(
+                requests=1,
+                input_tokens=10,
+                output_tokens=5,
+                total_tokens=15,
+                input_tokens_details=InputTokensDetails(cached_tokens=0),
+                output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+            )
+
+            final_response = Response(
+                id=response_id,
+                output=[msg],
+                usage=usage,
+                # These fields are commonly present; include minimally required ones
+                type="response",
+                status="completed",
+                # Some SDK versions include this; harmless if accepted:
+                model=self.name,
+            )
+
+            yield ResponseCompletedEvent(response=final_response)
+
+        return _gen()
 
 
 class FakeFailingModel(Model):
@@ -188,22 +225,30 @@ class FakeFailingModel(Model):
             output=[message], usage=usage, response_id="fake-response-id"
         )
 
-    async def stream_response(
+    def stream_response(
         self,
         system_instructions: str | None,
         input: str | list,
         model_settings: ModelSettings,
-        tools: list,
-        output_schema,
-        handoffs: list,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
         tracing: ModelTracing,
         *,
         previous_response_id: str | None = None,
         conversation_id: str | None = None,
         prompt=None,
-    ):
-        print("henlo")
-        raise Exception("Fake exception")
+    ) -> AsyncIterator[object]:
+        # Minimal valid sequence of OpenAI Responses stream events.
+        async def _gen() -> AsyncIterator[object]:
+            pass
+
+            # 1) created
+            # yield ResponseCreatedEvent(id=response_id)
+
+            raise Exception("Fake exception")
+
+        return _gen()
 
 
 class FakeSession:
@@ -471,5 +516,5 @@ def test_fast_chat_turn_catch_exception(
 
     # Call the function - it returns a generator due to the unified_event_stream decorator
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
-    packets = list(generator)
-    assert packets == [Packet(ind=0, obj=OverallStop(type="stop"))]
+    with pytest.raises(Exception):
+        list(generator)

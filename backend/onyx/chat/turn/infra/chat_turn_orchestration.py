@@ -48,6 +48,10 @@ def unified_event_stream(
         thread = run_in_background(run_with_exception_capture)
         while True:
             pkt: Packet = dependencies.emitter.bus.get()
+            # if isinstance(pkt.obj, PacketException):
+            #     raise pkt.obj.exception
+            # else:
+            #     yield pkt
             if pkt.obj == OverallStop(type="stop"):
                 yield pkt
                 break

@@ -64,10 +64,10 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
         ),
         all_cited_documents=[],
     )
+    wait_on_background(thread)
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
     )
-    wait_on_background(thread)
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
