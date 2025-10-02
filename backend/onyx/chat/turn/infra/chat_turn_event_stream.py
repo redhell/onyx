@@ -66,7 +66,9 @@ class OnyxRunner:
 
     def events(self) -> Iterator[object]:
         while True:
+            print("rg1")
             ev = self._q.get()
+            print("rg2")
             if ev is self.SENTINEL:
                 break
             yield ev

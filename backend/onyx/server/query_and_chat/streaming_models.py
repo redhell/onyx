@@ -36,6 +36,12 @@ class MessageDelta(BaseObj):
 """Control Packets"""
 
 
+class PacketException(BaseObj):
+    type: Literal["error"] = "error"
+    exception: Exception
+    model_config = {"arbitrary_types_allowed": True}
+
+
 class OverallStop(BaseObj):
     type: Literal["stop"] = "stop"
 
@@ -182,6 +188,7 @@ PacketObj = Annotated[
         ReasoningDelta,
         CitationStart,
         CitationDelta,
+        PacketException,
     ],
     Field(discriminator="type"),
 ]

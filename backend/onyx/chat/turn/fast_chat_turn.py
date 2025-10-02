@@ -73,7 +73,10 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
 def _emit_clean_up_packets(dependencies: ChatTurnDependencies, ctx: MyContext) -> None:
     # Tool call / reasoning cancelled
-    if dependencies.emitter.packet_history[-1].obj.type != "message_delta":
+    if (
+        dependencies.emitter.packet_history
+        and dependencies.emitter.packet_history[-1].obj.type != "message_delta"
+    ):
         dependencies.emitter.emit(
             Packet(
                 ind=ctx.current_run_step,

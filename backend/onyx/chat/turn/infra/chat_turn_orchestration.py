@@ -41,13 +41,13 @@ def unified_event_stream(
             try:
                 turn_func(messages, dependencies)
             except Exception as e:
-                emitter.emit(
+                dependencies.emitter.emit(
                     Packet(ind=0, obj=PacketException(type="error", exception=e))
                 )
 
         thread = run_in_background(run_with_exception_capture)
         while True:
-            pkt: Packet = emitter.bus.get()
+            pkt: Packet = dependencies.emitter.bus.get()
             if pkt.obj == OverallStop(type="stop"):
                 yield pkt
                 break
