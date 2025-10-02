@@ -4,43 +4,50 @@ import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useBoundingBox } from "@/hooks/useBoundingBox";
 import SvgX from "@/icons/x";
-import IconButton from "../buttons/IconButton";
+import IconButton from "@/refresh-components/buttons/IconButton";
+import SvgSearch from "@/icons/search";
 
 const divClasses = (active?: boolean, hovered?: boolean) =>
   ({
-    main: [
+    defaulted: [
       "border",
       hovered && "border-border-02",
       active && "border-border-05",
     ],
+    internal: [],
     disabled: ["bg-background-neutral-03"],
   }) as const;
 
 const inputClasses = (active?: boolean) =>
   ({
-    main: [
+    defaulted: [
       "text-text-04 placeholder:!font-secondary-body placeholder:text-text-02",
     ],
-    disabled: [
-      "text-text-02 placeholder:text-text-02 placeholder:font-secondary-body cursor-not-allowed",
-    ],
+    internal: [],
+    disabled: ["text-text-02"],
   }) as const;
 
 interface InputTypeInProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  placeholder: string;
-
   // Input states:
-  main?: boolean;
   active?: boolean;
+  internal?: boolean;
   disabled?: boolean;
+
+  // Stylings:
+  leftSearchIcon?: boolean;
+
+  placeholder: string;
 }
 
 function InputTypeInInner(
   {
-    placeholder,
-    main,
     active,
+    internal,
     disabled,
+
+    leftSearchIcon,
+
+    placeholder,
     className,
     value,
     onChange,
@@ -55,7 +62,7 @@ function InputTypeInInner(
   // Use forwarded ref if provided, otherwise use local ref
   const inputRef = ref || localRef;
 
-  const state = main ? "main" : disabled ? "disabled" : "main";
+  const state = internal ? "internal" : disabled ? "disabled" : "defaulted";
 
   useEffect(() => {
     // if disabled, set cursor to "not-allowed"
@@ -97,6 +104,10 @@ function InputTypeInInner(
         }
       }}
     >
+      <div className="pr-spacing-interline">
+        <SvgSearch className="w-[1rem] h-[1rem] stroke-text-02" />
+      </div>
+
       <input
         ref={inputRef}
         type="text"

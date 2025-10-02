@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  SlidersVerticalIcon,
   SearchIcon,
   DisableIcon,
   IconProps,
@@ -51,6 +50,8 @@ import { useTheme } from "next-themes";
 import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgSliders from "@/icons/sliders";
 import Text from "@/refresh-components/Text";
+import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
+import { cn } from "@/lib/utils";
 
 // Get source metadata for configured sources - deduplicated by source type
 function getConfiguredSources(
@@ -146,12 +147,12 @@ export function ActionItem({
               } ${isForced && "text-blue-500"}`}
             >
               <Icon
-                size={16}
-                className={
+                className={cn(
+                  "h-[1rem] w-[1rem] stroke-text-04",
                   isForced
                     ? "text-blue-500"
                     : "text-text-500 dark:text-neutral-400"
-                }
+                )}
               />
               <span
                 className={`text-sm font-medium select-none ${
@@ -856,33 +857,13 @@ export function ActionToggle({
         >
           {/* Search Input */}
           {!showSourceManagement && (
-            <div className="pt-1 mx-1">
-              <div className="relative">
-                <SearchIcon
-                  size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Search Menu"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="
-                    w-full
-                    pl-9
-                    pr-3
-                    py-2
-                    bg-transparent
-                    rounded-lg
-                    text-sm
-                    outline-none
-                    text-neutral-700 dark:text-neutral-300
-                    placeholder:text-neutral-400 dark:placeholder:text-neutral-500
-                  "
-                  autoFocus
-                />
-              </div>
-            </div>
+            <InputTypeIn
+              placeholder="Search Menu"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              autoFocus
+              internal
+            />
           )}
 
           {/* Options */}
