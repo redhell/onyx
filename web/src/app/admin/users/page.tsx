@@ -227,7 +227,7 @@ const AddUserButton = ({
           title="Bulk Add Users"
           onOutsideClick={() => setBulkAddUsersModal(false)}
         >
-          <div className="flex flex-col gap-y-4">
+          <div className="flex flex-col gap-spacing-interline">
             <Text>
               Add the email addresses to import, separated by whitespaces.
               Invited users will be able to login to this domain with their
