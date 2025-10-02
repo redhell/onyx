@@ -1,7 +1,7 @@
 "use client";
 
 import { EmbeddingFormProvider } from "@/components/context/EmbeddingContext";
-import EmbeddingSidebar from "../../../sections/sidebar/EmbeddingSidebar";
+import EmbeddingSidebar from "../../../sections/sidebar/UpsertEmbeddingSidebar";
 import EmbeddingForm from "./pages/EmbeddingFormPage";
 
 export default function EmbeddingWrapper() {

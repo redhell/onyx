@@ -1,23 +1,39 @@
-import { useEmbeddingFormContext } from "@/components/context/EmbeddingContext";
+import { useFormContext } from "@/components/context/FormContext";
+import { credentialTemplates } from "@/lib/connectors/credentials";
 import Text from "@/refresh-components/Text";
-import StepSidebar from "@/sections/sidebar/StepSidebar";
+import StepSidebar from "@/sections/sidebar/StepSidebarWrapper";
 import SvgSettings from "@/icons/settings";
+import { useUser } from "@/components/user/UserProvider";
 
-export default function EmbeddingSidebar() {
-  const { formStep, setFormStep } = useEmbeddingFormContext();
+export default function Sidebar() {
+  const { formStep, setFormStep, connector, allowAdvanced, allowCreate } =
+    useFormContext();
+  const noCredential = credentialTemplates[connector] == null;
 
-  const settingSteps = ["Embedding Model", "Reranking Model", "Advanced"];
+  const { isAdmin } = useUser();
+  const buttonName = isAdmin ? "Admin Page" : "Curator Page";
+
+  const settingSteps = [
+    ...(!noCredential ? ["Credential"] : []),
+    "Connector",
+    ...(connector == "file" ? [] : ["Advanced (optional)"]),
+  ];
 
   return (
     <StepSidebar
-      buttonName="Search Settings"
+      buttonName={buttonName}
       buttonIcon={SvgSettings}
-      buttonHref="/admin/configuration/search"
+      buttonHref="/admin/add-connector"
     >
       <div className="relative">
-        <div className="absolute h-[85%] left-[6px] top-[8px] bottom-0 w-0.5 bg-background-tint-04"></div>
+        {connector != "file" && (
+          <div className="absolute h-[85%] left-[6px] top-[8px] bottom-0 w-0.5 bg-background-tint-04"></div>
+        )}
         {settingSteps.map((step, index) => {
-          const allowed = true; // All steps are always allowed for embedding configuration
+          const allowed =
+            (step == "Connector" && allowCreate) ||
+            (step == "Advanced (optional)" && allowAdvanced) ||
+            index <= formStep;
 
           return (
             <div
@@ -27,7 +43,7 @@ export default function EmbeddingSidebar() {
               }`}
               onClick={() => {
                 if (allowed) {
-                  setFormStep(index);
+                  setFormStep(index - (noCredential ? 1 : 0));
                 }
               }}
             >
