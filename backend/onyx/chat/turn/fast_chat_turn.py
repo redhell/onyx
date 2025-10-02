@@ -8,8 +8,8 @@ from onyx.chat.turn.infra.chat_turn_orchestration import unified_event_stream
 from onyx.chat.turn.infra.packet_translation import default_packet_translation
 from onyx.chat.turn.infra.session_sink import extract_final_answer_from_packets
 from onyx.chat.turn.infra.session_sink import save_iteration
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.chat.turn.models import ChatTurnDependencies
-from onyx.chat.turn.models import MyContext
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -19,7 +19,7 @@ from onyx.utils.threadpool_concurrency import wait_on_background
 
 @unified_event_stream
 def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
-    ctx = MyContext(
+    ctx = ChatTurnContext(
         run_dependencies=dependencies,
         aggregated_context=AggregatedDRContext(
             context="context",
@@ -71,7 +71,9 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
-def _emit_clean_up_packets(dependencies: ChatTurnDependencies, ctx: MyContext) -> None:
+def _emit_clean_up_packets(
+    dependencies: ChatTurnDependencies, ctx: ChatTurnContext
+) -> None:
     # Tool call / reasoning cancelled
     if (
         dependencies.emitter.packet_history

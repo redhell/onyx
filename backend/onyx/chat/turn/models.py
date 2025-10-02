@@ -42,7 +42,7 @@ class ChatTurnDependencies:
 
 
 @dataclass
-class MyContext:
+class ChatTurnContext:
     """Context class to hold search tool and other dependencies"""
 
     run_dependencies: ChatTurnDependencies | None = None

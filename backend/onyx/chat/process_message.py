@@ -786,6 +786,9 @@ def stream_chat_message_objects(
         )
 
         # TODO: For backwards compatible PR, switch back to the original call
+        # yield from process_streamed_packets.process_streamed_packets(
+        #     answer_processed_output=answer.processed_streamed_output,
+        # )
         yield from _fast_message_stream(
             answer,
             tools,

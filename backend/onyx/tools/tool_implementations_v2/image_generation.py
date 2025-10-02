@@ -6,7 +6,7 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import GeneratedImage
 from onyx.agents.agent_search.dr.models import IterationAnswer
-from onyx.chat.turn.models import MyContext
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.file_store.utils import build_frontend_file_url
 from onyx.file_store.utils import save_files
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolDelta
@@ -24,7 +24,7 @@ logger = setup_logger()
 
 @function_tool
 def image_generation_tool(
-    run_context: RunContextWrapper[MyContext], prompt: str, shape: str = "square"
+    run_context: RunContextWrapper[ChatTurnContext], prompt: str, shape: str = "square"
 ) -> str:
     """
     Generate an image from a text prompt using AI image generation models.

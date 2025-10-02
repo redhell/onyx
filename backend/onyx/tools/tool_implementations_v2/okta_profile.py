@@ -3,7 +3,7 @@ import json
 from agents import function_tool
 from agents import RunContextWrapper
 
-from onyx.chat.turn.models import MyContext
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -14,7 +14,7 @@ logger = setup_logger()
 
 
 @function_tool
-def okta_profile_tool(run_context: RunContextWrapper[MyContext]) -> str:
+def okta_profile_tool(run_context: RunContextWrapper[ChatTurnContext]) -> str:
     """
     Retrieve the current user's profile information from Okta.
 

@@ -6,7 +6,7 @@ from agents import RunContextWrapper
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.stop_signal_checker import is_connected
-from onyx.chat.turn.models import MyContext
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
@@ -21,7 +21,9 @@ from onyx.tools.tool_implementations.search.search_tool import SearchResponseSum
 
 
 @function_tool
-def internal_search_tool(run_context: RunContextWrapper[MyContext], query: str) -> str:
+def internal_search_tool(
+    run_context: RunContextWrapper[ChatTurnContext], query: str
+) -> str:
     """
     Search the internal knowledge base and documents.
 

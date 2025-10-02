@@ -6,8 +6,8 @@ from agents import RunContextWrapper
 from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.turn.infra.chat_turn_event_stream import OnyxRunner
 from onyx.chat.turn.infra.packet_translation import default_packet_translation
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.chat.turn.models import ChatTurnDependencies
-from onyx.chat.turn.models import MyContext
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
@@ -15,7 +15,7 @@ from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 @function_tool
-def reasoning_tool(run_context: RunContextWrapper[MyContext], query: str) -> str:
+def reasoning_tool(run_context: RunContextWrapper[ChatTurnContext], query: str) -> str:
     """
     Reason about the query and return the answer.
     """
@@ -53,7 +53,9 @@ def reasoning_tool(run_context: RunContextWrapper[MyContext], query: str) -> str
     return "Reasoning tool"
 
 
-def _emit_clean_up_packets(dependencies: ChatTurnDependencies, ctx: MyContext) -> None:
+def _emit_clean_up_packets(
+    dependencies: ChatTurnDependencies, ctx: ChatTurnContext
+) -> None:
     # Tool call / reasoning cancelled
     if (
         dependencies.emitter.packet_history

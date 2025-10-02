@@ -203,7 +203,7 @@ def _call_mcp_client_function_sync(
         function, server_url, connection_headers, transport, auth, **kwargs
     )
     try:
-        run_async_sync(run_client_function())
+        return run_async_sync(run_client_function())
     except Exception as e:
         logger.error(f"Failed to call MCP client function: {e}")
         if isinstance(e, ExceptionGroup):

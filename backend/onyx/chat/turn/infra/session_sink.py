@@ -13,7 +13,7 @@ from onyx.agents.agent_search.dr.sub_agents.image_generation.models import (
     GeneratedImageFullResult,
 )
 from onyx.agents.agent_search.dr.utils import convert_inference_sections_to_search_docs
-from onyx.chat.turn.models import MyContext
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.context.search.models import InferenceSection
 from onyx.db.chat import create_search_doc_from_inference_section
 from onyx.db.chat import update_db_session_with_messages
@@ -31,7 +31,7 @@ def save_iteration(
     message_id: int,
     chat_session_id: UUID,
     research_type: ResearchType,
-    ctx: MyContext,
+    ctx: ChatTurnContext,
     final_answer: str,
     all_cited_documents: list[InferenceSection],
 ) -> None:

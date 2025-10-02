@@ -24,6 +24,17 @@ from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
 from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
 
 
+class MockEmitter:
+    """Mock emitter that tracks packet history for testing."""
+
+    def __init__(self):
+        self.packet_history: list = []
+
+    def emit(self, packet):
+        """Emit a packet and add it to history."""
+        self.packet_history.append(packet)
+
+
 @pytest.fixture
 def openapi_schema() -> dict[str, Any]:
     """OpenAPI schema for testing."""
@@ -170,14 +181,14 @@ def test_tool_to_function_tool_post_method(
 
 
 @patch("onyx.tools.tool_implementations.custom.custom_tool.requests.request")
-def test_function_tool_invocation(
+def test_custom_tool_invocation(
     mock_request: MagicMock,
     openapi_schema: dict[str, Any],
     dynamic_schema_info: DynamicSchemaInfo,
 ) -> None:
     """
     Test that the converted FunctionTool can be invoked correctly.
-    Verifies that the on_invoke_tool method works as expected.
+    Verifies that the on_invoke_tool method works as expected and emits packets.
     """
     tools = build_custom_tools_from_openapi_schema_and_headers(
         tool_id=-1,  # dummy tool id
@@ -188,8 +199,15 @@ def test_function_tool_invocation(
     v1_tool = tools[0]
     v2_tool = tool_to_function_tool(v1_tool)
 
-    # Mock the tool context (required by FunctionTool)
+    # Create a mock emitter that tracks packet history
+    mock_emitter = MockEmitter()
+
+    # Mock the tool context with an unmocked emitter
     mock_context = MagicMock()
+    mock_context.context = MagicMock()
+    mock_context.context.run_dependencies = MagicMock()
+    mock_context.context.run_dependencies.emitter = mock_emitter
+    mock_context.context.current_run_step = 0
 
     # Test the on_invoke_tool method
     # The FunctionTool expects a JSON string as input
@@ -214,6 +232,16 @@ def test_function_tool_invocation(
     assert len(result) == 1
     assert result[0].id == "custom_tool_response"
 
+    assert len(mock_emitter.packet_history) == 3
+
+    start_packet = mock_emitter.packet_history[0]
+    delta_packet = mock_emitter.packet_history[1]
+    section_end_packet = mock_emitter.packet_history[2]
+
+    assert getattr(start_packet.obj, "type", None) == "custom_tool_start"
+    assert getattr(delta_packet.obj, "type", None) == "custom_tool_delta"
+    assert getattr(section_end_packet.obj, "type", None) == "section_end"
+
 
 def test_tool_to_function_tool_mcp_tool(mcp_tool: MCPTool) -> None:
     """
@@ -236,15 +264,22 @@ def test_tool_to_function_tool_mcp_tool(mcp_tool: MCPTool) -> None:
 def test_mcp_tool_invocation(mock_call_mcp_tool: MagicMock, mcp_tool: MCPTool) -> None:
     """
     Test that the converted MCP FunctionTool can be invoked correctly.
-    Verifies that the on_invoke_tool method works as expected for MCP tools.
+    Verifies that the on_invoke_tool method works as expected for MCP tools and emits packets.
     """
     # Mock the MCP tool call response
     mock_call_mcp_tool.return_value = "Search results: test query"
 
     v2_tool = tool_to_function_tool(mcp_tool)
 
-    # Mock the tool context (required by FunctionTool)
+    # Create a mock emitter that tracks packet history
+    mock_emitter = MockEmitter()
+
+    # Mock the tool context with an unmocked emitter
     mock_context = MagicMock()
+    mock_context.context = MagicMock()
+    mock_context.context.run_dependencies = MagicMock()
+    mock_context.context.run_dependencies.emitter = mock_emitter
+    mock_context.context.current_run_step = 0
 
     # Test the on_invoke_tool method
     # The FunctionTool expects a JSON string as input
@@ -273,6 +308,16 @@ def test_mcp_tool_invocation(mock_call_mcp_tool: MagicMock, mcp_tool: MCPTool) -
     assert isinstance(result, list)
     assert len(result) == 1
     assert result[0].id == "custom_tool_response"
+
+    assert len(mock_emitter.packet_history) == 3
+
+    start_packet = mock_emitter.packet_history[0]
+    delta_packet = mock_emitter.packet_history[1]
+    section_end_packet = mock_emitter.packet_history[2]
+
+    assert getattr(start_packet.obj, "type", None) == "custom_tool_start"
+    assert getattr(delta_packet.obj, "type", None) == "custom_tool_delta"
+    assert getattr(section_end_packet.obj, "type", None) == "section_end"
 
 
 def test_tools_to_function_tools_comprehensive(
