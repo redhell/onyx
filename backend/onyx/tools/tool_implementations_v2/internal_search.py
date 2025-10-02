@@ -13,7 +13,7 @@ from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
 from onyx.server.query_and_chat.streaming_models import SectionEnd
-from onyx.tools.models import SearchPipelineOverrideKwargs
+from onyx.tools.models import SearchToolOverrideKwargs
 from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_RESPONSE_SUMMARY_ID,
 )
@@ -65,7 +65,7 @@ def internal_search_tool(run_context: RunContextWrapper[MyContext], query: str) 
     with get_session_with_current_tenant() as search_db_session:
         for tool_response in search_pipeline.run(
             query=query,
-            override_kwargs=SearchPipelineOverrideKwargs(
+            override_kwargs=SearchToolOverrideKwargs(
                 force_no_rerank=True,
                 alternate_db_session=search_db_session,
                 skip_query_analysis=True,

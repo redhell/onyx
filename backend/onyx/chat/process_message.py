@@ -30,9 +30,6 @@ from onyx.chat.models import PromptConfig
 from onyx.chat.models import QADocsResponse
 from onyx.chat.models import StreamingError
 from onyx.chat.models import UserKnowledgeFilePacket
-from onyx.chat.packet_proccessing.process_streamed_packets import (
-    process_streamed_packets,
-)
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
@@ -89,6 +86,7 @@ from onyx.llm.interfaces import LLM
 from onyx.llm.models import PreviousMessage
 from onyx.llm.utils import litellm_exception_to_error_msg
 from onyx.natural_language_processing.utils import get_tokenizer
+from onyx.redis.redis_pool import get_redis_client
 from onyx.server.query_and_chat.models import CreateChatMessageRequest
 from onyx.server.query_and_chat.streaming_models import CitationDelta
 from onyx.server.query_and_chat.streaming_models import CitationInfo
@@ -789,8 +787,13 @@ def stream_chat_message_objects(
         )
 
         # Process streamed packets using the new packet processing module
-        yield from process_streamed_packets(
-            answer_processed_output=answer.processed_streamed_output,
+        yield from fast_message_stream(
+            answer,
+            tools,
+            db_session,
+            get_redis_client(),
+            chat_session_id,
+            reserved_message_id,
         )
 
     except ValueError as e:

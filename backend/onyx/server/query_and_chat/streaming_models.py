@@ -66,6 +66,12 @@ class SearchToolDelta(BaseObj):
     documents: list[SavedSearchDoc] | None = None
 
 
+class FetchToolStart(BaseObj):
+    type: Literal["fetch_tool_start"] = "fetch_tool_start"
+
+    documents: list[SavedSearchDoc]
+
+
 class ImageGenerationToolStart(BaseObj):
     type: Literal["image_generation_tool_start"] = "image_generation_tool_start"
 
@@ -189,6 +195,7 @@ PacketObj = Annotated[
         CitationStart,
         CitationDelta,
         PacketException,
+        FetchToolStart,
     ],
     Field(discriminator="type"),
 ]
