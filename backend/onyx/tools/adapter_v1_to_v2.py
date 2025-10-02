@@ -5,6 +5,7 @@ from typing import Any
 from agents import FunctionTool
 from agents import RunContextWrapper
 
+from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
 from onyx.tools.tool import Tool
 
 
@@ -36,3 +37,24 @@ def tool_to_function_tool(tool: Tool) -> FunctionTool:
             tool, context, json_string
         ),
     )
+
+
+def tools_to_function_tools(tools: list[Tool]) -> list[FunctionTool]:
+    from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
+    from onyx.tools.tool_implementations.custom.custom_tool import CustomTool
+
+    onyx_tools: list[list[FunctionTool]] = [
+        BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
+        for tool in tools
+        if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
+    ]
+    flattened_builtin_tools: list[FunctionTool] = [
+        onyx_tool for sublist in onyx_tools for onyx_tool in sublist
+    ]
+    custom_and_mcp_tools: list[FunctionTool] = [
+        tool_to_function_tool(tool)
+        for tool in tools
+        if isinstance(tool, CustomTool) or isinstance(tool, MCPTool)
+    ]
+
+    return flattened_builtin_tools + custom_and_mcp_tools

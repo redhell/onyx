@@ -8,7 +8,6 @@ from typing import cast
 from typing import Protocol
 from uuid import UUID
 
-from agents import FunctionTool
 from agents.extensions.models.litellm_model import LitellmModel
 from redis.client import Redis
 from sqlalchemy.orm import Session
@@ -94,8 +93,7 @@ from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.utils import get_json_line
-from onyx.tools.adapter_v1_to_v2 import tool_to_function_tool
-from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
+from onyx.tools.adapter_v1_to_v2 import tools_to_function_tools
 from onyx.tools.force import ForceUseTool
 from onyx.tools.models import SearchToolOverrideKwargs
 from onyx.tools.tool import Tool
@@ -847,25 +845,6 @@ def _fast_message_stream(
     from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
         OktaProfileTool,
     )
-    from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
-    from onyx.tools.tool_implementations.custom.custom_tool import CustomTool
-
-    onyx_tools: list[list[FunctionTool]] = [
-        BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
-        for tool in tools
-        if type(tool).__name__ in BUILT_IN_TOOL_MAP_V2
-    ]
-    flattened_builtin_tools: list[FunctionTool] = [
-        onyx_tool for sublist in onyx_tools for onyx_tool in sublist
-    ]
-    custom_and_mcp_tools: list[list[FunctionTool]] = [
-        tool_to_function_tool(tool)
-        for tool in tools
-        if isinstance(tool, CustomTool) or isinstance(tool, MCPTool)
-    ]
-    flattened_custom_and_mcp_tools: list[FunctionTool] = [
-        onyx_tool for sublist in custom_and_mcp_tools for onyx_tool in sublist
-    ]
 
     image_generation_tool_instance = None
     okta_profile_tool_instance = None
@@ -888,7 +867,7 @@ def _fast_message_stream(
                 api_key=answer.graph_tooling.primary_llm.config.api_key,
             ),
             llm=answer.graph_tooling.primary_llm,
-            tools=flattened_builtin_tools + flattened_custom_and_mcp_tools,
+            tools=tools_to_function_tools(tools),
             search_pipeline=answer.graph_tooling.search_tool,
             image_generation_tool=image_generation_tool_instance,
             okta_profile_tool=okta_profile_tool_instance,

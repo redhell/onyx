@@ -9,11 +9,19 @@ from onyx.db.enums import MCPAuthenticationType
 from onyx.db.enums import MCPTransport
 from onyx.db.models import MCPServer
 from onyx.tools.adapter_v1_to_v2 import tool_to_function_tool
+from onyx.tools.adapter_v1_to_v2 import tools_to_function_tools
 from onyx.tools.models import DynamicSchemaInfo
 from onyx.tools.tool_implementations.custom.custom_tool import (
     build_custom_tools_from_openapi_schema_and_headers,
 )
+from onyx.tools.tool_implementations.images.image_generation_tool import (
+    ImageGenerationTool,
+)
 from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
+from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
+    OktaProfileTool,
+)
+from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
 
 
 @pytest.fixture
@@ -99,6 +107,38 @@ def mcp_tool(mcp_server: MCPServer) -> MCPTool:
         tool_definition=tool_definition,
         connection_config=None,
         user_email="test@example.com",
+    )
+
+
+@pytest.fixture
+def image_generation_tool() -> ImageGenerationTool:
+    """Image generation tool for testing."""
+    return ImageGenerationTool(
+        api_key="test-api-key",
+        api_base=None,
+        api_version=None,
+        tool_id=3,
+        model="test-model",
+        num_imgs=1,
+    )
+
+
+@pytest.fixture
+def web_search_tool() -> WebSearchTool:
+    """Web search tool for testing."""
+    return WebSearchTool(tool_id=4)
+
+
+@pytest.fixture
+def okta_profile_tool() -> OktaProfileTool:
+    """Okta profile tool for testing."""
+    return OktaProfileTool(
+        access_token="test-access-token",
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+        openid_config_url="https://test.okta.com/.well-known/openid_configuration",
+        okta_api_token="test-api-token",
+        tool_id=5,
     )
 
 
@@ -233,3 +273,90 @@ def test_mcp_tool_invocation(mock_call_mcp_tool: MagicMock, mcp_tool: MCPTool) -
     assert isinstance(result, list)
     assert len(result) == 1
     assert result[0].id == "custom_tool_response"
+
+
+def test_tools_to_function_tools_comprehensive(
+    openapi_schema: dict[str, Any],
+    dynamic_schema_info: DynamicSchemaInfo,
+    mcp_tool: MCPTool,
+    image_generation_tool: ImageGenerationTool,
+    web_search_tool: WebSearchTool,
+    okta_profile_tool: OktaProfileTool,
+) -> None:
+    """
+    Test conversion of a mixed list of tools to FunctionTools.
+    Verifies that the adapter correctly handles:
+    - MCP tools (converted via tool_to_function_tool)
+    - Custom tools (converted via tool_to_function_tool)
+    - Built-in tools (ImageGenerationTool, WebSearchTool, OktaProfileTool)
+      (converted via BUILT_IN_TOOL_MAP_V2)
+    """
+    # Create custom tools from the OpenAPI schema
+    custom_tools = build_custom_tools_from_openapi_schema_and_headers(
+        tool_id=-1,  # dummy tool id
+        openapi_schema=openapi_schema,
+        dynamic_schema_info=dynamic_schema_info,
+    )
+
+    # Create a mixed list of different tool types
+    mixed_tools = [
+        mcp_tool,  # MCP tool
+        custom_tools[0],  # Custom tool (GET method)
+        image_generation_tool,  # Built-in image generation tool
+        web_search_tool,  # Built-in web search tool
+        okta_profile_tool,  # Built-in okta profile tool
+    ]
+
+    # Convert the tools
+    function_tools = tools_to_function_tools(mixed_tools)
+
+    # Verify we got a list of FunctionTools
+    assert isinstance(function_tools, list)
+    assert len(function_tools) > 0
+    assert all(
+        hasattr(tool, "name")
+        and hasattr(tool, "description")
+        and hasattr(tool, "on_invoke_tool")
+        for tool in function_tools
+    )
+
+    # Verify that built-in tools are mapped to their V2 equivalents
+    # ImageGenerationTool should map to image_generation_tool
+    image_function_tools = [
+        tool for tool in function_tools if tool.name == "image_generation_tool"
+    ]
+    assert len(image_function_tools) == 1
+
+    # WebSearchTool should map to web_search_tool and web_fetch_tool (2 tools)
+    web_function_tools = [
+        tool
+        for tool in function_tools
+        if tool.name in ["web_search_tool", "web_fetch_tool"]
+    ]
+    assert len(web_function_tools) == 2
+
+    # OktaProfileTool should map to okta_profile_tool
+    okta_function_tools = [
+        tool for tool in function_tools if tool.name == "okta_profile_tool"
+    ]
+    assert len(okta_function_tools) == 1
+
+    # Verify that custom and MCP tools are converted via tool_to_function_tool
+    # These should have the same names as their original tools
+    mcp_function_tools = [tool for tool in function_tools if tool.name == mcp_tool.name]
+    assert len(mcp_function_tools) == 1
+
+    custom_function_tools = [
+        tool for tool in function_tools if tool.name == custom_tools[0].name
+    ]
+    assert len(custom_function_tools) == 1
+
+    # Verify that all FunctionTools have the required properties
+    for tool in function_tools:
+        assert hasattr(tool, "name")
+        assert hasattr(tool, "description")
+        assert hasattr(tool, "params_json_schema")
+        assert hasattr(tool, "on_invoke_tool")
+        assert tool.name is not None
+        assert tool.description is not None
+        assert tool.on_invoke_tool is not None
