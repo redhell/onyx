@@ -23,14 +23,14 @@ import Text from "@/refresh-components/Text";
 
 interface LLMPopoverProps {
   requiresImageGeneration?: boolean;
-  compact?: boolean;
+  folded?: boolean;
   onSelect?: (value: string) => void;
   currentModelName?: string;
 }
 
 export default function LLMPopover({
   requiresImageGeneration,
-  compact,
+  folded,
   onSelect,
   currentModelName,
 }: LLMPopoverProps) {
@@ -72,21 +72,24 @@ export default function LLMPopover({
 
   // Memoize trigger content to prevent rerendering
   const triggerContent = useMemo(
-    compact
-      ? () => <IconButton icon={SvgRefreshCw} tertiary tooltip="Regenerate" />
-      : () => (
-          <SelectButton
-            icon={getProviderIcon(
-              llmManager.currentLlm.provider,
-              llmManager.currentLlm.modelName
-            )}
-            onClick={() => setOpen(true)}
-            active={open}
-          >
-            {getDisplayNameForModel(llmManager.currentLlm.modelName)}
-          </SelectButton>
-        ),
-    [llmManager.currentLlm, open, setOpen]
+    () => (
+      <SelectButton
+        icon={
+          folded
+            ? SvgRefreshCw
+            : getProviderIcon(
+                llmManager.currentLlm.provider,
+                llmManager.currentLlm.modelName
+              )
+        }
+        onClick={() => setOpen(true)}
+        active={open}
+        folded={folded}
+      >
+        {getDisplayNameForModel(llmManager.currentLlm.modelName)}
+      </SelectButton>
+    ),
+    [llmManager.currentLlm, open, setOpen, folded]
   );
 
   const llmOptionsToChooseFrom = useMemo(

@@ -19,7 +19,6 @@ import {
   useSelectedNodeForDocDisplay,
 } from "@/app/chat/stores/useChatSessionStore";
 import { copyAll, handleCopy } from "@/app/chat/message/copyingUtils";
-import RegenerateOption from "@/app/chat/components/RegenerateOption";
 import MessageSwitcher from "@/app/chat/message/MessageSwitcher";
 import { BlinkingDot } from "@/app/chat/message/BlinkingDot";
 import {
@@ -38,6 +37,8 @@ import SvgCopy from "@/icons/copy";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
 import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
+import LLMPopover from "../../components/input/LLMPopover";
+import { parseLlmDescriptor } from "@/lib/llm/utils";
 
 export interface AIMessageProps {
   rawPackets: Packet[];
@@ -385,9 +386,14 @@ export default function AIMessage({
                           />
 
                           {chatState.regenerate && (
-                            <RegenerateOption
-                              regenerate={chatState.regenerate}
-                              overriddenModel={chatState.overriddenModel}
+                            <LLMPopover
+                              currentModelName={chatState.overriddenModel}
+                              onSelect={(modelName) => {
+                                const llmDescriptor =
+                                  parseLlmDescriptor(modelName);
+                                chatState.regenerate!(llmDescriptor);
+                              }}
+                              folded
                             />
                           )}
 
