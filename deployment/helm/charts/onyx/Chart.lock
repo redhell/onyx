@@ -5,14 +5,14 @@ dependencies:
 - name: vespa
   repository: https://onyx-dot-app.github.io/vespa-helm-charts
   version: 0.2.24
-- name: nginx
-  repository: oci://registry-1.docker.io/bitnamicharts
-  version: 15.14.0
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.13.3
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 20.1.0
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.4
-digest: sha256:dddd687525764f5698adc339a11d268b0ee9c3ca81f8d46c9e65a6bf2c21cf25
-generated: "2025-09-24T12:16:33.661608-07:00"
+digest: sha256:994513ba5d2f700179163e80f25180be86d26a5e24a767ec763392a6be3adc34
+generated: "2025-10-02T11:41:40.925259-07:00"
