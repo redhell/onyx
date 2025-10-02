@@ -409,10 +409,9 @@ const Main = () => {
       )}
       <div className="mb-2"></div>
 
-      <CreateButton
-        href="/admin/standard-answer/new"
-        text="New Standard Answer"
-      />
+      <CreateButton href="/admin/standard-answer/new">
+        New Standard Answer
+      </CreateButton>
 
       <Separator />
 

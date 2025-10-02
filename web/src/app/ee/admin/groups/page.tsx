@@ -52,10 +52,9 @@ const Main = () => {
     <>
       {popup}
       {isAdmin && (
-        <CreateButton
-          onClick={() => setShowForm(true)}
-          text="Create New User Group"
-        />
+        <CreateButton onClick={() => setShowForm(true)}>
+          Create New User Group
+        </CreateButton>
       )}
       {data.length > 0 && (
         <div className="mt-2">

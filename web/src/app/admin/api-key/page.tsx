@@ -108,10 +108,9 @@ function Main() {
   }
 
   const newApiKeyButton = (
-    <CreateButton
-      onClick={() => setShowCreateUpdateForm(true)}
-      text="Create API Key"
-    />
+    <CreateButton onClick={() => setShowCreateUpdateForm(true)}>
+      Create API Key
+    </CreateButton>
   );
 
   if (apiKeys.length === 0) {

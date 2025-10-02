@@ -138,10 +138,9 @@ function Main() {
         </li>
       </ul>
 
-      <CreateButton
-        onClick={() => setModalIsOpen(true)}
-        text="Create a Token Rate Limit"
-      />
+      <CreateButton onClick={() => setModalIsOpen(true)}>
+        Create a Token Rate Limit
+      </CreateButton>
       {isPaidEnterpriseFeaturesEnabled && (
         <Tabs
           className="mt-2"

@@ -199,7 +199,7 @@ const iconClasses = (active?: boolean) =>
     },
   }) as const;
 
-interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
   // Button variants:
   defaulted?: boolean;
   action?: boolean;

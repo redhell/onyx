@@ -43,7 +43,9 @@ function MainContent({
         <Separator />
 
         <Title>Create an Assistant</Title>
-        <CreateButton href="/assistants/new?admin=true" text="New Assistant" />
+        <CreateButton href="/assistants/new?admin=true">
+          New Assistant
+        </CreateButton>
 
         <Separator />
 
@@ -77,10 +79,9 @@ function MainContent({
             <Text className="text-subtle text-sm mb-4">
               ...and so much more!
             </Text>
-            <CreateButton
-              href="/assistants/new?admin=true"
-              text="Create Your First Assistant"
-            />
+            <CreateButton href="/assistants/new?admin=true">
+              Create Your First Assistant
+            </CreateButton>
             <div className="mt-6 pt-6 border-t border-border">
               <Text className="text-subtle text-sm">
                 OR go{" "}

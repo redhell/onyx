@@ -69,7 +69,7 @@ const Main = () => {
         found in the Onyx documentation to get started!
       </p>
 
-      <CreateButton href="/admin/bots/new" text="New Slack Bot" />
+      <CreateButton href="/admin/bots/new">New Slack Bot</CreateButton>
 
       <SlackBotTable slackBots={slackBots} />
     </div>
