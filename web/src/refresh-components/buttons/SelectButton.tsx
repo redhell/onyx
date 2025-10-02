@@ -1,86 +1,166 @@
 "use client";
 
-import React from "react";
-import { SvgProps } from "@/icons";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import Truncated from "@/refresh-components/Truncated";
-import SvgChevronDownSmall from "@/icons/chevron-down-small";
+import { SvgProps } from "@/icons";
+import Text from "@/refresh-components/Text";
+import IconButton from "./IconButton";
+import SvgX from "@/icons/x";
 
-const textClasses = {
-  primary: {
-    main: ["text-text-04", "stroke-text-04"],
-    disabled: ["text-text-02", "stroke-text-02"],
-  },
-} as const;
+const MARGIN = 5;
+
+const baseClassNames = (active?: boolean) =>
+  ({
+    enabled: [
+      active && "bg-background-neutral-00",
+      "hover:bg-background-tint-02",
+    ],
+    disabled: ["bg-background-neutral-02"],
+  }) as const;
+
+const iconClassNames = (active?: boolean) =>
+  ({
+    defaulted: {
+      enabled: [
+        active ? "stroke-text-05" : "stroke-text-03",
+        "group-hover/SelectButton:stroke-text-04",
+      ],
+      disabled: ["stroke-text-01"],
+    },
+    action: {
+      enabled: [active ? "stroke-action-link-05" : "stroke-text-03"],
+      disabled: ["stroke-text-01"],
+    },
+  }) as const;
+
+const textClassNames = (active?: boolean) =>
+  ({
+    defaulted: {
+      enabled: [
+        active ? "text-text-05" : "text-text-03",
+        "group-hover/SelectButton:text-text-04",
+      ],
+      disabled: ["text-text-01"],
+    },
+    action: {
+      enabled: [active ? "text-action-link-05" : "text-text-03"],
+      disabled: ["text-text-01"],
+    },
+  }) as const;
 
 export interface SelectButtonProps {
-  // Button states:
-  folded?: boolean;
+  // Button states
   active?: boolean;
   disabled?: boolean;
+  folded?: boolean;
 
-  // Button variants
-  primary?: boolean;
+  // Variants
+  action?: boolean;
 
-  // Button properties:
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
-  className?: string;
+  // Content
+  children: string;
   icon: React.FunctionComponent<SvgProps>;
-  children?: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
 }
 
 export default function SelectButton({
-  folded,
   active,
   disabled,
-
-  primary,
-
+  action,
+  folded,
+  children,
+  icon: Icon,
   onClick,
   className,
-  icon: Icon,
-  children,
 }: SelectButtonProps) {
-  const variant = primary ? "primary" : "primary";
-  const state = disabled ? "disabled" : "main";
+  const variant = action ? "action" : "defaulted";
+  const state = disabled ? "disabled" : "enabled";
+
+  // Refs and state for measuring foldedContent width
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [foldedContentWidth, setFoldedContentWidth] = useState<number>(0);
+  const [hovered, setHovered] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (measureRef.current) {
+      const width = measureRef.current.clientWidth;
+      setFoldedContentWidth(width);
+    }
+  }, [children]);
+
+  const content = useMemo(
+    () => (
+      <>
+        <Text
+          className={cn(
+            "whitespace-nowrap",
+            textClassNames(active)[variant][state]
+          )}
+        >
+          {children}
+        </Text>
+      </>
+    ),
+    [active]
+  );
 
   return (
-    <button
-      className={cn(
-        "flex flex-row justify-center items-center p-spacing-interline gap-spacing-inline hover:bg-background-tint-02 rounded-08 h-[2rem] max-w-[10rem] w-full overflow-hidden",
-        folded ? "w-min" : "w-full",
-        active ? "bg-background-tint-00" : "bg-transparent",
-        disabled && "opacity-50 cursor-not-allowed",
-        className
-      )}
-      onClick={disabled ? undefined : onClick}
-    >
-      <div className="w-[1rem] h-[1rem] flex flex-col justify-center items-center">
-        <Icon className={cn("w-full h-full", textClasses[variant][state])} />
+    <>
+      {/* Hidden element for measuring the natural width of the content */}
+      <div
+        ref={measureRef}
+        className="flex items-center w-auto h-fit absolute -left-[9999rem] opacity-0 pointer-events-none"
+      >
+        {content}
       </div>
-      {!folded && (
-        <div className="flex flex-row justify-center items-center">
-          {typeof children === "string" ? (
-            <Truncated
-              side="right"
-              offset={40}
-              className={cn("text-left", textClasses[variant][state])}
-              mainAction
-            >
-              {children}
-            </Truncated>
-          ) : (
-            children
+
+      <button
+        className={cn(
+          baseClassNames(active)[state],
+          "group/SelectButton flex items-center p-spacing-interline-mini rounded-12 h-fit w-fit",
+          className
+        )}
+        onClick={disabled ? undefined : onClick}
+        disabled={disabled}
+        onMouseEnter={() => setHovered(true)}
+        onMouseOver={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Static icon component */}
+        <Icon
+          className={cn(
+            "w-[1rem] h-[1rem]",
+            iconClassNames(active)[variant][state]
           )}
-          <SvgChevronDownSmall
-            className={cn(
-              "h-[1.5rem] w-[1.5rem] transition-transform duration-200",
-              textClasses[variant][state],
-              active && "-rotate-180"
-            )}
-          />
+        />
+
+        {/* Animation component */}
+        <div
+          className={cn(
+            "flex items-center transition-all duration-300 ease-in-out overflow-hidden py-spacing-inline-mini",
+            folded
+              ? active || hovered
+                ? "opacity-100"
+                : "opacity-0"
+              : "opacity-100"
+          )}
+          style={{
+            width: folded
+              ? active || hovered
+                ? `${foldedContentWidth}px`
+                : "0px"
+              : `${foldedContentWidth}px`,
+            margin: folded
+              ? active || hovered
+                ? `0px ${MARGIN}px`
+                : "0px"
+              : `0px ${MARGIN}px`,
+          }}
+        >
+          {content}
         </div>
-      )}
-    </button>
+      </button>
+    </>
   );
 }

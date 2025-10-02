@@ -22,7 +22,6 @@ import { truncateString, cn } from "@/lib/utils";
 import { useUser } from "@/components/user/UserProvider";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
 import { UnconfiguredLlmProviderText } from "@/components/chat/UnconfiguredLlmProviderText";
-import { SelectedTool } from "@/app/chat/components/input/SelectedTool";
 import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import { FileCard } from "@/app/chat/components/projects/ProjectContextPanel";
 import {
@@ -35,6 +34,8 @@ import SvgArrowUp from "@/icons/arrow-up";
 import SvgStop from "@/icons/stop";
 import FilePicker from "@/app/chat/components/files/FilePicker";
 import { ActionToggle } from "@/app/chat/components/input/ActionManagement";
+import SelectButton from "@/refresh-components/buttons/SelectButton";
+import { getIconForAction } from "../../services/actionUtils";
 
 const MAX_INPUT_HEIGHT = 200;
 
@@ -545,37 +546,41 @@ function ChatInputBarInner({
                 availableSources={memoizedAvailableSources}
               />
             )}
-            <IconButton
+            <SelectButton
               icon={SvgHourglass}
-              tertiary
               active={deepResearchEnabled}
               onClick={toggleDeepResearch}
-              tooltip="Deep Research"
-            />
+              folded
+              action
+            >
+              Deep Research
+            </SelectButton>
 
-            {forcedToolIds.length > 0 && (
-              <div className="flex items-center gap-2 text-blue-500">
-                {forcedToolIds.map((toolId) => {
-                  const tool = selectedAssistant.tools.find(
-                    (tool) => tool.id === toolId
-                  );
-                  if (!tool) {
-                    return null;
-                  }
-                  return (
-                    <SelectedTool
-                      key={toolId}
-                      tool={tool}
-                      onClick={() => {
-                        setForcedToolIds((prev) =>
-                          prev.filter((id) => id !== toolId)
-                        );
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            )}
+            {forcedToolIds.length > 0 &&
+              forcedToolIds.map((toolId) => {
+                const tool = selectedAssistant.tools.find(
+                  (tool) => tool.id === toolId
+                );
+                if (!tool) {
+                  return null;
+                }
+                return (
+                  <SelectButton
+                    key={toolId}
+                    // icon={SvgHourglass}
+                    icon={getIconForAction(tool)}
+                    onClick={() => {
+                      setForcedToolIds((prev) =>
+                        prev.filter((id) => id !== toolId)
+                      );
+                    }}
+                    action
+                    active
+                  >
+                    {tool.name}
+                  </SelectButton>
+                );
+              })}
           </div>
 
           <div className="flex flex-row items-center gap-spacing-inline">
