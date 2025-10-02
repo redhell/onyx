@@ -567,7 +567,6 @@ function ChatInputBarInner({
                 return (
                   <SelectButton
                     key={toolId}
-                    // icon={SvgHourglass}
                     icon={getIconForAction(tool)}
                     onClick={() => {
                       setForcedToolIds((prev) =>

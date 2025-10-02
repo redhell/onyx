@@ -29,6 +29,7 @@ const PopoverContent = React.forwardRef<
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 interface PopoverMenuProps {
+  className?: string;
   children?: React.ReactNode[];
 }
 
@@ -40,7 +41,7 @@ interface PopoverMenuProps {
 // # Filtering:
 // `undefined`s will be filtered out.
 // `null`s that are at the beginning / end will also be filtered out (separator lines don't make sense as the first / last element; they're supposed to *separate* options).
-export function PopoverMenu({ children }: PopoverMenuProps) {
+export function PopoverMenu({ className, children }: PopoverMenuProps) {
   if (!children) return null;
 
   const definedChildren = children.filter(
@@ -52,7 +53,9 @@ export function PopoverMenu({ children }: PopoverMenuProps) {
   });
 
   return (
-    <div className="flex flex-col gap-spacing-inline w-[10rem]">
+    <div
+      className={cn("flex flex-col gap-spacing-inline w-[10rem]", className)}
+    >
       {filteredChildren.map((child, index) => (
         <div key={index}>
           {child === undefined ? (
