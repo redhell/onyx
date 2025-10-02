@@ -160,8 +160,9 @@ const AddUserButton = ({
 }: {
   setPopup: (spec: PopupSpec) => void;
 }) => {
-  const [modal, setModal] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bulkAddUsersModal, setBulkAddUsersModal] = useState(false);
+  const [firstUserConfirmationModal, setFirstUserConfirmationModal] =
+    useState(false);
 
   const { data: invitedUsers } = useSWR<InvitedUserSnapshot[]>(
     "/api/manage/users/invited",
@@ -172,7 +173,7 @@ const AddUserButton = ({
     mutate(
       (key) => typeof key === "string" && key.startsWith("/api/manage/users")
     );
-    setModal(false);
+    setBulkAddUsersModal(false);
     setPopup({
       message: "Users invited!",
       type: "success",
@@ -193,15 +194,15 @@ const AddUserButton = ({
       invitedUsers &&
       invitedUsers.length === 0
     ) {
-      setShowConfirmation(true);
+      setFirstUserConfirmationModal(true);
     } else {
-      setModal(true);
+      setBulkAddUsersModal(true);
     }
   };
 
   const handleConfirmFirstInvite = () => {
-    setShowConfirmation(false);
-    setModal(true);
+    setFirstUserConfirmationModal(false);
+    setBulkAddUsersModal(true);
   };
 
   return (
@@ -210,21 +211,24 @@ const AddUserButton = ({
         Invite Users
       </CreateButton>
 
-      {showConfirmation && (
+      {firstUserConfirmationModal && (
         <ConfirmEntityModal
           entityType="First User Invitation"
           entityName="your Access Logic"
-          onClose={() => setShowConfirmation(false)}
+          onClose={() => setFirstUserConfirmationModal(false)}
           onSubmit={handleConfirmFirstInvite}
           additionalDetails="After inviting the first user, only invited users will be able to join this platform. This is a security measure to control access to your team."
           actionButtonText="Continue"
         />
       )}
 
-      {modal && (
-        <Modal title="Bulk Add Users" onOutsideClick={() => setModal(false)}>
+      {bulkAddUsersModal && (
+        <Modal
+          title="Bulk Add Users"
+          onOutsideClick={() => setBulkAddUsersModal(false)}
+        >
           <div className="flex flex-col gap-y-4">
-            <Text className="font-medium text-base">
+            <Text>
               Add the email addresses to import, separated by whitespaces.
               Invited users will be able to login to this domain with their
               email address.

@@ -1,65 +1,72 @@
-import { Modal } from "../Modal";
+import Modal from "@/refresh-components/modals/ConfirmationModal";
 import Button from "@/refresh-components/buttons/Button";
+import SvgAlertCircle from "@/icons/alert-circle";
+import Text from "@/refresh-components/Text";
 
-export const ConfirmEntityModal = ({
-  onClose,
-  onSubmit,
-  entityType,
-  entityName,
-  additionalDetails,
-  actionButtonText,
-  action,
-  includeCancelButton = true,
-  variant = "delete",
-  removeConfirmationText = false,
-}: {
-  entityType: string;
-  entityName: string;
+export interface ConfirmEntityModalProps {
+  danger?: boolean;
+
   onClose: () => void;
   onSubmit: () => void;
-  additionalDetails?: string;
-  actionButtonText?: string;
-  action?: string;
-  includeCancelButton?: boolean;
-  variant?: "delete" | "action";
-  removeConfirmationText?: boolean;
-}) => {
-  const isDeleteVariant = variant === "delete";
-  const defaultButtonText = isDeleteVariant ? "Delete" : "Confirm";
-  const buttonText = actionButtonText || defaultButtonText;
 
-  const getActionText = () => {
-    if (action) {
-      return action;
-    }
-    return isDeleteVariant ? "delete" : "modify";
-  };
+  entityType: string;
+  entityName: string;
+
+  additionalDetails?: string;
+
+  action?: string;
+  actionButtonText?: string;
+
+  removeConfirmationText?: boolean;
+}
+
+export function ConfirmEntityModal({
+  danger,
+
+  onClose,
+  onSubmit,
+
+  entityType,
+  entityName,
+
+  additionalDetails,
+
+  action,
+  actionButtonText,
+
+  removeConfirmationText = false,
+}: ConfirmEntityModalProps) {
+  const buttonText = actionButtonText
+    ? actionButtonText
+    : danger
+      ? "Delete"
+      : "Confirm";
+  const actionText = action ? action : danger ? "delete" : "modify";
 
   return (
-    <Modal width="rounded max-w-md w-full" onOutsideClick={onClose}>
-      <>
-        <div className="flex mb-4">
-          <h2 className="my-auto text-2xl font-bold">
-            {buttonText} {entityType}
-          </h2>
-        </div>
+    <Modal
+      icon={SvgAlertCircle}
+      title={`${buttonText} ${entityType}`}
+      onClose={onClose}
+    >
+      <div className="flex flex-col gap-spacing-paragraph">
         {!removeConfirmationText && (
-          <p className="mb-4">
-            Are you sure you want to {getActionText()} <b>{entityName}</b>?
-          </p>
+          <Text>
+            Are you sure you want to {actionText} <b>{entityName}</b>?
+          </Text>
         )}
-        {additionalDetails && <p className="mb-4">{additionalDetails}</p>}
-        <div className="flex justify-end gap-2">
-          {includeCancelButton && (
-            <Button onClick={onClose} secondary>
-              Cancel
-            </Button>
-          )}
-          <Button onClick={onSubmit} danger={isDeleteVariant}>
+
+        {additionalDetails && <Text text03>{additionalDetails}</Text>}
+
+        <div className="flex flex-row items-center justify-end gap-spacing-interline">
+          <Button onClick={onClose} secondary>
+            Cancel
+          </Button>
+          <Button onClick={onSubmit} danger={danger}>
             {buttonText}
           </Button>
         </div>
-      </>
+      </div>
     </Modal>
   );
-};
+}
