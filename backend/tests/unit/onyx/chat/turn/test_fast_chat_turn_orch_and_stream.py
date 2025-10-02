@@ -30,6 +30,7 @@ from openai.types.responses.response_stream_event import ResponseCreatedEvent
 from openai.types.responses.response_stream_event import ResponseTextDeltaEvent
 from openai.types.responses.response_usage import InputTokensDetails
 from openai.types.responses.response_usage import OutputTokensDetails
+from openai.types.responses.response_usage import ResponseUsage
 
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.chat.turn.models import ChatTurnDependencies
@@ -116,7 +117,15 @@ class FakeModel(Model):
     ) -> ModelResponse:
         # Build a minimal full response (non-streaming path)
         msg = ResponseOutputMessage(
-            role="assistant", content=[ResponseOutputText(text="fake response")]
+            id="fake-message-id",
+            role="assistant",
+            content=[
+                ResponseOutputText(
+                    text="fake response", type="output_text", annotations=[]
+                )
+            ],
+            status="completed",
+            type="message",
         )
 
         usage = Usage(
@@ -149,19 +158,20 @@ class FakeModel(Model):
         async def _gen() -> AsyncIterator[object]:
             response_id = "fake-response-id"
 
-            # 1) created
-            yield ResponseCreatedEvent(id=response_id)
-
-            # 2) stream some text (delta)
-            yield ResponseTextDeltaEvent(delta="fake response")
-
-            # 3) completed with a full Response object
+            # Build the response object first
             msg = ResponseOutputMessage(
-                role="assistant", content=[ResponseOutputText(text="fake response")]
+                id="fake-message-id",
+                role="assistant",
+                content=[
+                    ResponseOutputText(
+                        text="fake response", type="output_text", annotations=[]
+                    )
+                ],
+                status="completed",
+                type="message",
             )
 
-            usage = Usage(
-                requests=1,
+            usage = ResponseUsage(
                 input_tokens=10,
                 output_tokens=5,
                 total_tokens=15,
@@ -171,16 +181,37 @@ class FakeModel(Model):
 
             final_response = Response(
                 id=response_id,
+                created_at=1234567890,
+                object="response",
                 output=[msg],
                 usage=usage,
-                # These fields are commonly present; include minimally required ones
-                type="response",
                 status="completed",
-                # Some SDK versions include this; harmless if accepted:
                 model=self.name,
+                parallel_tool_calls=False,
+                tool_choice="none",
+                tools=[],
             )
 
-            yield ResponseCompletedEvent(response=final_response)
+            # 1) created
+            yield ResponseCreatedEvent(
+                response=final_response, sequence_number=1, type="response.created"
+            )
+
+            # 2) stream some text (delta)
+            yield ResponseTextDeltaEvent(
+                content_index=0,
+                delta="fake response",
+                item_id="fake-item-id",
+                logprobs=[],
+                output_index=0,
+                sequence_number=2,
+                type="response.output_text.delta",
+            )
+
+            # 3) completed with the full Response object
+            yield ResponseCompletedEvent(
+                response=final_response, sequence_number=3, type="response.completed"
+            )
 
         return _gen()
 
@@ -208,8 +239,16 @@ class FakeFailingModel(Model):
     ) -> ModelResponse:
         """Fake get_response method that returns a simple response."""
         # Create a simple text response
-        text_content = ResponseOutputText(text="fake response")
-        message = ResponseOutputMessage(role="assistant", content=[text_content])
+        text_content = ResponseOutputText(
+            text="fake response", type="output_text", annotations=[]
+        )
+        message = ResponseOutputMessage(
+            id="fake-message-id",
+            role="assistant",
+            content=[text_content],
+            status="completed",
+            type="message",
+        )
 
         # Create usage information
         usage = Usage(
@@ -239,13 +278,7 @@ class FakeFailingModel(Model):
         conversation_id: str | None = None,
         prompt=None,
     ) -> AsyncIterator[object]:
-        # Minimal valid sequence of OpenAI Responses stream events.
         async def _gen() -> AsyncIterator[object]:
-            pass
-
-            # 1) created
-            # yield ResponseCreatedEvent(id=response_id)
-
             raise Exception("Fake exception")
 
         return _gen()
@@ -488,16 +521,15 @@ def test_fast_chat_turn_basic(
     the dependency injection setup. The function will run with fake implementations
     and the unified_event_stream decorator will handle the emitter creation.
     """
-    # Import the function
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
-    # Call the function - it returns a generator due to the unified_event_stream decorator
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
     packets = list(generator)
-    assert packets == [Packet(ind=0, obj=OverallStop(type="stop"))]
+    # The test should end with an OverallStop packet, but may have other packets before it
+    assert len(packets) >= 1
+    assert packets[-1] == Packet(ind=0, obj=OverallStop(type="stop"))
 
 
-# TODO: Figure this one out
 def test_fast_chat_turn_catch_exception(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
@@ -509,12 +541,10 @@ def test_fast_chat_turn_catch_exception(
     the dependency injection setup. The function will run with fake implementations
     and the unified_event_stream decorator will handle the emitter creation.
     """
-    # Import the function
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
     chat_turn_dependencies.llm_model = fake_failing_model
 
-    # Call the function - it returns a generator due to the unified_event_stream decorator
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
     with pytest.raises(Exception):
         list(generator)

@@ -55,12 +55,14 @@ class OnyxRunner:
                         self._q.put(ev)
                 finally:
                     self._q.put(self.SENTINEL)
-                self._loop.close()
 
             # Each thread needs its own loop
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            self._loop.run_until_complete(run_and_consume())
+            try:
+                self._loop.run_until_complete(run_and_consume())
+            finally:
+                self._loop.close()
 
         return self, run_in_background(worker)
 
