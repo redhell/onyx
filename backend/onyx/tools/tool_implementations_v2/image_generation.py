@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from typing import cast
 
 from agents import function_tool
@@ -21,12 +20,6 @@ from onyx.tools.tool_implementations.images.image_generation_tool import (
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
-
-
-class ImageShape(str, Enum):
-    SQUARE = "square"
-    PORTRAIT = "portrait"
-    LANDSCAPE = "landscape"
 
 
 @function_tool
@@ -150,14 +143,16 @@ def image_generation_tool(
 
         run_context.context.current_run_step = index + 1
 
-        # Return the first generated image data
-        first_image = generated_images[0]
+        # Return all generated images data
         return json.dumps(
-            {
-                "file_id": first_image.file_id,
-                "revised_prompt": first_image.revised_prompt,
-                "url": first_image.url,
-            }
+            [
+                {
+                    "file_id": image.file_id,
+                    "revised_prompt": image.revised_prompt,
+                    "url": image.url,
+                }
+                for image in generated_images
+            ]
         )
     except Exception as e:
         run_context.context.current_run_step = index + 1
