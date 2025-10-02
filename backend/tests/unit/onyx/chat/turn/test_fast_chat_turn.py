@@ -252,123 +252,6 @@ def test_fast_chat_turn_basic(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
 ):
-    """Basic test for fast_chat_turn function.
-
-    This test verifies that the function can be called with fake dependencies
-    and completes without errors. The emitter is created by the unified_event_stream
-    decorator and dependencies_to_maybe_remove is provided by the test writer.
-
-    Note: This test focuses on the dependency injection setup and basic structure
-    rather than full execution, since fast_chat_turn has complex external dependencies
-    that would require significant mocking.
-    """
-    # Verify that all dependencies are properly set up
-    assert chat_turn_dependencies.llm_model is not None
-    assert chat_turn_dependencies.llm is not None
-    assert chat_turn_dependencies.db_session is not None
-    assert chat_turn_dependencies.tools is not None
-    assert chat_turn_dependencies.redis_client is not None
-    assert chat_turn_dependencies.search_pipeline is not None
-    assert chat_turn_dependencies.image_generation_tool is not None
-    assert chat_turn_dependencies.okta_profile_tool is not None
-    assert chat_turn_dependencies.dependencies_to_maybe_remove is not None
-
-    # Verify that emitter is None initially (will be set by decorator)
-    assert chat_turn_dependencies.emitter is None
-
-    # Verify that our fake dependencies have the expected types
-    assert isinstance(chat_turn_dependencies.llm_model, FakeModel)
-    assert isinstance(chat_turn_dependencies.llm, FakeLLM)
-    assert isinstance(chat_turn_dependencies.db_session, FakeSession)
-    assert isinstance(chat_turn_dependencies.redis_client, FakeRedis)
-    assert isinstance(chat_turn_dependencies.search_pipeline, FakeSearchTool)
-    assert isinstance(
-        chat_turn_dependencies.image_generation_tool, FakeImageGenerationTool
-    )
-    assert isinstance(chat_turn_dependencies.okta_profile_tool, FakeOktaProfileTool)
-    assert isinstance(
-        chat_turn_dependencies.dependencies_to_maybe_remove, DependenciesToMaybeRemove
-    )
-
-    # Verify that dependencies_to_maybe_remove has the expected values
-    assert chat_turn_dependencies.dependencies_to_maybe_remove.message_id == 123
-    assert (
-        chat_turn_dependencies.dependencies_to_maybe_remove.research_type
-        == ResearchType.FAST
-    )
-    assert (
-        chat_turn_dependencies.dependencies_to_maybe_remove.chat_session_id is not None
-    )
-
-
-def test_fast_chat_turn_with_custom_dependencies_to_maybe_remove(
-    fake_llm: LLM,
-    fake_model: Model,
-    fake_db_session: FakeSession,
-    fake_tools: list[FunctionTool],
-    fake_redis_client: FakeRedis,
-    fake_search_pipeline: SearchTool,
-    fake_image_generation_tool: ImageGenerationTool,
-    fake_okta_profile_tool: OktaProfileTool,
-    sample_messages: list[dict],
-):
-    """Test that demonstrates how to provide custom dependencies_to_maybe_remove.
-
-    This shows how test writers can provide their own DependenciesToMaybeRemove
-    instance with specific values for testing different scenarios.
-    """
-    # Create custom dependencies_to_maybe_remove
-    custom_dependencies = DependenciesToMaybeRemove(
-        chat_session_id=uuid4(),
-        message_id=456,
-        research_type=ResearchType.THOUGHTFUL,
-    )
-
-    # Create dependencies with custom DependenciesToMaybeRemove
-    dependencies = ChatTurnDependencies(
-        llm_model=fake_model,
-        llm=fake_llm,
-        db_session=fake_db_session,
-        tools=fake_tools,
-        redis_client=fake_redis_client,
-        emitter=None,  # Set by unified_event_stream decorator
-        search_pipeline=fake_search_pipeline,
-        image_generation_tool=fake_image_generation_tool,
-        okta_profile_tool=fake_okta_profile_tool,
-        dependencies_to_maybe_remove=custom_dependencies,
-    )
-
-    # Verify that our custom dependencies were used
-    assert dependencies.dependencies_to_maybe_remove.message_id == 456
-    assert (
-        dependencies.dependencies_to_maybe_remove.research_type
-        == ResearchType.THOUGHTFUL
-    )
-    assert dependencies.dependencies_to_maybe_remove.chat_session_id is not None
-
-    # Verify all other dependencies are properly set
-    assert dependencies.llm_model is not None
-    assert dependencies.llm is not None
-    assert dependencies.db_session is not None
-    assert dependencies.tools is not None
-    assert dependencies.redis_client is not None
-    assert dependencies.search_pipeline is not None
-    assert dependencies.image_generation_tool is not None
-    assert dependencies.okta_profile_tool is not None
-    assert dependencies.emitter is None  # Will be set by decorator
-
-    # Verify that we can access the fake implementations
-    assert isinstance(dependencies.db_session, FakeSession)
-    assert isinstance(dependencies.redis_client, FakeRedis)
-    assert isinstance(dependencies.search_pipeline, FakeSearchTool)
-    assert isinstance(dependencies.image_generation_tool, FakeImageGenerationTool)
-    assert isinstance(dependencies.okta_profile_tool, FakeOktaProfileTool)
-
-
-def test_fast_chat_turn_execution(
-    chat_turn_dependencies: ChatTurnDependencies,
-    sample_messages: list[dict],
-):
     """Test that demonstrates calling fast_chat_turn with dependency injection.
 
     This test shows how to actually call the fast_chat_turn function using
@@ -379,8 +262,8 @@ def test_fast_chat_turn_execution(
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
     # Call the function - it returns a generator due to the unified_event_stream decorator
-    print("before fast_chat_turn")
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+    packets = list(generator)
     # The emitter is only set when we start consuming the generator
     # Let's try to get the first packet to trigger the decorator setup
 
