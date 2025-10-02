@@ -71,13 +71,16 @@ jobs:
         helm repo add ot-container-kit https://ot-container-kit.github.io/helm-charts
         helm repo update
 
-    - name: Install Redis operator
+    - name: Install Redis operator and Postgres operator
       if: steps.list-changed.outputs.changed == 'true'
       shell: bash
       run: |
         echo "=== Installing redis-operator CRDs ==="
         helm upgrade --install redis-operator ot-container-kit/redis-operator \
           --namespace redis-operator --create-namespace --wait --timeout 300s
+        echo "=== Installing postgres-operator CRDs ==="
+        helm upgrade --install postgres-operator cloudnative-pg/postgres-operator \
+          --namespace postgres-operator --create-namespace --wait --timeout 300s
 
     - name: Pre-pull required images
       if: steps.list-changed.outputs.changed == 'true'
