@@ -79,8 +79,8 @@ jobs:
         helm upgrade --install redis-operator ot-container-kit/redis-operator \
           --namespace redis-operator --create-namespace --wait --timeout 300s
         echo "=== Installing postgres-operator CRDs ==="
-        helm upgrade --install postgres-operator cloudnative-pg/postgres-operator \
-          --namespace postgres-operator --create-namespace --wait --timeout 300s
+        helm upgrade --install cnpg --namespace cnpg-system --create-namespace \
+          cnpg/cloudnative-pg --wait --timeout 300s
 
     - name: Pre-pull required images
       if: steps.list-changed.outputs.changed == 'true'
