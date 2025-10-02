@@ -138,4 +138,4 @@ def internal_search_tool(run_context: RunContextWrapper[MyContext], query: str) 
         )
     )
     run_context.context.current_run_step = index + 1
-    return retrieved_docs
+    return str(retrieved_docs)

@@ -7,9 +7,6 @@ from onyx.server.query_and_chat.streaming_models import SectionEnd
 
 
 def default_packet_translation(ev: object) -> PacketObj | None:
-    with open("ev.log", "a") as f:
-        f.write("ev: " + str(ev))
-        f.write("\n")
     if isinstance(ev, RawResponsesStreamEvent):
         # TODO: might need some variation here for different types of models
         # OpenAI packet translator
