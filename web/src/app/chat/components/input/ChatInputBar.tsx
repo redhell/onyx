@@ -36,6 +36,7 @@ import FilePicker from "@/app/chat/components/files/FilePicker";
 import { ActionToggle } from "@/app/chat/components/input/ActionManagement";
 import SelectButton from "@/refresh-components/buttons/SelectButton";
 import { getIconForAction } from "../../services/actionUtils";
+import SvgPlusCircle from "@/icons/plus-circle";
 
 const MAX_INPUT_HEIGHT = 200;
 
@@ -539,6 +540,13 @@ function ChatInputBarInner({
               }}
               recentFiles={recentFiles}
               handleUploadChange={handleUploadChange}
+              trigger={
+                <IconButton
+                  icon={SvgPlusCircle}
+                  tooltip="Attach Files"
+                  tertiary
+                />
+              }
             />
             {selectedAssistant.tools.length > 0 && (
               <ActionToggle

@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Button } from "@/components/ui/button";
+import { useDropzone } from "react-dropzone";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,10 @@ import {
   ListSettingsIcon,
   DocumentIcon,
 } from "@/components/icons/CustomIcons";
+import Button from "@/refresh-components/buttons/Button";
+import SvgPlusCircle from "@/icons/plus-circle";
+import IconButton from "@/refresh-components/buttons/IconButton";
+import LineItem from "@/refresh-components/buttons/LineItem";
 
 export function FileCard({
   file,
@@ -161,17 +165,8 @@ export default function ProjectContextPanel({
   } = useProjectsContext();
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => {
-    const preset = currentProjectDetails?.project?.instructions ?? "";
-    setInstructionText(preset);
-  }, [currentProjectDetails?.project?.instructions ?? ""]);
-
-  const totalFiles = (currentProjectDetails?.files || []).length;
-  const displayFileCount = totalFiles > 100 ? "100+" : String(totalFiles);
-
-  const handleUploadChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
+  const handleUploadFiles = useCallback(
+    async (files: File[]) => {
       if (!files || files.length === 0) return;
       setIsUploading(true);
       try {
@@ -219,19 +214,47 @@ export default function ProjectContextPanel({
       } finally {
         setIsUploading(false);
         setTempProjectFiles([]);
-        e.target.value = "";
       }
     },
     [currentProjectId, uploadFiles, setPopup]
   );
 
+  useEffect(() => {
+    const preset = currentProjectDetails?.project?.instructions ?? "";
+    setInstructionText(preset);
+  }, [currentProjectDetails?.project?.instructions ?? ""]);
+
+  const totalFiles = (currentProjectDetails?.files || []).length;
+  const displayFileCount = totalFiles > 100 ? "100+" : String(totalFiles);
+
+  const handleUploadChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      await handleUploadFiles(Array.from(files));
+      e.target.value = "";
+    },
+    [handleUploadFiles]
+  );
+
+  // Nested dropzone for drag-and-drop within ProjectContextPanel
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    noClick: true,
+    noKeyboard: true,
+    multiple: true,
+    noDragEventsBubbling: true,
+    onDrop: (acceptedFiles) => {
+      void handleUploadFiles(acceptedFiles);
+    },
+  });
+
   if (!currentProjectId) return null; // no selection yet
 
   return (
-    <div className="flex flex-col gap-5 p-4 w-full max-w-[800px] mx-auto mt-10">
-      <div className="flex flex-col gap-2">
-        <OpenFolderIcon size={34} className="text-onyx-ultra-strong" />
-        <h1 className="text-onyx-strong text-4xl">
+    <div className="flex flex-col gap-6 w-full max-w-[800px] mx-auto mt-10 mb-[1.5rem]">
+      <div className="flex flex-col gap-1 text-text-04">
+        <OpenFolderIcon size={32} />
+        <h1 className="font-heading-h2">
           {currentProjectDetails?.project?.name || "Loading project..."}
         </h1>
       </div>
@@ -239,42 +262,47 @@ export default function ProjectContextPanel({
       <Separator className="my-0" />
       <div className="flex flex-row gap-2 justify-between">
         <div className="min-w-0">
-          <p className="text-onyx-medium text-2xl">Instructions</p>
+          <p className="font-heading-h3 text-text-04">Instructions</p>
           {currentProjectDetails?.project?.instructions ? (
             <p
-              className="text-onyx-muted text-base truncate"
+              className="text-text-02 font-secondary-body truncate"
               title={currentProjectDetails.project.instructions || ""}
             >
               {currentProjectDetails.project.instructions}
             </p>
           ) : (
-            <p className="text-onyx-muted text-base truncate">
+            <p className="text-text-02 font-secondary-body truncate">
               Add instructions to tailor the response in this project.
             </p>
           )}
         </div>
-        <button
-          onClick={() => setIsInstrOpen(true)}
-          className="flex flex-row gap-2 items-center justify-center p-2 rounded-md bg-background-dark/75 hover:dark:bg-neutral-800/75 hover:bg-accent-background-hovered cursor-pointer transition-all duration-150 shrink-0 whitespace-nowrap h-12"
-        >
-          <ListSettingsIcon size={20} className="text-onyx-emphasis" />
-          <p className="text-onyx-emphasis text-lg whitespace-nowrap">
-            Set Instructions
-          </p>
-        </button>
+        <Button onClick={() => setIsInstrOpen(true)} tertiary>
+          <div className="flex flex-row gap-1 items-center">
+            <ListSettingsIcon size={16} />
+            <p className="text-text-03 font-main-action whitespace-nowrap">
+              Set Instructions
+            </p>
+          </div>
+        </Button>
       </div>
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2 "
+        {...getRootProps({ onClick: (e) => e.stopPropagation() })}
+      >
         <div className="flex flex-row gap-2 justify-between">
           <div>
-            <p className="text-onyx-medium text-2xl">Files</p>
+            <p className="font-heading-h3 text-text-04">Files</p>
 
-            <p className="text-onyx-muted text-base">
+            <p className="text-text-02 font-secondary-body">
               Chats in this project can access these files.
             </p>
           </div>
           <FilePicker
-            showTriggerLabel
-            triggerLabel="Add Files"
+            trigger={
+              <LineItem icon={SvgPlusCircle}>
+                <p className="text-text-03 font-main-action">Add Files</p>
+              </LineItem>
+            }
             recentFiles={recentFiles}
             onFileClick={handleFileClick}
             onPickRecent={async (file) => {
@@ -283,10 +311,11 @@ export default function ProjectContextPanel({
               await linkFileToProject(currentProjectId, file.id);
             }}
             handleUploadChange={handleUploadChange}
-            triggerLabelClassName="text-lg text-onyx-emphasis"
-            triggerClassName="h-12"
+            className="mr-1.5"
           />
         </div>
+        {/* Hidden input just to satisfy dropzone contract; we rely on FilePicker for clicks */}
+        <input {...getInputProps()} />
 
         {tempProjectFiles.length > 0 ||
         (currentProjectDetails?.files &&
@@ -367,7 +396,23 @@ export default function ProjectContextPanel({
             )}
           </>
         ) : (
-          <p className="text-onyx-muted text-base">No files yet.</p>
+          <div
+            className={`h-12 rounded-lg border border-dashed${
+              isDragActive
+                ? "bg-action-link-01 border-action-link-05"
+                : "border-border-01"
+            } flex items-center pl-spacing-interline`}
+          >
+            <p
+              className={`font-secondary-body ${
+                isDragActive ? "text-action-link-05" : "text-text-02 "
+              }`}
+            >
+              {isDragActive
+                ? "Drop files here to add to this project"
+                : "Add documents, texts, or images to use in the project. Drag & drop supported."}
+            </p>
+          </div>
         )}
       </div>
 
@@ -391,9 +436,7 @@ export default function ProjectContextPanel({
               className="min-h-[140px]"
             />
             <div className="flex justify-end gap-4">
-              <Button variant="outline" onClick={() => setIsInstrOpen(false)}>
-                Cancel
-              </Button>
+              <Button onClick={() => setIsInstrOpen(false)}>Cancel</Button>
               <Button
                 onClick={() => {
                   setIsInstrOpen(false);

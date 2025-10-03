@@ -125,6 +125,8 @@ import { useProjectsContext } from "@/app/chat/projects/ProjectsContext";
 import FilePicker from "@/app/chat/components/files/FilePicker";
 import SvgTrash from "@/icons/trash";
 import SvgEditBig from "@/icons/edit-big";
+import LineItem from "@/refresh-components/buttons/LineItem";
+import SvgPlusCircle from "@/icons/plus-circle";
 
 function findSearchTool(tools: ToolSnapshot[]) {
   return tools.find((tool) => tool.in_code_tool_id === SEARCH_TOOL_ID);
@@ -1157,8 +1159,11 @@ export function AssistantEditor({
                                 </div>
                               )}
                               <FilePicker
-                                showTriggerLabel
-                                triggerLabel="Add User  Files"
+                                trigger={
+                                  <LineItem icon={SvgPlusCircle}>
+                                    Add User Files
+                                  </LineItem>
+                                }
                                 recentFiles={recentFiles}
                                 onFileClick={(file: ProjectFile) => {
                                   setPresentingDocument({
