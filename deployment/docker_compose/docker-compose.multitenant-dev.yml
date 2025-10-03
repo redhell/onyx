@@ -140,7 +140,7 @@ services:
       if [ -f /etc/ssl/certs/custom-ca.crt ]; then
         update-ca-certificates;
       fi &&
-      /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"
+      /app/backend/scripts/supervisord_entrypoint.sh"
     depends_on:
       - relational_db
       - index
