@@ -360,7 +360,8 @@ class JiraConnectorCheckpoint(ConnectorCheckpoint):
 
 
 class JiraConnector(
-    CheckpointedConnectorWithPermSync[JiraConnectorCheckpoint], SlimConnectorWithPermSync
+    CheckpointedConnectorWithPermSync[JiraConnectorCheckpoint],
+    SlimConnectorWithPermSync,
 ):
     def __init__(
         self,
