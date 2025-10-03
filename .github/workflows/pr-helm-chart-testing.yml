@@ -167,6 +167,7 @@ jobs:
             --set=slackbot.enabled=false \
             --set=postgresql.enabled=true \
             --set=postgresql.cluster.storage.storageClass=standard \
+            --set=postgresql.commonLabels."app.kubernetes.io/name"=cloudnative-pg \
             --set=redis.enabled=true \
             --set=redis.storageSpec.volumeClaimTemplate.spec.storageClassName=standard \
             --set=webserver.replicaCount=1 \
