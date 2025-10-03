@@ -201,8 +201,8 @@ jobs:
 
         # Delete CloudNativePG and Redis operator CRDs so they can be recreated with new ownership
         echo "=== Cleaning up CRDs for next test ==="
-        kubectl delete crd --selector=app.kubernetes.io/name=cloudnative-pg || true
-        kubectl delete crd --selector=app.kubernetes.io/name=redis-operator || true
+        kubectl delete crd backups.postgresql.cnpg.io clusters.postgresql.cnpg.io scheduledbackups.postgresql.cnpg.io poolers.postgresql.cnpg.io imagecatalogs.postgresql.cnpg.io clusterimagecatalogs.postgresql.cnpg.io --ignore-not-found=true || true
+        kubectl delete crd redis.redis.redis.opstreelabs.in redisclusters.redis.redis.opstreelabs.in redisreplications.redis.redis.opstreelabs.in redissentinels.redis.redis.opstreelabs.in --ignore-not-found=true || true
 
     - name: Run chart-testing (install) - Standard Mode
       timeout-minutes: 25
