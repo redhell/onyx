@@ -1,30 +1,30 @@
-{{- if and (gt (int .Values.celery_worker_background.replicaCount) 0) .Values.global.useLightweightBackgroundWorker }}
+{{- if and (gt (int .Values.celery_worker_heavy.replicaCount) 0) (not .Values.global.useLightweightBackgroundWorker) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "onyx.fullname" . }}-celery-worker-background
+  name: {{ include "onyx.fullname" . }}-celery-worker-heavy
   labels:
     {{- include "onyx.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.celery_worker_background.autoscaling.enabled }}
-  replicas: {{ .Values.celery_worker_background.replicaCount }}
+  {{- if not .Values.celery_worker_heavy.autoscaling.enabled }}
+  replicas: {{ .Values.celery_worker_heavy.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
       {{- include "onyx.selectorLabels" . | nindent 6 }}
-      {{- if .Values.celery_worker_background.deploymentLabels }}
-      {{- toYaml .Values.celery_worker_background.deploymentLabels | nindent 6 }}
+      {{- if .Values.celery_worker_heavy.deploymentLabels }}
+      {{- toYaml .Values.celery_worker_heavy.deploymentLabels | nindent 6 }}
       {{- end }}
   template:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      {{- with .Values.celery_worker_background.podAnnotations }}
+      {{- with .Values.celery_worker_heavy.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "onyx.labels" . | nindent 8 }}
-        {{- with .Values.celery_worker_background.podLabels }}
+        {{- with .Values.celery_worker_heavy.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
@@ -35,12 +35,12 @@ spec:
       serviceAccountName: {{ include "onyx.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.celery_shared.podSecurityContext | nindent 8 }}
-      {{- with .Values.celery_worker_background.nodeSelector }}
+      {{- with .Values.celery_worker_heavy.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: celery-worker-background
+        - name: celery-worker-heavy
           securityContext:
             {{- toYaml .Values.celery_shared.securityContext | nindent 12 }}
           image: "{{ .Values.celery_shared.image.repository }}:{{ .Values.celery_shared.image.tag | default .Values.global.version }}"
@@ -49,21 +49,21 @@ spec:
             [
               "celery",
               "-A",
-              "onyx.background.celery.versioned_apps.background",
+              "onyx.background.celery.versioned_apps.heavy",
               "worker",
               "--loglevel=INFO",
-              "--hostname=background@%n",
+              "--hostname=heavy@%n",
               "-Q",
-              "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation,kg_processing,monitoring,user_file_processing,user_file_project_sync",
+              "connector_pruning,connector_doc_permissions_sync,connector_external_group_sync,csv_generation",
             ]
           resources:
-            {{- toYaml .Values.celery_worker_background.resources | nindent 12 }}
+            {{- toYaml .Values.celery_worker_heavy.resources | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ .Values.config.envConfigMapName }}
           env:
             {{- include "onyx.envSecrets" . | nindent 12}}
-          {{- with .Values.celery_worker_background.volumeMounts }}
+          {{- with .Values.celery_worker_heavy.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -78,7 +78,7 @@ spec:
                 - >
                     python onyx/background/celery/celery_k8s_probe.py
                     --probe readiness
-                    --filename /tmp/onyx_k8s_background_readiness.txt
+                    --filename /tmp/onyx_k8s_heavy_readiness.txt
           livenessProbe:
             {{ .Values.celery_shared.livenessProbe | toYaml | nindent 12}}
             exec:
@@ -88,8 +88,8 @@ spec:
                 - >
                     python onyx/background/celery/celery_k8s_probe.py
                     --probe liveness
-                    --filename /tmp/onyx_k8s_background_liveness.txt
-      {{- with .Values.celery_worker_background.volumes }}
+                    --filename /tmp/onyx_k8s_heavy_liveness.txt
+      {{- with .Values.celery_worker_heavy.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
