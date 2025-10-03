@@ -576,7 +576,7 @@ function ChatInputBarInner({
                     action
                     active
                   >
-                    {tool.name}
+                    {tool.display_name}
                   </SelectButton>
                 );
               })}
