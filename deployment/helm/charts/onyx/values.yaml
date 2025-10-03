@@ -7,6 +7,9 @@ global:
   version: "latest"
   # Global pull policy for all Onyx component images
   pullPolicy: "IfNotPresent"
+  # Use lightweight background worker mode (single consolidated worker)
+  # Set to false to use separate workers (heavy, kg_processing, monitoring, user_file_processing)
+  useLightweightBackgroundWorker: true
 
 postgresql:
   primary:
@@ -429,6 +432,41 @@ celery_worker_background:
   tolerations: []
   affinity: {}
 
+celery_worker_heavy:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    # KEDA specific configurations (only used when autoscaling.engine is set to 'keda')
+    pollingInterval: 30  # seconds
+    cooldownPeriod: 300  # seconds
+    idleReplicaCount: 1  # minimum replicas when idle
+    failureThreshold: 3  # number of failures before fallback
+    fallbackReplicas: 1  # replicas to maintain on failure
+    # Custom triggers for advanced KEDA configurations
+    customTriggers: []
+  podAnnotations: {}
+  podLabels:
+    scope: onyx-backend-celery
+    app: celery-worker-heavy
+  deploymentLabels:
+    app: celery-worker-heavy
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2500m
+      memory: 5Gi
+  volumes: []  # Additional volumes on the output Deployment definition.
+  volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
 celery_worker_docprocessing:
   replicaCount: 1
   autoscaling:
@@ -499,6 +537,41 @@ celery_worker_light:
   tolerations: []
   affinity: {}
 
+celery_worker_monitoring:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    # KEDA specific configurations (only used when autoscaling.engine is set to 'keda')
+    pollingInterval: 30  # seconds
+    cooldownPeriod: 300  # seconds
+    idleReplicaCount: 1  # minimum replicas when idle
+    failureThreshold: 3  # number of failures before fallback
+    fallbackReplicas: 1  # replicas to maintain on failure
+    # Custom triggers for advanced KEDA configurations
+    customTriggers: []
+  podAnnotations: {}
+  podLabels:
+    scope: onyx-backend-celery
+    app: celery-worker-monitoring
+  deploymentLabels:
+    app: celery-worker-monitoring
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  volumes: []  # Additional volumes on the output Deployment definition.
+  volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
 celery_worker_primary:
   replicaCount: 1
   autoscaling:
@@ -556,6 +629,41 @@ celery_worker_user_files_indexing:
     app: celery-worker-user-files-indexing
   deploymentLabels:
     app: celery-worker-user-files-indexing
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 6Gi
+    limits:
+      cpu: 4000m
+      memory: 12Gi
+  volumes: []  # Additional volumes on the output Deployment definition.
+  volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+celery_worker_user_file_processing:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+    # KEDA specific configurations
+    pollingInterval: 30  # seconds
+    cooldownPeriod: 300  # seconds
+    idleReplicaCount: 1  # minimum replicas when idle
+    failureThreshold: 3  # number of failures before fallback
+    fallbackReplicas: 1  # replicas to maintain on failure
+    # Custom triggers for advanced KEDA configurations
+    customTriggers: []
+  podAnnotations: {}
+  podLabels:
+    scope: onyx-backend-celery
+    app: celery-worker-user-file-processing
+  deploymentLabels:
+    app: celery-worker-user-file-processing
   resources:
     requests:
       cpu: 2000m

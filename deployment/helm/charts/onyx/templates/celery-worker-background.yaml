@@ -1,4 +1,4 @@
-{{- if gt (int .Values.celery_worker_background.replicaCount) 0 }}
+{{- if and (gt (int .Values.celery_worker_background.replicaCount) 0) .Values.global.useLightweightBackgroundWorker }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

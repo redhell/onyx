@@ -1,4 +1,4 @@
-{{- if and (.Values.celery_worker_background.autoscaling.enabled) (ne (include "onyx.autoscaling.engine" .) "keda") }}
+{{- if and (.Values.celery_worker_background.autoscaling.enabled) (ne (include "onyx.autoscaling.engine" .) "keda") .Values.global.useLightweightBackgroundWorker }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
