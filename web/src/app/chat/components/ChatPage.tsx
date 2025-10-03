@@ -1,7 +1,6 @@
 "use client";
 
 import { redirect, useRouter, useSearchParams } from "next/navigation";
-import { ChatSession, ChatSessionSharedStatus } from "@/app/chat/interfaces";
 import { HealthCheckBanner } from "@/components/health/healthcheck";
 import {
   personaIncludesRetrieval,
@@ -23,7 +22,6 @@ import { useFederatedOAuthStatus } from "@/lib/hooks/useFederatedOAuthStatus";
 import { FeedbackType } from "@/app/chat/interfaces";
 import { OnyxInitializingLoader } from "@/components/OnyxInitializingLoader";
 import { FeedbackModal } from "@/app/chat/components/modal/FeedbackModal";
-import { ShareChatSessionModal } from "@/app/chat/components/modal/ShareChatSessionModal";
 import { FiArrowDown } from "react-icons/fi";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import { SettingsContext } from "@/components/settings/SettingsProvider";
@@ -68,7 +66,6 @@ import {
   useCurrentMessageHistory,
   useHasPerformedInitialScroll,
   useDocumentSidebarVisible,
-  useChatSessionSharedStatus,
   useHasSentLocalUserMessage,
 } from "@/app/chat/stores/useChatSessionStore";
 import { FederatedOAuthModal } from "@/components/chat/FederatedOAuthModal";
@@ -281,9 +278,6 @@ export function ChatPage({
     [FeedbackType, number] | null
   >(null);
 
-  const [sharingModalVisible, setSharingModalVisible] =
-    useState<boolean>(false);
-
   const [aboveHorizon, setAboveHorizon] = useState(false);
 
   const scrollableDivRef = useRef<HTMLDivElement>(null);
@@ -433,15 +427,11 @@ export function ChatPage({
   const hasPerformedInitialScroll = useHasPerformedInitialScroll();
   const currentSessionHasSentLocalUserMessage = useHasSentLocalUserMessage();
   const documentSidebarVisible = useDocumentSidebarVisible();
-  const chatSessionSharedStatus = useChatSessionSharedStatus();
   const updateHasPerformedInitialScroll = useChatSessionStore(
     (state) => state.updateHasPerformedInitialScroll
   );
   const updateCurrentDocumentSidebarVisible = useChatSessionStore(
     (state) => state.updateCurrentDocumentSidebarVisible
-  );
-  const updateCurrentChatSessionSharedStatus = useChatSessionStore(
-    (state) => state.updateCurrentChatSessionSharedStatus
   );
 
   const clientScrollToBottom = useCallback(
@@ -578,9 +568,6 @@ export function ChatPage({
     scrollDist.current = scrollDistance;
     setAboveHorizon(scrollDist.current > HORIZON_DISTANCE);
   }, []);
-
-  const [sharedChatSession, setSharedChatSession] =
-    useState<ChatSession | null>();
 
   function handleResubmitLastMessage() {
     // Grab the last user-type message
@@ -814,35 +801,6 @@ export function ChatPage({
         <ExceptionTraceModal
           onOutsideClick={() => setStackTraceModalContent(null)}
           exceptionTrace={stackTraceModalContent}
-        />
-      )}
-
-      {sharedChatSession && (
-        <ShareChatSessionModal
-          assistantId={liveAssistant?.id}
-          message={message}
-          modelOverride={llmManager.currentLlm}
-          chatSessionId={sharedChatSession.id}
-          existingSharedStatus={sharedChatSession.shared_status}
-          onClose={() => setSharedChatSession(null)}
-          onShare={(shared) =>
-            updateCurrentChatSessionSharedStatus(
-              shared
-                ? ChatSessionSharedStatus.Public
-                : ChatSessionSharedStatus.Private
-            )
-          }
-        />
-      )}
-
-      {sharingModalVisible && chatSessionId !== null && (
-        <ShareChatSessionModal
-          message={message}
-          assistantId={liveAssistant?.id}
-          modelOverride={llmManager.currentLlm}
-          chatSessionId={chatSessionId}
-          existingSharedStatus={chatSessionSharedStatus}
-          onClose={() => setSharingModalVisible(false)}
         />
       )}
 

@@ -61,6 +61,7 @@ import SvgChevronLeft from "@/icons/chevron-left";
 import MoveCustomAgentChatModal from "@/components/modals/MoveCustomAgentChatModal";
 import { UNNAMED_CHAT } from "@/lib/constants";
 import SidebarWrapper from "@/sections/sidebar/SidebarWrapper";
+import ShareChatSessionModal from "@/app/chat/components/modal/ShareChatSessionModal";
 
 // Constants
 const DEFAULT_PERSONA_ID = 0;
@@ -147,6 +148,7 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   const [deleteConfirmationModalOpen, setDeleteConfirmationModalOpen] =
     useState(false);
   const [showMoveOptions, setShowMoveOptions] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [popoverItems, setPopoverItems] = useState<React.ReactNode[]>([]);
   const { refreshChatSessions } = useChatContext();
@@ -189,7 +191,11 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
   useEffect(() => {
     if (!showMoveOptions) {
       const popoverItems = [
-        <NavigationTab key="share" icon={SvgShare} onClick={noProp()}>
+        <NavigationTab
+          key="share"
+          icon={SvgShare}
+          onClick={noProp(() => setShowShareModal(true))}
+        >
           Share
         </NavigationTab>,
         <NavigationTab
@@ -364,6 +370,13 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
               await performMove(target);
             }
           }}
+        />
+      )}
+
+      {showShareModal && (
+        <ShareChatSessionModal
+          chatSession={chatSession}
+          onClose={() => setShowShareModal(false)}
         />
       )}
 
