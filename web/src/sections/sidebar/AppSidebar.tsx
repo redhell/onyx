@@ -2,7 +2,6 @@
 
 import React, { useCallback, useState, memo, useMemo, useEffect } from "react";
 import { useSettingsContext } from "@/components/settings/SettingsProvider";
-import { OnyxLogoTypeIcon, OnyxIcon } from "@/components/icons/icons";
 import { MinimalPersonaSnapshot } from "@/app/admin/assistants/interfaces";
 import Text from "@/refresh-components/Text";
 import { DragEndEvent } from "@dnd-kit/core";
@@ -22,12 +21,10 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import SvgSidebar from "@/icons/sidebar";
 import SvgEditBig from "@/icons/edit-big";
 import SvgMoreHorizontal from "@/icons/more-horizontal";
-import SvgLightbulbSimple from "@/icons/lightbulb-simple";
 import Settings from "@/sections/sidebar/Settings";
-import { SidebarSection } from "@/sections/sidebar/components";
+import { getAgentIcon, SidebarSection } from "@/sections/sidebar/components";
 import NavigationTab from "@/refresh-components/buttons/NavigationTab";
 import AgentsModal from "@/sections/AgentsModal";
 import { useChatContext } from "@/refresh-components/contexts/ChatContext";
@@ -43,9 +40,8 @@ import SvgShare from "@/icons/share";
 import SvgEdit from "@/icons/edit";
 import Button from "@/refresh-components/buttons/Button";
 import SvgPin from "@/icons/pin";
-import { cn, noProp } from "@/lib/utils";
+import { noProp } from "@/lib/utils";
 import { PopoverMenu } from "@/components/ui/popover";
-import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgFolderPlus from "@/icons/folder-plus";
 import SvgOnyxOctagon from "@/icons/onyx-octagon";
 import Projects from "@/components/sidebar/Projects";
@@ -410,7 +406,7 @@ function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
       <div className="flex flex-col w-full h-full">
         <NavigationTab
           key={visibleAgent.id}
-          icon={SvgLightbulbSimple}
+          icon={getAgentIcon(visibleAgent)}
           onClick={() => route({ agentId: visibleAgent.id })}
           active={
             params(SEARCH_PARAM_NAMES.PERSONA_ID) === String(visibleAgent.id)

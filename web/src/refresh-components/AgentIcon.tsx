@@ -16,8 +16,6 @@ import {
 import { cn } from "@/lib/utils";
 import Text from "@/refresh-components/Text";
 
-const SIZE = 24;
-
 function md5ToBits(str: string): number[] {
   const md5hex = crypto.createHash("md5").update(str).digest("hex");
   const bits: number[] = [];
@@ -30,11 +28,11 @@ function md5ToBits(str: string): number[] {
   return bits;
 }
 
-export function generateIdenticon(str: string) {
+export function generateIdenticon(str: string, size: number) {
   const bits = md5ToBits(str);
   const gridSize = 5;
   const halfCols = 4;
-  const cellSize = SIZE / gridSize;
+  const cellSize = size / gridSize;
 
   let bitIndex = 0;
   const squares: JSX.Element[] = [];
@@ -78,9 +76,9 @@ export function generateIdenticon(str: string) {
 
   return (
     <svg
-      width={SIZE}
-      height={SIZE}
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
       style={{ display: "block" }}
     >
       {squares}
@@ -90,20 +88,21 @@ export function generateIdenticon(str: string) {
 
 export interface AgentIconProps {
   agent: MinimalPersonaSnapshot;
+  size?: number;
 }
 
-export function AgentIcon({ agent }: AgentIconProps) {
+export function AgentIcon({ agent, size = 24 }: AgentIconProps) {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="text-text-04">
             {agent.id == -3 ? (
-              <ArtAsistantIcon size={SIZE} />
+              <ArtAsistantIcon size={size} />
             ) : agent.id == 0 ? (
-              <OnyxIcon size={SIZE} />
+              <OnyxIcon size={size} />
             ) : agent.id == -1 ? (
-              <GeneralAssistantIcon size={SIZE} />
+              <GeneralAssistantIcon size={size} />
             ) : agent.uploaded_image_id ? (
               <img
                 alt={agent.name}
@@ -112,9 +111,11 @@ export function AgentIcon({ agent }: AgentIconProps) {
                 className={cn(
                   "rounded-full object-cover object-center transition-opacity duration-300"
                 )}
+                width={size}
+                height={size}
               />
             ) : (
-              generateIdenticon((agent.icon_shape || 0).toString())
+              generateIdenticon((agent.icon_shape || 0).toString(), size)
             )}
           </div>
         </TooltipTrigger>
