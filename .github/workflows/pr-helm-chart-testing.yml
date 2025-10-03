@@ -103,12 +103,13 @@ jobs:
         helm dependency update
         helm lint .
 
-    - name: Run chart-testing (install) with enhanced monitoring
+    - name: Run chart-testing (install) - Lightweight Mode
       timeout-minutes: 25
       if: steps.list-changed.outputs.changed == 'true'
       run: |
+        echo "=== Testing LIGHTWEIGHT MODE (single background worker) ==="
         echo "=== Starting chart installation with monitoring ==="
-        
+
         # Function to monitor cluster state
         monitor_cluster() {
           while true; do
@@ -130,11 +131,11 @@ jobs:
             sleep 60
           done
         }
-        
+
         # Start monitoring in background
         monitor_cluster &
         MONITOR_PID=$!
-        
+
         # Set up cleanup
         cleanup() {
           echo "=== Cleaning up monitoring process ==="
@@ -143,12 +144,101 @@ jobs:
           kubectl get pods --all-namespaces
           kubectl get events --all-namespaces --sort-by=.lastTimestamp | tail -20
         }
-        
+
         # Trap cleanup on exit
         trap cleanup EXIT
-        
+
         # Run the actual installation with detailed logging
-        echo "=== Starting ct install ==="
+        echo "=== Starting ct install with LIGHTWEIGHT mode (default) ==="
+        ct install --all \
+          --helm-extra-set-args="\
+            --set=nginx.enabled=false \
+            --set=minio.enabled=false \
+            --set=vespa.enabled=false \
+            --set=slackbot.enabled=false \
+            --set=postgresql.enabled=true \
+            --set=postgresql.primary.persistence.enabled=false \
+            --set=redis.enabled=true \
+            --set=webserver.replicaCount=1 \
+            --set=api.replicaCount=0 \
+            --set=inferenceCapability.replicaCount=0 \
+            --set=indexCapability.replicaCount=0 \
+            --set=celery_beat.replicaCount=0 \
+            --set=celery_worker_background.replicaCount=1 \
+            --set=celery_worker_docfetching.replicaCount=0 \
+            --set=celery_worker_docprocessing.replicaCount=0 \
+            --set=celery_worker_light.replicaCount=0 \
+            --set=celery_worker_primary.replicaCount=0 \
+            --set=celery_worker_user_files_indexing.replicaCount=0 \
+            --set=global.useLightweightBackgroundWorker=true" \
+          --helm-extra-args="--timeout 900s --debug" \
+          --debug --config ct.yaml
+
+        echo "=== Installation completed successfully ==="
+        kubectl get pods --all-namespaces
+
+        # Verify background worker is running
+        echo "=== Verifying lightweight background worker ==="
+        kubectl get pods --all-namespaces -l app=celery-worker-background
+
+        # Cleanup for next test
+        echo "=== Cleaning up lightweight mode deployment ==="
+        helm list --all-namespaces
+        RELEASE_NAME=$(helm list --all-namespaces --output json | jq -r '.[0].name')
+        RELEASE_NAMESPACE=$(helm list --all-namespaces --output json | jq -r '.[0].namespace')
+        if [ -n "$RELEASE_NAME" ] && [ "$RELEASE_NAME" != "null" ]; then
+          echo "Uninstalling release: $RELEASE_NAME in namespace: $RELEASE_NAMESPACE"
+          helm uninstall $RELEASE_NAME -n $RELEASE_NAMESPACE
+          kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || true
+        fi
+
+    - name: Run chart-testing (install) - Standard Mode
+      timeout-minutes: 25
+      if: steps.list-changed.outputs.changed == 'true'
+      run: |
+        echo "=== Testing STANDARD MODE (separate background workers) ==="
+        echo "=== Starting chart installation with monitoring ==="
+
+        # Function to monitor cluster state
+        monitor_cluster() {
+          while true; do
+            echo "=== Cluster Status Check at $(date) ==="
+            # Only show non-running pods to reduce noise
+            NON_RUNNING_PODS=$(kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers 2>/dev/null | wc -l)
+            if [ "$NON_RUNNING_PODS" -gt 0 ]; then
+              echo "Non-running pods:"
+              kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded
+            else
+              echo "All pods running successfully"
+            fi
+            # Only show recent events if there are issues
+            RECENT_EVENTS=$(kubectl get events --sort-by=.lastTimestamp --all-namespaces --field-selector=type!=Normal 2>/dev/null | tail -5)
+            if [ -n "$RECENT_EVENTS" ]; then
+              echo "Recent warnings/errors:"
+              echo "$RECENT_EVENTS"
+            fi
+            sleep 60
+          done
+        }
+
+        # Start monitoring in background
+        monitor_cluster &
+        MONITOR_PID=$!
+
+        # Set up cleanup
+        cleanup() {
+          echo "=== Cleaning up monitoring process ==="
+          kill $MONITOR_PID 2>/dev/null || true
+          echo "=== Final cluster state ==="
+          kubectl get pods --all-namespaces
+          kubectl get events --all-namespaces --sort-by=.lastTimestamp | tail -20
+        }
+
+        # Trap cleanup on exit
+        trap cleanup EXIT
+
+        # Run the actual installation with detailed logging
+        echo "=== Starting ct install with STANDARD mode ==="
         ct install --all \
           --helm-extra-set-args="\
             --set=nginx.enabled=false \
@@ -168,12 +258,20 @@ jobs:
             --set=celery_worker_docprocessing.replicaCount=0 \
             --set=celery_worker_light.replicaCount=0 \
             --set=celery_worker_primary.replicaCount=0 \
-            --set=celery_worker_user_files_indexing.replicaCount=0" \
+            --set=celery_worker_user_files_indexing.replicaCount=0 \
+            --set=celery_worker_heavy.replicaCount=1 \
+            --set=celery_worker_monitoring.replicaCount=1 \
+            --set=celery_worker_user_file_processing.replicaCount=1 \
+            --set=global.useLightweightBackgroundWorker=false" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
-        
+
         echo "=== Installation completed successfully ==="
         kubectl get pods --all-namespaces
+
+        # Verify standard mode workers are running
+        echo "=== Verifying standard mode workers ==="
+        kubectl get pods --all-namespaces -l 'app in (celery-worker-heavy,celery-worker-monitoring,celery-worker-user-file-processing)'
 
     - name: Post-install verification
       if: steps.list-changed.outputs.changed == 'true'
