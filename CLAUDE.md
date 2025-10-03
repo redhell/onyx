@@ -51,17 +51,31 @@ Onyx uses Celery for asynchronous task processing with multiple specialized work
 4. **Light Worker** (`light`)
    - Handles lightweight, fast operations
    - Tasks: vespa operations, document permissions sync, external group sync
-   - Higher concurrency for quick tasks (24 threads default)
+   - Higher concurrency for quick tasks
 
-5. **Background Worker** (`background`)
-   - Handles all low-volume background tasks:
-     - Document pruning operations
-     - Knowledge graph processing and clustering
-     - System health monitoring and metrics collection
-     - User file processing and project sync
-   - Runs with 6 threads concurrency
+5. **Heavy Worker** (`heavy`)
+   - Handles resource-intensive operations
+   - Primary task: document pruning operations
+   - Runs with 4 threads concurrency
 
-6. **Beat Worker** (`beat`)
+6. **KG Processing Worker** (`kg_processing`)
+   - Handles Knowledge Graph processing and clustering
+   - Builds relationships between documents
+   - Runs clustering algorithms
+   - Configurable concurrency
+
+7. **Monitoring Worker** (`monitoring`)
+   - System health monitoring and metrics collection
+   - Monitors Celery queues, process memory, and system status
+   - Single thread (monitoring doesn't need parallelism)
+   - Cloud-specific monitoring tasks
+
+8. **User File Processing Worker** (`user_file_processing`)
+   - Processes user-uploaded files
+   - Handles user file indexing and project synchronization
+   - Configurable concurrency
+
+9. **Beat Worker** (`beat`)
    - Celery's scheduler for periodic tasks
    - Uses DynamicTenantScheduler for multi-tenant support
    - Schedules tasks like:
@@ -75,27 +89,28 @@ Onyx uses Celery for asynchronous task processing with multiple specialized work
 
 #### Worker Deployment Modes
 
-Onyx supports two deployment modes for background workers:
+Onyx supports two deployment modes for background workers, controlled by the `USE_LIGHTWEIGHT_BACKGROUND_WORKER` environment variable:
 
-**Lightweight Mode** (enabled by setting `USE_LIGHTWEIGHT_BACKGROUND_WORKER=true`):
+**Lightweight Mode** (default, `USE_LIGHTWEIGHT_BACKGROUND_WORKER=true`):
 - Runs a single consolidated `background` worker that handles all background tasks:
-  - Pruning operations
-  - Knowledge graph processing
-  - Monitoring tasks
-  - User file processing
+  - Pruning operations (from `heavy` worker)
+  - Knowledge graph processing (from `kg_processing` worker)
+  - Monitoring tasks (from `monitoring` worker)
+  - User file processing (from `user_file_processing` worker)
 - Lower resource footprint (single worker process)
 - Suitable for smaller deployments or development environments
 - Default concurrency: 6 threads
 
-**Standard Mode** (default when `USE_LIGHTWEIGHT_BACKGROUND_WORKER` is not set or set to `false`):
-- Runs separate specialized workers:
-  - `heavy` worker: Handles pruning operations (4 threads)
-  - `kg_processing` worker: Knowledge graph processing (2 threads)
-  - `monitoring` worker: System health monitoring (1 thread)
-  - `user_file_processing` worker: User file operations (2 threads)
+**Standard Mode** (`USE_LIGHTWEIGHT_BACKGROUND_WORKER=false`):
+- Runs separate specialized workers as documented above (heavy, kg_processing, monitoring, user_file_processing)
 - Better isolation and scalability
-- Can scale individual workers independently
+- Can scale individual workers independently based on workload
 - Suitable for production deployments with higher load
+
+The deployment mode affects:
+- **Backend**: Worker processes spawned by supervisord or dev scripts
+- **Helm**: Which Kubernetes deployments are created
+- **Dev Environment**: Which workers `dev_run_background_jobs.py` spawns
 
 #### Key Features
 
