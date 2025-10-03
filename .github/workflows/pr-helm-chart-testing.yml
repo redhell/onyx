@@ -177,10 +177,6 @@ jobs:
         echo "=== Installation completed successfully ==="
         kubectl get pods --all-namespaces
 
-        # Verify background worker is running
-        echo "=== Verifying lightweight background worker ==="
-        kubectl get pods --all-namespaces -l app=celery-worker-background
-
         # Cleanup for next test
         echo "=== Cleaning up lightweight mode deployment ==="
         helm list --all-namespaces
@@ -268,10 +264,6 @@ jobs:
 
         echo "=== Installation completed successfully ==="
         kubectl get pods --all-namespaces
-
-        # Verify standard mode workers are running
-        echo "=== Verifying standard mode workers ==="
-        kubectl get pods --all-namespaces -l 'app in (celery-worker-heavy,celery-worker-monitoring,celery-worker-user-file-processing)'
 
     - name: Post-install verification
       if: steps.list-changed.outputs.changed == 'true'
