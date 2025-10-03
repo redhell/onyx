@@ -39,15 +39,15 @@ export default function ProjectChatSessionList() {
   if (!currentProjectId) return null;
 
   return (
-    <div className="flex flex-col gap-2 p-4 w-full max-w-[800px] mx-auto mt-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-base text-onyx-muted">Recent Chats</h2>
+    <div className="flex flex-col gap-2 px-2 w-full max-w-[800px] mx-auto mt-6">
+      <div className="flex items-center pl-spacing-interline">
+        <h2 className="text-text-02 font-secondary-body">Recent Chats</h2>
       </div>
 
       {projectChats.length === 0 ? (
-        <p className="text-sm text-onyx-muted">No chats yet.</p>
+        <p className="text-text-02 font-secondary-body">No chats yet.</p>
       ) : (
-        <div className="flex flex-col gap-2 max-h-[46vh] overflow-y-auto overscroll-y-none pr-1">
+        <div className="flex flex-col gap-2 max-h-[46vh] overflow-y-auto overscroll-y-none">
           {projectChats.map((chat) => (
             <Link
               key={chat.id}
@@ -57,7 +57,7 @@ export default function ProjectChatSessionList() {
               onMouseLeave={() => setHoveredChatId(null)}
             >
               <div
-                className={`w-full rounded-xl bg-background-background px-1 py-2 transition-colors ${hoveredChatId === chat.id ? "bg-accent-background-hovered" : ""}`}
+                className={`w-full rounded-08 py-2 transition-colors p-spacing-interline-mini ${hoveredChatId === chat.id ? "bg-background-tint-02" : ""}`}
               >
                 <div className="flex gap-3 min-w-0 w-full">
                   <div className="flex h-full w-fit pt-1 pl-1">
@@ -82,7 +82,7 @@ export default function ProjectChatSessionList() {
                         }
                       }
                       return (
-                        <ChatBubbleIcon className="h-5 w-5 text-onyx-medium" />
+                        <ChatBubbleIcon className="h-4 w-4 text-text-02" />
                       );
                     })()}
                   </div>
@@ -90,7 +90,7 @@ export default function ProjectChatSessionList() {
                     <div className="flex items-center gap-1 w-full justify-between">
                       <div className="flex items-center gap-1">
                         <span
-                          className="text-lg text-onyx-emphasis truncate"
+                          className="text-text-03 font-main-body truncate"
                           title={chat.name}
                         >
                           {chat.name || "Unnamed Chat"}
@@ -119,7 +119,7 @@ export default function ProjectChatSessionList() {
                         />
                       </div>
                     </div>
-                    <span className="text-base text-onyx-muted truncate">
+                    <span className="text-text-03 font-secondary-body truncate">
                       Last message {formatRelativeTime(chat.time_updated)}
                     </span>
                   </div>
