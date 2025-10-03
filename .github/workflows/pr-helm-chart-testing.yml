@@ -118,7 +118,7 @@ jobs:
       run: |
         echo "=== Testing LIGHTWEIGHT MODE (single background worker) ==="
         echo "=== Starting chart installation with monitoring ==="
-
+        
         # Function to monitor cluster state
         monitor_cluster() {
           while true; do
@@ -140,11 +140,11 @@ jobs:
             sleep 60
           done
         }
-
+        
         # Start monitoring in background
         monitor_cluster &
         MONITOR_PID=$!
-
+        
         # Set up cleanup
         cleanup() {
           echo "=== Cleaning up monitoring process ==="
@@ -153,12 +153,13 @@ jobs:
           kubectl get pods --all-namespaces
           kubectl get events --all-namespaces --sort-by=.lastTimestamp | tail -20
         }
-
+        
         # Trap cleanup on exit
         trap cleanup EXIT
-
+        
         # Run the actual installation with detailed logging
-        echo "=== Starting ct install with LIGHTWEIGHT mode (default) ==="
+        echo "=== Starting ct install with LIGHTWEIGHT mode ==="
+        set +e
         ct install --all \
           --helm-extra-set-args="\
             --set=nginx.enabled=false \
@@ -176,16 +177,27 @@ jobs:
             --set=indexCapability.replicaCount=0 \
             --set=celery_beat.replicaCount=0 \
             --set=celery_worker_background.replicaCount=0 \
+            --set=celery_worker_heavy.replicaCount=0 \
             --set=celery_worker_docfetching.replicaCount=0 \
             --set=celery_worker_docprocessing.replicaCount=0 \
             --set=celery_worker_light.replicaCount=0 \
+            --set=celery_worker_monitoring.replicaCount=0 \
             --set=celery_worker_primary.replicaCount=0 \
+            --set=celery_worker_user_file_processing.replicaCount=0 \
             --set=celery_worker_user_files_indexing.replicaCount=0 \
             --set=global.useLightweightBackgroundWorker=true" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
+        CT_EXIT=$?
+        set -e
 
-        echo "=== Installation completed successfully ==="
+        if [[ $CT_EXIT -ne 0 ]]; then
+          echo "ct install failed with exit code $CT_EXIT"
+          exit $CT_EXIT
+        else
+          echo "=== Installation completed successfully ==="
+        fi
+
         kubectl get pods --all-namespaces
 
         # Cleanup for next test
@@ -199,10 +211,21 @@ jobs:
           kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || true
         fi
 
-        # Delete CloudNativePG and Redis operator CRDs so they can be recreated with new ownership
-        echo "=== Cleaning up CRDs for next test ==="
-        kubectl delete crd backups.postgresql.cnpg.io clusters.postgresql.cnpg.io scheduledbackups.postgresql.cnpg.io poolers.postgresql.cnpg.io imagecatalogs.postgresql.cnpg.io clusterimagecatalogs.postgresql.cnpg.io --ignore-not-found=true || true
-        kubectl delete crd redis.redis.redis.opstreelabs.in redisclusters.redis.redis.opstreelabs.in redisreplications.redis.redis.opstreelabs.in redissentinels.redis.redis.opstreelabs.in --ignore-not-found=true || true
+        # Delete and reinstall operators for clean CRD ownership in Standard Mode test
+        echo "=== Cleaning up operators and CRDs for next test ==="
+
+        # Uninstall operators (this also removes CRDs)
+        helm uninstall redis-operator -n redis-operator || true
+        kubectl delete namespace redis-operator || true
+
+        # Wait for CRDs to be fully deleted
+        echo "Waiting for CRDs to be deleted..."
+        sleep 10
+
+        # Reinstall operators for Standard Mode test
+        echo "=== Reinstalling operators for Standard Mode ==="
+        helm upgrade --install redis-operator ot-container-kit/redis-operator \
+          --namespace redis-operator --create-namespace --wait --timeout 300s
 
     - name: Run chart-testing (install) - Standard Mode
       timeout-minutes: 25
@@ -251,6 +274,7 @@ jobs:
 
         # Run the actual installation with detailed logging
         echo "=== Starting ct install with STANDARD mode ==="
+        set +e
         ct install --all \
           --helm-extra-set-args="\
             --set=nginx.enabled=false \
@@ -268,19 +292,17 @@ jobs:
             --set=indexCapability.replicaCount=0 \
             --set=celery_beat.replicaCount=0 \
             --set=celery_worker_background.replicaCount=0 \
+            --set=celery_worker_heavy.replicaCount=0 \
             --set=celery_worker_docfetching.replicaCount=0 \
             --set=celery_worker_docprocessing.replicaCount=0 \
             --set=celery_worker_light.replicaCount=0 \
-            --set=celery_worker_primary.replicaCount=0 \
-            --set=celery_worker_user_files_indexing.replicaCount=0 \
-            --set=celery_worker_heavy.replicaCount=0   \
             --set=celery_worker_monitoring.replicaCount=0 \
+            --set=celery_worker_primary.replicaCount=0 \
             --set=celery_worker_user_file_processing.replicaCount=0 \
+            --set=celery_worker_user_files_indexing.replicaCount=0 \
             --set=global.useLightweightBackgroundWorker=false" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
-
-        echo "=== Installation completed successfully ==="
         CT_EXIT=$?
         set -e
 
