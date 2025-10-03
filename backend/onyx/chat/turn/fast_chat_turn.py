@@ -14,6 +14,7 @@ from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 from onyx.utils.threadpool_concurrency import wait_on_background
 
 
@@ -32,7 +33,7 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
     agent = Agent(
         name="Assistant",
         model=dependencies.llm_model,
-        tools=dependencies.tools,
+        tools=dependencies.tools + [reasoning_tool],
         model_settings=ModelSettings(
             temperature=0.0,
             include_usage=True,
