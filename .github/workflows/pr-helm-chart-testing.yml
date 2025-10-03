@@ -199,6 +199,11 @@ jobs:
           kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || true
         fi
 
+        # Delete CloudNativePG and Redis operator CRDs so they can be recreated with new ownership
+        echo "=== Cleaning up CRDs for next test ==="
+        kubectl delete crd --selector=app.kubernetes.io/name=cloudnative-pg || true
+        kubectl delete crd --selector=app.kubernetes.io/name=redis-operator || true
+
     - name: Run chart-testing (install) - Standard Mode
       timeout-minutes: 25
       if: steps.list-changed.outputs.changed == 'true'
@@ -272,7 +277,7 @@ jobs:
             --set=celery_worker_monitoring.replicaCount=0 \
             --set=celery_worker_user_file_processing.replicaCount=0 \
             --set=global.useLightweightBackgroundWorker=false" \
-          --helm-extra-args="--timeout 900s --debug --skip-crds" \
+          --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
 
         echo "=== Installation completed successfully ==="
