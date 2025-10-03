@@ -104,9 +104,11 @@ function InputTypeInInner(
         }
       }}
     >
-      <div className="pr-spacing-interline">
-        <SvgSearch className="w-[1rem] h-[1rem] stroke-text-02" />
-      </div>
+      {leftSearchIcon && (
+        <div className="pr-spacing-interline">
+          <SvgSearch className="w-[1rem] h-[1rem] stroke-text-02" />
+        </div>
+      )}
 
       <input
         ref={inputRef}
