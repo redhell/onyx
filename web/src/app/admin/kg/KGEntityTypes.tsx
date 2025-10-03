@@ -6,7 +6,6 @@ import { EntityType, SourceAndEntityTypeView } from "@/app/admin/kg/interfaces";
 import CollapsibleCard from "@/components/CollapsibleCard";
 import { ValidSources } from "@/lib/types";
 import { FaCircleQuestion } from "react-icons/fa6";
-import { Input } from "@/components/ui/input";
 import { CheckmarkIcon } from "@/components/icons/icons";
 import Button from "@/refresh-components/buttons/Button";
 import Text from "@/refresh-components/Text";
@@ -248,10 +247,8 @@ export default function KGEntityTypes({
       <div className="flex flex-col gap-y-4 w-full">
         {Object.entries(sourceAndEntityTypes.entity_types).length === 0 ? (
           <div className="flex flex-col gap-y-4">
-            <Text mainContentBody text02>
-              No results available.
-            </Text>
-            <Text mainContentBody text02>
+            <Text text02>No results available.</Text>
+            <Text text02>
               To configure Knowledge Graph, first connect some{" "}
               <Link
                 href="/admin/add-connector"

@@ -94,7 +94,7 @@ export const ReasoningRenderer: MessageRenderer<
   const { renderedContent } = useMarkdownRenderer(
     content,
     state,
-    "text-text-03"
+    "text-text-03 font-main-ui-body"
   );
 
   if (!hasStart && !hasEnd && content.length === 0) {

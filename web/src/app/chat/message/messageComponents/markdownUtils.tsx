@@ -6,12 +6,14 @@ import rehypePrism from "rehype-prism-plus";
 import rehypeKatex from "rehype-katex";
 import "prismjs/themes/prism-tomorrow.css";
 import "katex/dist/katex.min.css";
-import "../custom-code-styles.css";
-
-import { FullChatState } from "./interfaces";
-import { MemoizedAnchor, MemoizedParagraph } from "../MemoizedTextComponents";
-import { extractCodeText, preprocessLaTeX } from "../codeUtils";
-import { CodeBlock } from "../CodeBlock";
+import "@/app/chat/message/custom-code-styles.css";
+import { FullChatState } from "@/app/chat/message/messageComponents/interfaces";
+import {
+  MemoizedAnchor,
+  MemoizedParagraph,
+} from "@/app/chat/message/MemoizedTextComponents";
+import { extractCodeText, preprocessLaTeX } from "@/app/chat/message/codeUtils";
+import { CodeBlock } from "@/app/chat/message/CodeBlock";
 import { transformLinkUri } from "@/lib/utils";
 
 /**
@@ -120,7 +122,7 @@ export const renderMarkdown = (
 export const useMarkdownRenderer = (
   content: string,
   state: FullChatState | undefined,
-  textSize: string = "text-base"
+  textSize: string
 ) => {
   const processedContent = useMemo(() => processContent(content), [content]);
   const markdownComponents = useMarkdownComponents(

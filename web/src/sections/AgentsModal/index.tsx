@@ -188,10 +188,7 @@ export default function AgentsModal() {
 
       <div className="h-full w-full p-spacing-paragraph">
         {featuredAgents.length === 0 && allAgents.length === 0 ? (
-          <Text
-            mainContentBody
-            className="w-full h-full flex flex-col items-center justify-center"
-          >
+          <Text className="w-full h-full flex flex-col items-center justify-center">
             No Agents configured yet...
           </Text>
         ) : (

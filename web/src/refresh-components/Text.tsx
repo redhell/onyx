@@ -10,7 +10,7 @@ const fonts = {
   // Main Content
   mainContentBody: "font-main-content-body",
   mainContentMuted: "font-main-content-muted",
-  mainContentAction: "font-main-content-emphasis",
+  mainContentEmphasis: "font-main-content-emphasis",
   mainContentMono: "font-main-content-mono",
 
   // Main UI
@@ -27,7 +27,7 @@ const fonts = {
   // Figure
   figureSmallLabel: "font-figure-small-label",
   figureSmallValue: "font-figure-small-value",
-  figureSmallKeystroke: "font-figure-keystroke",
+  figureKeystroke: "font-figure-keystroke",
 };
 
 const colors = {
@@ -56,7 +56,7 @@ export interface TextProps extends React.HTMLAttributes<HTMLElement> {
   headingH3Muted?: boolean;
   mainContentBody?: boolean;
   mainContentMuted?: boolean;
-  mainContentAction?: boolean;
+  mainContentEmphasis?: boolean;
   mainContentMono?: boolean;
   mainUiBody?: boolean;
   mainUiMuted?: boolean;
@@ -67,7 +67,7 @@ export interface TextProps extends React.HTMLAttributes<HTMLElement> {
   secondaryMono?: boolean;
   figureSmallLabel?: boolean;
   figureSmallValue?: boolean;
-  figureSmallKeystroke?: boolean;
+  figureKeystroke?: boolean;
 
   // Colors
   text05?: boolean;
@@ -86,7 +86,7 @@ export default function Text({
   headingH3Muted,
   mainContentBody,
   mainContentMuted,
-  mainContentAction,
+  mainContentEmphasis,
   mainContentMono,
   mainUiBody,
   mainUiMuted,
@@ -97,7 +97,7 @@ export default function Text({
   secondaryMono,
   figureSmallLabel,
   figureSmallValue,
-  figureSmallKeystroke,
+  figureKeystroke,
   text05,
   text04,
   text03,
@@ -119,8 +119,8 @@ export default function Text({
             ? "mainContentBody"
             : mainContentMuted
               ? "mainContentMuted"
-              : mainContentAction
-                ? "mainContentAction"
+              : mainContentEmphasis
+                ? "mainContentEmphasis"
                 : mainContentMono
                   ? "mainContentMono"
                   : mainUiBody
@@ -141,9 +141,9 @@ export default function Text({
                                   ? "figureSmallLabel"
                                   : figureSmallValue
                                     ? "figureSmallValue"
-                                    : figureSmallKeystroke
-                                      ? "figureSmallKeystroke"
-                                      : "mainContentBody";
+                                    : figureKeystroke
+                                      ? "figureKeystroke"
+                                      : "mainUiBody";
 
   const color = text01
     ? "text01"

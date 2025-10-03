@@ -512,7 +512,6 @@
   font-weight: 600;
   line-height: 64px;
   letter-spacing: -0.48px;
-  color: var(--text-04);
 }
 
 .font-heading-h2 {
@@ -521,7 +520,6 @@
   font-weight: 600;
   line-height: 36px;
   letter-spacing: -0.24px;
-  color: var(--text-04);
 }
 
 .font-heading-h3 {
@@ -530,7 +528,6 @@
   font-weight: 600;
   line-height: 28px;
   letter-spacing: -0.18px;
-  color: var(--text-04);
 }
 
 .font-heading-h3-muted {
@@ -539,7 +536,6 @@
   font-weight: 500;
   line-height: 28px;
   letter-spacing: -0.18px;
-  color: var(--text-04);
 }
 
 /* MAIN CONTENT STYLES */
@@ -550,7 +546,6 @@
   font-weight: 450;
   line-height: 24px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-content-emphasis {
@@ -559,7 +554,6 @@
   font-weight: 700;
   line-height: 24px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-content-muted {
@@ -568,7 +562,6 @@
   font-weight: 400;
   line-height: 24px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-content-mono {
@@ -577,7 +570,6 @@
   font-weight: 400;
   line-height: 23px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 /* MAIN UI STYLES */
@@ -588,7 +580,6 @@
   font-weight: 500;
   line-height: 20px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-ui-muted {
@@ -597,7 +588,6 @@
   font-weight: 400;
   line-height: 20px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-ui-action {
@@ -606,7 +596,6 @@
   font-weight: 600;
   line-height: 20px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-main-ui-mono {
@@ -615,7 +604,6 @@
   font-weight: 400;
   line-height: 20px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 /* SECONDARY STYLES */
@@ -626,7 +614,6 @@
   font-weight: 400;
   line-height: 16px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-secondary-action {
@@ -635,7 +622,6 @@
   font-weight: 600;
   line-height: 16px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-secondary-mono {
@@ -644,7 +630,6 @@
   font-weight: 400;
   line-height: 16px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 /* FIGURE STYLES */
@@ -655,7 +640,6 @@
   font-weight: 700;
   line-height: 12px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-figure-small-value {
@@ -664,7 +648,6 @@
   font-weight: 400;
   line-height: 12px;
   letter-spacing: 0px;
-  color: var(--text-04);
 }
 
 .font-figure-keystroke {
@@ -673,7 +656,6 @@
   font-weight: 400;
   line-height: 16px;
   letter-spacing: -0.6px;
-  color: var(--text-04);
 }
 
 /* SCROLL BAR */

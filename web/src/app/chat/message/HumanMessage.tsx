@@ -302,7 +302,7 @@ export default function HumanMessage({
                         ) && "ml-auto"
                       )}
                     >
-                      <Text>{content}</Text>
+                      <Text mainContentBody>{content}</Text>
                     </div>
                   </>
                 ) : (

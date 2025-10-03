@@ -13,6 +13,7 @@ import { ValidSources } from "@/lib/types";
 import { ProjectFile } from "../projects/projectsService";
 import { BlinkingDot } from "./BlinkingDot";
 import Text from "@/refresh-components/Text";
+import { cn } from "@/lib/utils";
 
 export const MemoizedAnchor = memo(
   ({
@@ -204,7 +205,11 @@ export const MemoizedLink = memo(
 
 export const MemoizedParagraph = memo(
   function MemoizedParagraph({ className, children }: any) {
-    return <Text className={className}>{children}</Text>;
+    return (
+      <Text mainContentBody className={className}>
+        {children}
+      </Text>
+    );
   },
   (prevProps, nextProps) => {
     const areEqual = isEqual(prevProps.children, nextProps.children);
