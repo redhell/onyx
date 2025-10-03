@@ -29,8 +29,7 @@ def short_tag(link: str, i: int) -> str:
 @function_tool
 def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str) -> str:
     """
-    Tool for searching the public internet.
-
+    Tool for searching the public internet. Useful for up to date information on PUBLIC knowledge.
     ---
     ## Decision boundary
     - You MUST call `web_search_tool` to discover sources when the request involves:

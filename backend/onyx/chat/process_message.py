@@ -786,6 +786,9 @@ def stream_chat_message_objects(
         )
 
         # TODO: For backwards compatible PR, switch back to the original call
+        # import litellm
+        # litellm.set_verbose = True
+        # from onyx.chat.packet_proccessing import process_streamed_packets
         # yield from process_streamed_packets.process_streamed_packets(
         #     answer_processed_output=answer.processed_streamed_output,
         # )

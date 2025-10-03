@@ -25,12 +25,7 @@ def internal_search_tool(
     run_context: RunContextWrapper[ChatTurnContext], query: str
 ) -> str:
     """
-    Runs a semantic search over the user's knowledge base.
-    The default behavior is to use this tool. The only scenario where you should not use this tool is if:
-    - There is sufficient information in chat history to FULLY and ACCURATELY answer the query AND additional information
-    or details would provide little or no value.
-    - The query is some form of request that does not require additional information to handle.
-    HINT: if you are unfamiliar with the user input OR think the user input is a typo, use this tool.
+    Tool for searching PRIVATE organizational knowledge from sources connected to the user.
 
     Args:
         query: The natural-language search query.
