@@ -164,7 +164,7 @@ jobs:
             --set=inferenceCapability.replicaCount=0 \
             --set=indexCapability.replicaCount=0 \
             --set=celery_beat.replicaCount=0 \
-            --set=celery_worker_background.replicaCount=1 \
+            --set=celery_worker_background.replicaCount=0 \
             --set=celery_worker_docfetching.replicaCount=0 \
             --set=celery_worker_docprocessing.replicaCount=0 \
             --set=celery_worker_light.replicaCount=0 \
@@ -259,9 +259,9 @@ jobs:
             --set=celery_worker_light.replicaCount=0 \
             --set=celery_worker_primary.replicaCount=0 \
             --set=celery_worker_user_files_indexing.replicaCount=0 \
-            --set=celery_worker_heavy.replicaCount=1 \
-            --set=celery_worker_monitoring.replicaCount=1 \
-            --set=celery_worker_user_file_processing.replicaCount=1 \
+            --set=celery_worker_heavy.replicaCount=0   \
+            --set=celery_worker_monitoring.replicaCount=0 \
+            --set=celery_worker_user_file_processing.replicaCount=0 \
             --set=global.useLightweightBackgroundWorker=false" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
