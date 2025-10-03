@@ -42,11 +42,13 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
     bridge, thread = OnyxRunner().run_streamed_in_background(
         agent, messages, context=ctx, max_turns=100
     )
+    connected = True
     for ev in bridge.events():
-        if not is_connected(
+        connected = is_connected(
             dependencies.dependencies_to_maybe_remove.chat_session_id,
             dependencies.redis_client,
-        ):
+        )
+        if not connected:
             _emit_clean_up_packets(dependencies, ctx)
             bridge.cancel()
             break
@@ -65,7 +67,8 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
         ),
         all_cited_documents=[],
     )
-    wait_on_background(thread)
+    if connected:
+        wait_on_background(thread)
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
     )

@@ -14,7 +14,7 @@ from agents import TContext
 from agents import TResponseInputItem
 
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.utils.threadpool_concurrency import run_async_sync
+from onyx.utils.threadpool_concurrency import run_async_sync_no_cancel
 from onyx.utils.threadpool_concurrency import run_in_background
 from onyx.utils.threadpool_concurrency import TimeoutThread
 
@@ -56,7 +56,7 @@ class OnyxRunner:
                 finally:
                     self._q.put(self.SENTINEL)
 
-            run_async_sync(run_and_consume())
+            run_async_sync_no_cancel(run_and_consume())
 
         return self, run_in_background(worker)
 

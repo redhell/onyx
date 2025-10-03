@@ -25,6 +25,7 @@ from agents import Usage
 from agents.items import ResponseOutputMessage
 from agents.items import ResponseOutputText
 from openai.types.responses import Response
+from openai.types.responses import ResponseCustomToolCallInputDeltaEvent
 from openai.types.responses.response_stream_event import ResponseCompletedEvent
 from openai.types.responses.response_stream_event import ResponseCreatedEvent
 from openai.types.responses.response_stream_event import ResponseTextDeltaEvent
@@ -191,19 +192,308 @@ class FakeModel(Model):
             )
 
             # 2) stream some text (delta)
-            yield ResponseTextDeltaEvent(
-                content_index=0,
-                delta="fake response",
-                item_id="fake-item-id",
-                logprobs=[],
-                output_index=0,
-                sequence_number=2,
-                type="response.output_text.delta",
-            )
+            for _ in range(5):
+                yield ResponseTextDeltaEvent(
+                    content_index=0,
+                    delta="fake response",
+                    item_id="fake-item-id",
+                    logprobs=[],
+                    output_index=0,
+                    sequence_number=2,
+                    type="response.output_text.delta",
+                )
 
             # 3) completed with the full Response object
             yield ResponseCompletedEvent(
                 response=final_response, sequence_number=3, type="response.completed"
+            )
+
+        return _gen()
+
+
+class FakeCancellationModel(Model):
+    """Fake Model that allows triggering stop signal during streaming."""
+
+    def __init__(
+        self, set_fence_func=None, chat_session_id=None, redis_client=None
+    ) -> None:
+        self.name = "fake-model"
+        self.provider = "fake-provider"
+        self.set_fence_func = set_fence_func
+        self.chat_session_id = chat_session_id
+        self.redis_client = redis_client
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        # Build a minimal full response (non-streaming path)
+        msg = ResponseOutputMessage(
+            id="fake-message-id",
+            role="assistant",
+            content=[
+                ResponseOutputText(
+                    text="fake response", type="output_text", annotations=[]
+                )
+            ],
+            status="completed",
+            type="message",
+        )
+
+        usage = Usage(
+            requests=1,
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            input_tokens_details=InputTokensDetails(cached_tokens=0),
+            output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+        )
+
+        return ModelResponse(output=[msg], usage=usage, response_id="fake-response-id")
+
+    def stream_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> AsyncIterator[object]:
+        async def _gen() -> AsyncIterator[object]:
+            response_id = "fake-response-id"
+
+            # Build the response object first
+            msg = ResponseOutputMessage(
+                id="fake-message-id",
+                role="assistant",
+                content=[
+                    ResponseOutputText(
+                        text="fake response", type="output_text", annotations=[]
+                    )
+                ],
+                status="completed",
+                type="message",
+            )
+
+            usage = ResponseUsage(
+                input_tokens=10,
+                output_tokens=5,
+                total_tokens=15,
+                input_tokens_details=InputTokensDetails(cached_tokens=0),
+                output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+            )
+
+            final_response = Response(
+                id=response_id,
+                created_at=1234567890,
+                object="response",
+                output=[msg],
+                usage=usage,
+                status="completed",
+                model=self.name,
+                parallel_tool_calls=False,
+                tool_choice="none",
+                tools=[],
+            )
+
+            # 1) created
+            yield ResponseCreatedEvent(
+                response=final_response, sequence_number=1, type="response.created"
+            )
+
+            # 2) stream some text (delta) - trigger stop signal during streaming
+            for i in range(5):
+                yield ResponseTextDeltaEvent(
+                    content_index=0,
+                    delta="fake response",
+                    item_id="fake-item-id",
+                    logprobs=[],
+                    output_index=0,
+                    sequence_number=2,
+                    type="response.output_text.delta",
+                )
+
+                # Trigger stop signal after a few deltas to ensure there are message_delta packets in history
+                if (
+                    i == 2
+                    and self.set_fence_func
+                    and self.chat_session_id
+                    and self.redis_client
+                ):
+                    self.set_fence_func(self.chat_session_id, self.redis_client, True)
+
+            # 3) completed with the full Response object
+            yield ResponseCompletedEvent(
+                response=final_response, sequence_number=3, type="response.completed"
+            )
+
+        return _gen()
+
+
+class FakeToolCallModel(Model):
+    """Fake Model that forces tool calls for testing tool cancellation."""
+
+    def __init__(
+        self, set_fence_func=None, chat_session_id=None, redis_client=None
+    ) -> None:
+        self.name = "fake-model"
+        self.provider = "fake-provider"
+        self.set_fence_func = set_fence_func
+        self.chat_session_id = chat_session_id
+        self.redis_client = redis_client
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        # Build a response with tool calls
+        msg = ResponseOutputMessage(
+            id="fake-message-id",
+            role="assistant",
+            content=[
+                ResponseOutputText(
+                    text="I need to use a tool", type="output_text", annotations=[]
+                )
+            ],
+            status="completed",
+            type="message",
+            tool_calls=[
+                {
+                    "id": "fake-tool-call-id",
+                    "type": "function",
+                    "function": {
+                        "name": "fake_cancellation_tool",
+                        "arguments": '{"query": "test query"}',
+                    },
+                }
+            ],
+        )
+
+        usage = Usage(
+            requests=1,
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            input_tokens_details=InputTokensDetails(cached_tokens=0),
+            output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+        )
+
+        return ModelResponse(output=[msg], usage=usage, response_id="fake-response-id")
+
+    def stream_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> AsyncIterator[object]:
+        async def _gen() -> AsyncIterator[object]:
+            response_id = "fake-response-id"
+
+            # Build the response object with tool calls
+            msg = ResponseOutputMessage(
+                id="fake-message-id",
+                role="assistant",
+                content=[
+                    ResponseOutputText(
+                        text="I need to use a tool", type="output_text", annotations=[]
+                    )
+                ],
+                status="completed",
+                type="message",
+                tool_calls=[
+                    {
+                        "id": "fake-tool-call-id",
+                        "type": "function",
+                        "function": {
+                            "name": "fake_cancellation_tool",
+                            "arguments": '{"query": "test query"}',
+                        },
+                    }
+                ],
+            )
+
+            usage = ResponseUsage(
+                input_tokens=10,
+                output_tokens=5,
+                total_tokens=15,
+                input_tokens_details=InputTokensDetails(cached_tokens=0),
+                output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
+            )
+
+            final_response = Response(
+                id=response_id,
+                created_at=1234567890,
+                object="response",
+                output=[msg],
+                usage=usage,
+                status="completed",
+                model=self.name,
+                parallel_tool_calls=False,
+                tool_choice="none",
+                tools=[],
+            )
+
+            # 1) created
+            yield ResponseCreatedEvent(
+                response=final_response, sequence_number=1, type="response.created"
+            )
+
+            # 2) stream some text (delta) - trigger stop signal during streaming
+            for i in range(5):
+                yield ResponseCustomToolCallInputDeltaEvent(
+                    delta="fake response",
+                    item_id="fake-item-id",
+                    output_index=0,
+                    sequence_number=2,
+                    type="response.custom_tool_call_input.delta",
+                )
+
+                # Trigger stop signal after a few deltas to ensure there are message_delta packets in history
+                if (
+                    i == 2
+                    and self.set_fence_func
+                    and self.chat_session_id
+                    and self.redis_client
+                ):
+                    self.set_fence_func(self.chat_session_id, self.redis_client, True)
+
+            # 2) completed with the full Response object (including tool calls)
+            yield ResponseCompletedEvent(
+                response=final_response, sequence_number=2, type="response.completed"
             )
 
         return _gen()
@@ -436,6 +726,11 @@ def fake_failing_model() -> Model:
 
 
 @pytest.fixture
+def fake_tool_call_model() -> Model:
+    return FakeToolCallModel()
+
+
+@pytest.fixture
 def sample_messages() -> list[dict]:
     """Fixture providing sample messages for testing."""
     return [
@@ -476,3 +771,131 @@ def test_fast_chat_turn_catch_exception(
     generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
     with pytest.raises(Exception):
         list(generator)
+
+
+def test_fast_chat_turn_cancellation(
+    chat_turn_dependencies: ChatTurnDependencies,
+    sample_messages: list[dict],
+    monkeypatch,
+):
+    """Test that cancellation via set_fence works correctly.
+
+    When set_fence is called during message streaming, we should see:
+    1. SectionEnd packet (when cancelling during message streaming, no "Cancelled" message is shown)
+    2. OverallStop packet
+
+    The "Cancelled" MessageStart is only shown when cancelling during tool calls or reasoning,
+    not during regular message streaming.
+    """
+    from onyx.chat.stop_signal_checker import set_fence
+    from onyx.chat.turn.fast_chat_turn import fast_chat_turn
+
+    # Mock get_redis_client to return our fake redis client
+    # This is needed because set_fence and is_connected use get_redis_client() directly
+    monkeypatch.setattr(
+        "onyx.chat.stop_signal_checker.get_redis_client",
+        lambda: chat_turn_dependencies.redis_client,
+    )
+
+    # Mock get_current_tenant_id to return a test tenant ID
+    monkeypatch.setattr(
+        "onyx.chat.stop_signal_checker.get_current_tenant_id", lambda: "test-tenant"
+    )
+
+    # Replace the model with our cancellation model that triggers stop signal during streaming
+    cancellation_model = FakeCancellationModel(
+        set_fence_func=set_fence,
+        chat_session_id=chat_turn_dependencies.dependencies_to_maybe_remove.chat_session_id,
+        redis_client=chat_turn_dependencies.redis_client,
+    )
+    chat_turn_dependencies.llm_model = cancellation_model
+
+    generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+
+    packets = []
+    for packet in generator:
+        packets.append(packet)
+
+    # After cancellation during message streaming, we should see SectionEnd, then OverallStop
+    # The "Cancelled" MessageStart is only shown when cancelling during tool calls/reasoning
+    assert (
+        len(packets) >= 2
+    ), f"Expected at least 2 packets after cancellation, got {len(packets)}"
+
+    # The last packet should be OverallStop
+    assert packets[-1].obj.type == "stop", "Last packet should be OverallStop"
+
+    # The second-to-last should be SectionEnd
+    assert (
+        packets[-2].obj.type == "section_end"
+    ), "Second-to-last packet should be SectionEnd"
+
+
+def test_fast_chat_turn_tool_call_cancellation(
+    chat_turn_dependencies: ChatTurnDependencies,
+    sample_messages: list[dict],
+    monkeypatch,
+):
+    """Test that cancellation via set_fence works correctly during tool calls.
+
+    When set_fence is called during tool execution, we should see:
+    1. MessageStart packet with "Cancelled" content
+    2. SectionEnd packet
+    3. OverallStop packet
+    """
+    from onyx.chat.stop_signal_checker import set_fence
+    from onyx.chat.turn.fast_chat_turn import fast_chat_turn
+    from onyx.server.query_and_chat.streaming_models import MessageStart
+
+    # Mock get_redis_client to return our fake redis client
+    # This is needed because set_fence and is_connected use get_redis_client() directly
+    monkeypatch.setattr(
+        "onyx.chat.stop_signal_checker.get_redis_client",
+        lambda: chat_turn_dependencies.redis_client,
+    )
+
+    # Mock get_current_tenant_id to return a test tenant ID
+    monkeypatch.setattr(
+        "onyx.chat.stop_signal_checker.get_current_tenant_id", lambda: "test-tenant"
+    )
+
+    # Replace the model with our tool call model
+    cancellation_model = FakeToolCallModel(
+        set_fence_func=set_fence,
+        chat_session_id=chat_turn_dependencies.dependencies_to_maybe_remove.chat_session_id,
+        redis_client=chat_turn_dependencies.redis_client,
+    )
+    chat_turn_dependencies.llm_model = cancellation_model
+    generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+
+    packets = []
+    for packet in generator:
+        packets.append(packet)
+
+    # Debug: print all packets to understand what we're getting
+    print(f"Tool call test - Total packets: {len(packets)}")
+    for i, packet in enumerate(packets):
+        print(f"Tool call test - Packet {i}: {packet}")
+
+    # After cancellation during tool call, we should see MessageStart, SectionEnd, then OverallStop
+    # The "Cancelled" MessageStart is shown when cancelling during tool calls/reasoning
+    assert (
+        len(packets) >= 3
+    ), f"Expected at least 3 packets after tool call cancellation, got {len(packets)}"
+
+    # The last packet should be OverallStop
+    assert packets[-1].obj.type == "stop", "Last packet should be OverallStop"
+
+    # The second-to-last should be SectionEnd
+    assert (
+        packets[-2].obj.type == "section_end"
+    ), "Second-to-last packet should be SectionEnd"
+
+    # The third-to-last should be MessageStart with "Cancelled" content
+    assert (
+        packets[-3].obj.type == "message_start"
+    ), "Third-to-last packet should be MessageStart"
+    assert isinstance(packets[-3].obj, MessageStart)
+    assert (
+        packets[-3].obj.content == "Cancelled"
+    ), "MessageStart should contain 'Cancelled'"
