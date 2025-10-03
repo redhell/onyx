@@ -29,14 +29,44 @@ def short_tag(link: str, i: int) -> str:
 @function_tool
 def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str) -> str:
     """
-    Perform a live search on the public internet.
+    Tool for searching the public internet.
 
-    Use this tool when you need fresh or external information not found
-    in the conversation. It returns a ranked list of web pages with titles,
-    snippets, and URLs.
+    ---
+    ## Decision boundary
+    - You MUST call `web_search_tool` to discover sources when the request involves:
+      - Fresh/unstable info (news, prices, laws, schedules, product specs, scores, exchange rates).
+      - Recommendations, or any query where the specific sources matter.
+      - Verifiable claims, quotes, or citations.
+    - After ANY successful `web_search_tool` call that yields candidate URLs, you MUST call
+      `web_fetch_tool` on the selected URLs BEFORE answering. Do NOT answer from snippets.
 
-    Args:
-        query: The natural-language search query.
+    ## When NOT to use
+    - Casual chat, rewriting/summarizing user-provided text, or translation.
+    - When the user already provided URLs (go straight to `web_fetch_tool`).
+
+    ## Usage hints
+    - Use ONE focused natural-language `query` per call.
+    - Prefer 1–3 searches for distinct intents; then batch-fetch 3–8 best URLs.
+    - Deduplicate domains/near-duplicates. Prefer recent, authoritative sources.
+
+    ## Args
+    - query (str): The search query.
+
+    ## Returns (JSON string)
+    {
+      "results": [
+        {
+          "tag": "short_ref",
+          "title": "...",
+          "link": "https://...",
+          "author": "...",
+          "published_date": "2025-10-01T12:34:56Z"
+          // intentionally NO full content
+        }
+      ],
+      "must_fetch_next": true,
+      "next_actions": "Select 3–8 strongest URLs and call web_fetch_tool before answering."
+    }
     """
     search_provider = get_default_provider()
     # TODO: Find better way to track index that isn't so implicit
@@ -111,15 +141,38 @@ def web_fetch_tool(
     run_context: RunContextWrapper[ChatTurnContext], urls: List[str]
 ) -> str:
     """
-    Fetch and extract the text content from a specific web page.
+    Tool for fetching and extracting full content from web pages.
 
-    Use this tool after identifying relevant URLs (for example from
-    `web_search`) to read the full content. It returns the cleaned page
-    text and metadata. Bias towards fetching multiple URLs at once instead of
-    one at a time.
+    ---
+    ## Decision boundary
+    - You MUST use `web_fetch_tool` before quoting, citing, or relying on page content.
+    - Use it whenever you already have URLs (from the user or from `web_search_tool`).
+    - Do NOT answer questions based on search snippets alone.
 
-    Args:
-        urls: The full URLs of the pages to retrieve.
+    ## When NOT to use
+    - If you do not yet have URLs (search first).
+    - Avoid many tiny calls; batch URLs (1–20) in one request.
+
+    ## Usage hints
+    - Batch 3–8 high-quality, deduplicated URLs per topic.
+    - Prefer primary, recent, and reputable sources.
+    - If PDFs/long docs appear, still fetch; you may summarize sections explicitly.
+
+    ## Args
+    - urls (List[str]): Absolute URLs to retrieve.
+
+    ## Returns (JSON string)
+    {
+      "results": [
+        {
+          "tag": "short_ref",
+          "title": "...",
+          "link": "https://...",
+          "full_content": "...",
+          "published_date": "2025-10-01T12:34:56Z"
+        }
+      ]
+    }
     """
     # TODO: Find better way to track index that isn't so implicit
     # based on number of tool calls
