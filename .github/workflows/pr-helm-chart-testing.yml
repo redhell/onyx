@@ -213,21 +213,45 @@ jobs:
           echo "No Helm release found (already cleaned up by ct install)"
         fi
 
-        # Delete and reinstall operators for clean CRD ownership in Standard Mode test
-        echo "=== Cleaning up operators and CRDs for next test ==="
-
-        # Uninstall operators (this also removes CRDs)
-        helm uninstall redis-operator -n redis-operator || true
-        kubectl delete namespace redis-operator || true
+        # CRITICAL: Delete CRDs to prevent ownership conflicts in next test
+        echo "=== Cleaning up CRDs for next test ==="
+        
+        # Delete CloudNativePG CRDs (cluster-scoped resources)
+        echo "Deleting CloudNativePG CRDs..."
+        kubectl delete crd \
+          backups.postgresql.cnpg.io \
+          clusters.postgresql.cnpg.io \
+          poolers.postgresql.cnpg.io \
+          scheduledbackups.postgresql.cnpg.io \
+          --ignore-not-found=true || echo "Some CloudNativePG CRDs may not exist"
+        
+        # Delete Redis operator CRDs
+        echo "Deleting Redis operator CRDs..."
+        kubectl delete crd \
+          redis.redis.redis.opstreelabs.in \
+          redisclusters.redis.redis.opstreelabs.in \
+          redisreplications.redis.redis.opstreelabs.in \
+          --ignore-not-found=true || echo "Some Redis CRDs may not exist"
+        
+        # Uninstall Redis operator (will be reinstalled)
+        echo "Uninstalling Redis operator..."
+        helm uninstall redis-operator -n redis-operator || echo "Redis operator already uninstalled"
+        kubectl delete namespace redis-operator --timeout=60s || echo "Redis operator namespace already deleted"
 
         # Wait for CRDs to be fully deleted
         echo "Waiting for CRDs to be deleted..."
-        sleep 10
+        sleep 15
+        
+        # Verify CRDs are gone
+        echo "Verifying CRDs are deleted..."
+        kubectl get crd | grep -E "(cnpg|redis)" || echo "All CRDs successfully deleted"
 
-        # Reinstall operators for Standard Mode test
+        # Reinstall operators with clean state
         echo "=== Reinstalling operators for Standard Mode ==="
         helm upgrade --install redis-operator ot-container-kit/redis-operator \
           --namespace redis-operator --create-namespace --wait --timeout 300s
+        
+        echo "=== Ready for Standard Mode test ==="
 
     - name: Run chart-testing (install) - Standard Mode
       timeout-minutes: 25
