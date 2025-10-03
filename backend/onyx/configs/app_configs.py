@@ -359,12 +359,6 @@ CELERY_WORKER_PRIMARY_POOL_OVERFLOW = int(
     os.environ.get("CELERY_WORKER_PRIMARY_POOL_OVERFLOW") or 4
 )
 
-# Lightweight mode: if enabled, uses a single background worker for all background tasks
-# If disabled, uses separate workers for heavy, kg_processing, monitoring, and user_file_processing
-USE_LIGHTWEIGHT_BACKGROUND_WORKER = (
-    os.environ.get("USE_LIGHTWEIGHT_BACKGROUND_WORKER", "true").lower() == "true"
-)
-
 # Consolidated background worker (merges heavy, kg_processing, monitoring, user_file_processing)
 CELERY_WORKER_BACKGROUND_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_BACKGROUND_CONCURRENCY") or 6

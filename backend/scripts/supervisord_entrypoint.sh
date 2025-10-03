@@ -2,9 +2,9 @@
 # Entrypoint script for supervisord that sets environment variables
 # for controlling which celery workers to start
 
-# Default to separate workers (standard mode) if not set
+# Default to lightweight mode if not set
 if [ -z "$USE_LIGHTWEIGHT_BACKGROUND_WORKER" ]; then
-    export USE_LIGHTWEIGHT_BACKGROUND_WORKER="false"
+    export USE_LIGHTWEIGHT_BACKGROUND_WORKER="true"
 fi
 
 # Set the complementary variable for supervisord
