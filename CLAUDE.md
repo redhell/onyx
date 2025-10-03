@@ -73,11 +73,35 @@ Onyx uses Celery for asynchronous task processing with multiple specialized work
      - Monitoring tasks (every 5 minutes)
      - Cleanup tasks (hourly)
 
+#### Worker Deployment Modes
+
+Onyx supports two deployment modes for background workers:
+
+**Lightweight Mode** (enabled by setting `USE_LIGHTWEIGHT_BACKGROUND_WORKER=true`):
+- Runs a single consolidated `background` worker that handles all background tasks:
+  - Pruning operations
+  - Knowledge graph processing
+  - Monitoring tasks
+  - User file processing
+- Lower resource footprint (single worker process)
+- Suitable for smaller deployments or development environments
+- Default concurrency: 6 threads
+
+**Standard Mode** (default when `USE_LIGHTWEIGHT_BACKGROUND_WORKER` is not set or set to `false`):
+- Runs separate specialized workers:
+  - `heavy` worker: Handles pruning operations (4 threads)
+  - `kg_processing` worker: Knowledge graph processing (2 threads)
+  - `monitoring` worker: System health monitoring (1 thread)
+  - `user_file_processing` worker: User file operations (2 threads)
+- Better isolation and scalability
+- Can scale individual workers independently
+- Suitable for production deployments with higher load
+
 #### Key Features
 
 - **Thread-based Workers**: All workers use thread pools (not processes) for stability
-- **Tenant Awareness**: Multi-tenant support with per-tenant task isolation. There is a 
-middleware layer that automatically finds the appropriate tenant ID when sending tasks 
+- **Tenant Awareness**: Multi-tenant support with per-tenant task isolation. There is a
+middleware layer that automatically finds the appropriate tenant ID when sending tasks
 via Celery Beat.
 - **Task Prioritization**: High, Medium, Low priority queues
 - **Monitoring**: Built-in heartbeat and liveness checking
