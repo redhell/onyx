@@ -272,7 +272,7 @@ jobs:
             --set=celery_worker_monitoring.replicaCount=0 \
             --set=celery_worker_user_file_processing.replicaCount=0 \
             --set=global.useLightweightBackgroundWorker=false" \
-          --helm-extra-args="--timeout 900s --debug" \
+          --helm-extra-args="--timeout 900s --debug --skip-crds" \
           --debug --config ct.yaml
 
         echo "=== Installation completed successfully ==="
