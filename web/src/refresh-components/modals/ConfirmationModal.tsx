@@ -5,27 +5,32 @@ import SvgX from "@/icons/x";
 import CoreModal from "@/refresh-components/modals/CoreModal";
 import { useEscape } from "@/hooks/useKeyPress";
 import IconButton from "@/refresh-components/buttons/IconButton";
+import Button from "@/refresh-components/buttons/Button";
 
 interface ConfirmationModalProps {
   escapeToClose?: boolean;
   clickOutsideToClose?: boolean;
-  onClose: () => void;
 
   icon: React.FunctionComponent<SvgProps>;
   title: string;
-  description?: React.ReactNode;
   children?: React.ReactNode;
+
+  submit: React.ReactNode;
+  hideCancel?: boolean;
+  onClose: () => void;
 }
 
 export default function ConfirmationModal({
   escapeToClose = true,
   clickOutsideToClose = true,
-  onClose,
 
   icon: Icon,
   title,
-  description,
   children,
+
+  submit,
+  hideCancel,
+  onClose,
 }: ConfirmationModalProps) {
   useEscape(onClose, escapeToClose);
 
@@ -43,16 +48,21 @@ export default function ConfirmationModal({
           {title}
         </Text>
       </div>
-      {description && (
-        <div className="p-spacing-paragraph">
-          {typeof description === "string" ? (
-            <Text text03>{description}</Text>
-          ) : (
-            description
-          )}
-        </div>
-      )}
-      {children && <div className="p-spacing-paragraph">{children}</div>}
+      <div className="p-spacing-paragraph">
+        {typeof children === "string" ? (
+          <Text text03>{children}</Text>
+        ) : (
+          children
+        )}
+      </div>
+      <div className="flex flex-row w-full items-center justify-end p-spacing-paragraph gap-spacing-interline">
+        {!hideCancel && (
+          <Button secondary onClick={onClose}>
+            Cancel
+          </Button>
+        )}
+        {submit}
+      </div>
     </CoreModal>
   );
 }

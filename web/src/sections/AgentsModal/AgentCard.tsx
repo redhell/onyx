@@ -71,19 +71,14 @@ export default function AgentCard({
           title="Delete Agent"
           icon={SvgTrash}
           onClose={() => setDeleteConfirmationModalOpen(false)}
-          description="Are you sure you want to delete this agent? This action cannot be undone."
-        >
-          <div className="flex flex-row items-center justify-end gap-spacing-interline">
-            <Button
-              secondary
-              onClick={() => setDeleteConfirmationModalOpen(false)}
-            >
-              Cancel
-            </Button>
+          submit={
             <Button danger onClick={confirmDelete}>
               Delete
             </Button>
-          </div>
+          }
+        >
+          Are you sure you want to delete this agent? This action cannot be
+          undone.
         </ConfirmationModal>
       )}
 

@@ -50,15 +50,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
           title="Delete Project"
           icon={SvgTrash}
           onClose={() => setDeleteConfirmationModalOpen(false)}
-          description="Are you sure you want to delete this project? This action cannot be undone."
-        >
-          <div className="flex flex-row justify-end items-center gap-spacing-interline">
-            <Button
-              onClick={() => setDeleteConfirmationModalOpen(false)}
-              secondary
-            >
-              Cancel
-            </Button>
+          submit={
             <Button
               danger
               onClick={() => {
@@ -68,7 +60,10 @@ function ProjectFolder({ project }: ProjectFolderProps) {
             >
               Delete
             </Button>
-          </div>
+          }
+        >
+          Are you sure you want to delete this project? This action cannot be
+          undone.
         </ConfirmationModal>
       )}
 

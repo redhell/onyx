@@ -48,6 +48,11 @@ export function ConfirmEntityModal({
       icon={SvgAlertCircle}
       title={`${buttonText} ${entityType}`}
       onClose={onClose}
+      submit={
+        <Button onClick={onSubmit} danger={danger}>
+          {buttonText}
+        </Button>
+      }
     >
       <div className="flex flex-col gap-spacing-paragraph">
         {!removeConfirmationText && (
@@ -57,15 +62,6 @@ export function ConfirmEntityModal({
         )}
 
         {additionalDetails && <Text text03>{additionalDetails}</Text>}
-
-        <div className="flex flex-row items-center justify-end gap-spacing-interline">
-          <Button onClick={onClose} secondary>
-            Cancel
-          </Button>
-          <Button onClick={onSubmit} danger={danger}>
-            {buttonText}
-          </Button>
-        </div>
       </div>
     </Modal>
   );

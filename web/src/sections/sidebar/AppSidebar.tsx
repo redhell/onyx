@@ -326,16 +326,8 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
         <ConfirmationModal
           title="Delete Chat"
           icon={SvgTrash}
-          description="Are you sure you want to delete this chat? This action cannot be undone."
           onClose={() => setDeleteConfirmationModalOpen(false)}
-        >
-          <div className="flex flex-row justify-end items-center gap-spacing-interline">
-            <Button
-              onClick={() => setDeleteConfirmationModalOpen(false)}
-              secondary
-            >
-              Cancel
-            </Button>
+          submit={
             <Button
               danger
               onClick={() => {
@@ -345,31 +337,35 @@ function ChatButtonInner({ chatSession, project }: ChatButtonProps) {
             >
               Delete
             </Button>
-          </div>
+          }
+        >
+          Are you sure you want to delete this chat? This action cannot be
+          undone.
         </ConfirmationModal>
       )}
 
-      <MoveCustomAgentChatModal
-        isOpen={showMoveCustomAgentModal}
-        onCancel={() => {
-          setShowMoveCustomAgentModal(false);
-          setPendingMoveProjectId(null);
-        }}
-        onConfirm={async (doNotShowAgain: boolean) => {
-          if (doNotShowAgain && typeof window !== "undefined") {
-            window.localStorage.setItem(
-              LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY,
-              "true"
-            );
-          }
-          const target = pendingMoveProjectId;
-          setShowMoveCustomAgentModal(false);
-          setPendingMoveProjectId(null);
-          if (target != null) {
-            await performMove(target);
-          }
-        }}
-      />
+      {showMoveCustomAgentModal && (
+        <MoveCustomAgentChatModal
+          onCancel={() => {
+            setShowMoveCustomAgentModal(false);
+            setPendingMoveProjectId(null);
+          }}
+          onConfirm={async (doNotShowAgain: boolean) => {
+            if (doNotShowAgain && typeof window !== "undefined") {
+              window.localStorage.setItem(
+                LS_HIDE_MOVE_CUSTOM_AGENT_MODAL_KEY,
+                "true"
+              );
+            }
+            const target = pendingMoveProjectId;
+            setShowMoveCustomAgentModal(false);
+            setPendingMoveProjectId(null);
+            if (target != null) {
+              await performMove(target);
+            }
+          }}
+        />
+      )}
 
       <NavigationTab
         icon={project ? () => <></> : SvgBubbleText}
