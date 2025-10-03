@@ -43,7 +43,7 @@ def extract_ids_from_runnable_connector(
     callback: IndexingHeartbeatInterface | None = None,
 ) -> set[str]:
     """
-    If the SlimConnectorWithPermSync hasnt been implemented for the given connector, just pull
+    If the given connector is neither a SlimConnector nor a SlimConnectorWithPermSync, just pull
     all docs using the load_from_state and grab out the IDs.
 
     Optionally, a callback can be passed to handle the length of each document batch.

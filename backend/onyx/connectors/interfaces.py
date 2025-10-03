@@ -97,7 +97,7 @@ class PollConnector(BaseConnector):
         raise NotImplementedError
 
 
-# Slim connectorsretrieve just the ids
+# Slim connectors retrieve just the ids of documents
 class SlimConnector(BaseConnector):
     @abc.abstractmethod
     def retrieve_all_slim_docs(
@@ -106,7 +106,7 @@ class SlimConnector(BaseConnector):
         raise NotImplementedError
 
 
-# Slim connectors can retrieve just the ids AND
+# Slim connectors retrieve both the ids AND
 # permission syncing information for connected documents
 class SlimConnectorWithPermSync(BaseConnector):
     @abc.abstractmethod

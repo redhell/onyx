@@ -606,7 +606,7 @@ class ConfluenceConnector(
         doc_metadata_list: list[SlimDocument] = []
         restrictions_expand = ",".join(_RESTRICTIONS_EXPANSION_FIELDS)
 
-        space_level_access_info = {}
+        space_level_access_info: dict[str, ExternalAccess] = {}
         if include_permissions:
             space_level_access_info = get_all_space_permissions(
                 self.confluence_client, self.is_cloud
