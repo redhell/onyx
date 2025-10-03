@@ -400,7 +400,7 @@ interface AgentsButtonProps {
 function AgentsButtonInner({ visibleAgent }: AgentsButtonProps) {
   const route = useAppRouter();
   const params = useAppParams();
-  const { currentAgent, pinnedAgents, togglePinnedAgent } = useAgentsContext();
+  const { pinnedAgents, togglePinnedAgent } = useAgentsContext();
   const pinned = pinnedAgents.some(
     (pinnedAgent) => pinnedAgent.id === visibleAgent.id
   );
@@ -538,40 +538,7 @@ function AppSidebarInner() {
       <AgentsModal />
       <CreateProjectModal />
 
-      <SidebarWrapper folded={folded} className="group/AppSidebar">
-        <div
-          className={cn(
-            "flex flex-row items-center px-spacing-interline py-spacing-inline flex-shrink-0",
-            folded ? "justify-center" : "justify-between"
-          )}
-        >
-          {folded ? (
-            <div className="h-[2rem] flex flex-col justify-center items-center">
-              <>
-                <IconButton
-                  icon={SvgSidebar}
-                  tertiary
-                  onClick={() => setFolded(false)}
-                  className="hidden group-hover/AppSidebar:flex"
-                />
-                <OnyxIcon
-                  size={24}
-                  className="visible group-hover/AppSidebar:hidden"
-                />
-              </>
-            </div>
-          ) : (
-            <>
-              <OnyxLogoTypeIcon size={88} />
-              <IconButton
-                icon={SvgSidebar}
-                tertiary
-                onClick={() => setFolded(true)}
-              />
-            </>
-          )}
-        </div>
-
+      <SidebarWrapper folded={folded} setFolded={setFolded}>
         <div className="flex flex-col gap-spacing-interline">
           <NavigationTab
             icon={SvgEditBig}

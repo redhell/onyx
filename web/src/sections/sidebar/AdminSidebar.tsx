@@ -7,7 +7,6 @@ import {
   useSettingsContext,
 } from "@/components/settings/SettingsProvider";
 import { CgArrowsExpandUpLeft } from "react-icons/cg";
-import { LogoComponent } from "@/components/logo/FixedLogo";
 import Text from "@/refresh-components/Text";
 import { SidebarSection } from "@/sections/sidebar/components";
 import Settings from "@/sections/sidebar/Settings";
@@ -318,13 +317,6 @@ export default function AdminSidebar({
 
   return (
     <SidebarWrapper>
-      <LogoComponent
-        show={true}
-        enterpriseSettings={combinedSettings.enterpriseSettings!}
-        backgroundToggled={false}
-        isAdmin={true}
-      />
-
       <NavigationTab
         icon={({ className }) => (
           <CgArrowsExpandUpLeft className={className} size={16} />
