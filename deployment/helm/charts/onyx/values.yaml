@@ -10,7 +10,6 @@ global:
 
 postgresql:
   enabled: true
-  nameOverride: postgresql
   cluster:
     instances: 1
     storage:
@@ -18,8 +17,6 @@ postgresql:
       size: 10Gi
     enableSuperuserAccess: true
     superuserSecret: onyx-postgresql  # keep in sync with auth.postgresql
-    # -- Additional raw values merged into the Cluster spec. Useful for advanced CNPG features.
-    extraSpec: {}
 
 vespa:
   name: da-vespa-0

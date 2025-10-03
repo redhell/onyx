@@ -158,7 +158,6 @@ jobs:
         
         # Run the actual installation with detailed logging
         echo "=== Starting ct install ==="
-        set +e
         ct install --all \
           --helm-extra-set-args="\
             --set=nginx.enabled=false \
@@ -184,52 +183,8 @@ jobs:
             --set=celery_worker_user_files_indexing.replicaCount=0" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
-        CT_EXIT=$?
-        set -e
-
-        if [[ $CT_EXIT -ne 0 ]]; then
-          echo "ct install failed with exit code $CT_EXIT"
-        else
-          echo "=== Installation completed successfully ==="
-        fi
-
+        echo "=== Installation completed successfully ==="
         kubectl get pods --all-namespaces
-
-        echo "=== Inspecting CloudNativePG operator pods ==="
-        kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg || true
-        OPERATOR_INFO=$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg \
-          -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' 2>/dev/null || true)
-        if [[ -n "$OPERATOR_INFO" ]]; then
-          while IFS=' ' read -r OP_NS OP_POD; do
-            [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
-            echo "--- Describe: $OP_NS/$OP_POD ---"
-            kubectl -n "$OP_NS" describe pod "$OP_POD" || true
-            echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
-            kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
-          done <<< "$OPERATOR_INFO"
-        else
-          echo "No CloudNativePG operator pods detected"
-        fi
-
-        echo "=== Inspecting CloudNativePG managed pods ==="
-        kubectl get pods --all-namespaces -l app.kubernetes.io/managed-by=cloudnative-pg || true
-        mapfile -t CNPG_PODS < <({ kubectl get pods --all-namespaces --no-headers 2>/dev/null || true; } \
-          | awk '/cloudnative-pg/ || /postgresql/ {print $1" "$2}' 2>/dev/null)
-        for entry in "${CNPG_PODS[@]}"; do
-          OP_NS=${entry%% *}
-          OP_POD=${entry#* }
-          [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
-          echo "--- Describe: $OP_NS/$OP_POD ---"
-          kubectl -n "$OP_NS" describe pod "$OP_POD" || true
-          echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
-          kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
-          kubectl -n "$OP_NS" logs "$OP_POD" --previous --tail=200 || true
-        done
-
-        if [[ $CT_EXIT -ne 0 ]]; then
-          echo "Re-throwing ct install failure"
-          exit $CT_EXIT
-        fi
 
     - name: Post-install verification
       if: steps.list-changed.outputs.changed == 'true'
@@ -251,33 +206,8 @@ jobs:
         echo "=== Pod descriptions for debugging ==="
         kubectl describe pods --all-namespaces | grep -A 10 -B 3 "Failed\|Error\|Warning\|Pending" || echo "No problematic pods found"
         
-        echo "=== CloudNativePG diagnostics ==="
-        OPERATOR_INFO=$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=cloudnative-pg \
-          -o jsonpath='{range .items[*]}{.metadata.namespace} {.metadata.name}{"\n"}{end}' 2>/dev/null || true)
-        if [[ -n "$OPERATOR_INFO" ]]; then
-          while IFS=' ' read -r OP_NS OP_POD; do
-            [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
-            echo "--- Describe: $OP_NS/$OP_POD ---"
-            kubectl -n "$OP_NS" describe pod "$OP_POD" || true
-            echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
-            kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
-          done <<< "$OPERATOR_INFO"
-        else
-          echo "No CloudNativePG operator pods detected"
-        fi
-
-        mapfile -t CNPG_PODS < <({ kubectl get pods --all-namespaces --no-headers 2>/dev/null || true; } \
-          | awk '/cloudnative-pg/ || /postgresql/ {print $1" "$2}' 2>/dev/null)
-        for entry in "${CNPG_PODS[@]}"; do
-          OP_NS=${entry%% *}
-          OP_POD=${entry#* }
-          [[ -z "$OP_NS" || -z "$OP_POD" ]] && continue
-          echo "--- Describe: $OP_NS/$OP_POD ---"
-          kubectl -n "$OP_NS" describe pod "$OP_POD" || true
-          echo "--- Logs (tail 200): $OP_NS/$OP_POD ---"
-          kubectl -n "$OP_NS" logs "$OP_POD" --tail=200 || true
-          kubectl -n "$OP_NS" logs "$OP_POD" --previous --tail=200 || true
-        done
+        echo "=== Recent logs for debugging ==="
+        kubectl logs --all-namespaces --tail=50 | grep -i "error\|timeout\|failed\|pull" || echo "No error logs found"
         
         echo "=== Helm releases ==="
         helm list --all-namespaces
