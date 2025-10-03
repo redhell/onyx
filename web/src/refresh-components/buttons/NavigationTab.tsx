@@ -174,7 +174,7 @@ export default function NavigationTab({
                 ref={inputRef}
                 value={renamingValue}
                 onChange={(event) => setRenamingValue(event.target.value)}
-                className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full"
+                className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-content-body w-full"
                 autoFocus
               />
             </div>

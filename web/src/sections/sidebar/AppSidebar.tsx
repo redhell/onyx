@@ -125,7 +125,7 @@ export function PopoverSearchInput({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Search Projects"
-          className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-body w-full text-text-03 placeholder-text-02"
+          className="bg-transparent outline-none resize-none overflow-x-hidden overflow-y-hidden whitespace-nowrap no-scrollbar font-main-content-body w-full text-text-03 placeholder-text-02"
           onClick={noProp()}
           autoFocus
         />
