@@ -253,8 +253,10 @@ jobs:
             --set=vespa.enabled=false \
             --set=slackbot.enabled=false \
             --set=postgresql.enabled=true \
-            --set=postgresql.primary.persistence.enabled=false \
+            --set=postgresql.nameOverride=cloudnative-pg \
+            --set=postgresql.cluster.storage.storageClass=standard \
             --set=redis.enabled=true \
+            --set=redis.storageSpec.volumeClaimTemplate.spec.storageClassName=standard \
             --set=webserver.replicaCount=1 \
             --set=api.replicaCount=0 \
             --set=inferenceCapability.replicaCount=0 \
