@@ -2,6 +2,8 @@ import os
 import subprocess
 import threading
 
+from onyx.configs.app_configs import USE_LIGHTWEIGHT_BACKGROUND_WORKER
+
 
 def monitor_process(process_name: str, process: subprocess.Popen) -> None:
     assert process.stdout is not None
@@ -18,9 +20,7 @@ def monitor_process(process_name: str, process: subprocess.Popen) -> None:
 
 def run_jobs() -> None:
     # Check if we should use lightweight mode
-    use_lightweight = (
-        os.environ.get("USE_LIGHTWEIGHT_BACKGROUND_WORKER", "true").lower() == "true"
-    )
+    use_lightweight = USE_LIGHTWEIGHT_BACKGROUND_WORKER
 
     # command setup
     cmd_worker_primary = [
