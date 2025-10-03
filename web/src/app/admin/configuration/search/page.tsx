@@ -7,12 +7,16 @@ import Text from "@/components/ui/text";
 import Title from "@/components/ui/title";
 import Button from "@/refresh-components/buttons/Button";
 import useSWR from "swr";
-import { ModelPreview } from "../../../../components/embedding/ModelSelector";
+import { ModelPreview } from "@/components/embedding/ModelSelector";
 import {
   HostedEmbeddingModel,
   CloudEmbeddingModel,
 } from "@/components/embedding/interfaces";
-
+import { SavedSearchSettings } from "@/app/admin/embeddings/interfaces";
+import UpgradingPage from "./UpgradingPage";
+import { useContext } from "react";
+import { SettingsContext } from "@/components/settings/SettingsProvider";
+import CardSection from "@/components/admin/CardSection";
 import { ErrorCallout } from "@/components/ErrorCallout";
 
 export interface EmbeddingDetails {
@@ -24,13 +28,6 @@ export interface EmbeddingDetails {
 
 import { EmbeddingIcon } from "@/components/icons/icons";
 import { usePopupFromQuery } from "@/components/popup/PopupFromQuery";
-
-import Link from "next/link";
-import { SavedSearchSettings } from "../../embeddings/interfaces";
-import UpgradingPage from "./UpgradingPage";
-import { useContext } from "react";
-import { SettingsContext } from "@/components/settings/SettingsProvider";
-import CardSection from "@/components/admin/CardSection";
 
 function Main() {
   const settings = useContext(SettingsContext);
@@ -104,7 +101,7 @@ function Main() {
 
           <Title className="mb-2 mt-8 !text-2xl">Post-processing</Title>
 
-          <CardSection className="!mr-auto mt-8 !w-96">
+          <CardSection className="!mr-auto mt-8 !w-96 shadow-lg bg-background-tint-00 rounded-16">
             {searchSettings && (
               <>
                 <div className="px-1 w-full rounded-lg">
@@ -181,7 +178,7 @@ function Main() {
   );
 }
 
-function Page() {
+export default function Page() {
   return (
     <div className="mx-auto container">
       <AdminPageTitle
@@ -192,5 +189,3 @@ function Page() {
     </div>
   );
 }
-
-export default Page;
