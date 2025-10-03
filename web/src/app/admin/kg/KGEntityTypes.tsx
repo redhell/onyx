@@ -248,10 +248,10 @@ export default function KGEntityTypes({
       <div className="flex flex-col gap-y-4 w-full">
         {Object.entries(sourceAndEntityTypes.entity_types).length === 0 ? (
           <div className="flex flex-col gap-y-4">
-            <Text mainBody text02>
+            <Text mainContentBody text02>
               No results available.
             </Text>
-            <Text mainBody text02>
+            <Text mainContentBody text02>
               To configure Knowledge Graph, first connect some{" "}
               <Link
                 href="/admin/add-connector"

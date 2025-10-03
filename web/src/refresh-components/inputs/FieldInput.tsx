@@ -16,7 +16,7 @@ function FieldInputInner(
 ) {
   return (
     <div className="flex flex-col gap-spacing-interline w-full">
-      <Text mainAction>{label}</Text>
+      <Text mainUiAction>{label}</Text>
       <input
         ref={ref}
         type="text"

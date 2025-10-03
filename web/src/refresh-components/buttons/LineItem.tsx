@@ -31,7 +31,7 @@ export default function LineItem({
             <Icon className="h-[1rem] w-[1rem] stroke-text-03" />
           </div>
         )}
-        <Text mainMuted text04 className="text-left w-full">
+        <Text mainUiMuted text04 className="text-left w-full">
           {children}
         </Text>
       </div>

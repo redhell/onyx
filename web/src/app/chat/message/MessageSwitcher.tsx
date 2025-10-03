@@ -40,13 +40,13 @@ export default function MessageSwitcher({
       />
 
       <div className="flex flex-row items-center justify-center">
-        <Text text03 mainAction>
+        <Text text03 mainUiAction>
           {currentPage}
         </Text>
-        <Text text03 mainAction>
+        <Text text03 mainUiAction>
           /
         </Text>
-        <Text text03 mainAction>
+        <Text text03 mainUiAction>
           {totalPages}
         </Text>
       </div>

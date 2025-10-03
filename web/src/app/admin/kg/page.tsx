@@ -253,28 +253,28 @@ function Main() {
         <Text headingH2>Knowledge Graph Configuration (Private Beta)</Text>
         <div className="flex flex-col gap-y-6">
           <div>
-            <Text mainBody text03>
+            <Text mainContentBody text03>
               The Knowledge Graph feature lets you explore your data in new
               ways. Instead of searching through unstructured text, your data is
               organized as entities and their relationships, enabling powerful
               queries like:
             </Text>
             <div className="p-spacing-paragraph">
-              <Text mainBody text03>
+              <Text mainContentBody text03>
                 - &quot;Summarize my last 3 calls with account XYZ&quot;
               </Text>
-              <Text mainBody text03>
+              <Text mainContentBody text03>
                 - &quot;How many open Jiras are assigned to John Smith, ranked
                 by priority&quot;
               </Text>
             </div>
-            <Text mainBody text03>
+            <Text mainContentBody text03>
               (To use Knowledge Graph queries, you&apos;ll need a dedicated
               Assistant configured in a specific way. Please contact the Onyx
               team for setup instructions.)
             </Text>
           </div>
-          <Text mainBody text03>
+          <Text mainContentBody text03>
             <Title>Getting Started:</Title>
             Begin by configuring some high-level attributes, and then define the
             entities you want to model afterwards.

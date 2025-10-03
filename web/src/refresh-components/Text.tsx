@@ -7,11 +7,17 @@ const fonts = {
   headingH3: "font-heading-h3",
   headingH3Muted: "font-heading-h3-muted",
 
-  // Main
-  mainBody: "font-main-body",
-  mainMuted: "font-main-muted",
-  mainAction: "font-main-action",
-  mainMono: "font-main-mono",
+  // Main Content
+  mainContentBody: "font-main-content-body",
+  mainContentMuted: "font-main-content-muted",
+  mainContentAction: "font-main-content-emphasis",
+  mainContentMono: "font-main-content-mono",
+
+  // Main UI
+  mainUiBody: "font-main-ui-body",
+  mainUiMuted: "font-main-ui-muted",
+  mainUiAction: "font-main-ui-action",
+  mainUiMono: "font-main-ui-mono",
 
   // Secondary
   secondaryBody: "font-secondary-body",
@@ -21,7 +27,7 @@ const fonts = {
   // Figure
   figureSmallLabel: "font-figure-small-label",
   figureSmallValue: "font-figure-small-value",
-  figureSmallKeystroke: "font-figure-small-keystroke",
+  figureSmallKeystroke: "font-figure-keystroke",
 };
 
 const colors = {
@@ -48,10 +54,14 @@ export interface TextProps extends React.HTMLAttributes<HTMLElement> {
   headingH2?: boolean;
   headingH3?: boolean;
   headingH3Muted?: boolean;
-  mainBody?: boolean;
-  mainMuted?: boolean;
-  mainAction?: boolean;
-  mainMono?: boolean;
+  mainContentBody?: boolean;
+  mainContentMuted?: boolean;
+  mainContentAction?: boolean;
+  mainContentMono?: boolean;
+  mainUiBody?: boolean;
+  mainUiMuted?: boolean;
+  mainUiAction?: boolean;
+  mainUiMono?: boolean;
   secondaryBody?: boolean;
   secondaryAction?: boolean;
   secondaryMono?: boolean;
@@ -74,10 +84,14 @@ export default function Text({
   headingH2,
   headingH3,
   headingH3Muted,
-  mainBody,
-  mainMuted,
-  mainAction,
-  mainMono,
+  mainContentBody,
+  mainContentMuted,
+  mainContentAction,
+  mainContentMono,
+  mainUiBody,
+  mainUiMuted,
+  mainUiAction,
+  mainUiMono,
   secondaryBody,
   secondaryAction,
   secondaryMono,
@@ -101,27 +115,35 @@ export default function Text({
         ? "headingH3"
         : headingH3Muted
           ? "headingH3Muted"
-          : mainBody
-            ? "mainBody"
-            : mainMuted
-              ? "mainMuted"
-              : mainAction
-                ? "mainAction"
-                : mainMono
-                  ? "mainMono"
-                  : secondaryBody
-                    ? "secondaryBody"
-                    : secondaryAction
-                      ? "secondaryAction"
-                      : secondaryMono
-                        ? "secondaryMono"
-                        : figureSmallLabel
-                          ? "figureSmallLabel"
-                          : figureSmallValue
-                            ? "figureSmallValue"
-                            : figureSmallKeystroke
-                              ? "figureSmallKeystroke"
-                              : "mainBody";
+          : mainContentBody
+            ? "mainContentBody"
+            : mainContentMuted
+              ? "mainContentMuted"
+              : mainContentAction
+                ? "mainContentAction"
+                : mainContentMono
+                  ? "mainContentMono"
+                  : mainUiBody
+                    ? "mainUiBody"
+                    : mainUiMuted
+                      ? "mainUiMuted"
+                      : mainUiAction
+                        ? "mainUiAction"
+                        : mainUiMono
+                          ? "mainUiMono"
+                          : secondaryBody
+                            ? "secondaryBody"
+                            : secondaryAction
+                              ? "secondaryAction"
+                              : secondaryMono
+                                ? "secondaryMono"
+                                : figureSmallLabel
+                                  ? "figureSmallLabel"
+                                  : figureSmallValue
+                                    ? "figureSmallValue"
+                                    : figureSmallKeystroke
+                                      ? "figureSmallKeystroke"
+                                      : "mainContentBody";
 
   const color = text01
     ? "text01"
