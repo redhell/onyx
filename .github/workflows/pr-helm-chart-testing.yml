@@ -200,15 +200,17 @@ jobs:
 
         kubectl get pods --all-namespaces
 
-        # Cleanup for next test
+        # Cleanup for next test (ct install may have already cleaned up)
         echo "=== Cleaning up lightweight mode deployment ==="
         helm list --all-namespaces
         RELEASE_NAME=$(helm list --all-namespaces --output json | jq -r '.[0].name')
         RELEASE_NAMESPACE=$(helm list --all-namespaces --output json | jq -r '.[0].namespace')
         if [ -n "$RELEASE_NAME" ] && [ "$RELEASE_NAME" != "null" ]; then
           echo "Uninstalling release: $RELEASE_NAME in namespace: $RELEASE_NAMESPACE"
-          helm uninstall $RELEASE_NAME -n $RELEASE_NAMESPACE
-          kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || true
+          helm uninstall $RELEASE_NAME -n $RELEASE_NAMESPACE || echo "Release already uninstalled"
+          kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || echo "Namespace already deleted"
+        else
+          echo "No Helm release found (already cleaned up by ct install)"
         fi
 
         # Delete and reinstall operators for clean CRD ownership in Standard Mode test
