@@ -51,7 +51,7 @@ export default function SidebarWrapper({
                 icon={SvgSidebar}
                 tertiary
                 onClick={() => setFolded?.(true)}
-                className={cn(folded !== undefined && "invisible")}
+                className={cn(folded === undefined && "invisible")}
               />
             </>
           )}
