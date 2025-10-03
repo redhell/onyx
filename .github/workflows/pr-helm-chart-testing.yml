@@ -213,38 +213,41 @@ jobs:
           echo "No Helm release found (already cleaned up by ct install)"
         fi
 
-        # CRITICAL: Delete CRDs to prevent ownership conflicts in next test
+        # CRITICAL: Delete ALL CRDs to prevent ownership conflicts in next test
         echo "=== Cleaning up CRDs for next test ==="
         
-        # Delete CloudNativePG CRDs (cluster-scoped resources)
-        echo "Deleting CloudNativePG CRDs..."
-        kubectl delete crd \
-          backups.postgresql.cnpg.io \
-          clusters.postgresql.cnpg.io \
-          poolers.postgresql.cnpg.io \
-          scheduledbackups.postgresql.cnpg.io \
-          --ignore-not-found=true || echo "Some CloudNativePG CRDs may not exist"
+        # List all CRDs that exist
+        echo "Current CRDs in cluster:"
+        kubectl get crd
         
-        # Delete Redis operator CRDs
-        echo "Deleting Redis operator CRDs..."
-        kubectl delete crd \
-          redis.redis.redis.opstreelabs.in \
-          redisclusters.redis.redis.opstreelabs.in \
-          redisreplications.redis.redis.opstreelabs.in \
-          --ignore-not-found=true || echo "Some Redis CRDs may not exist"
+        # Delete all CloudNativePG CRDs dynamically
+        echo "Deleting all CloudNativePG CRDs..."
+        kubectl get crd -o name | grep cnpg.io | xargs -r kubectl delete || echo "No CloudNativePG CRDs to delete"
         
-        # Uninstall Redis operator (will be reinstalled)
+        # Delete all Redis operator CRDs dynamically
+        echo "Deleting all Redis operator CRDs..."
+        kubectl get crd -o name | grep opstreelabs.in | xargs -r kubectl delete || echo "No Redis CRDs to delete"
+        
+        # Uninstall Redis operator
         echo "Uninstalling Redis operator..."
         helm uninstall redis-operator -n redis-operator || echo "Redis operator already uninstalled"
         kubectl delete namespace redis-operator --timeout=60s || echo "Redis operator namespace already deleted"
 
         # Wait for CRDs to be fully deleted
         echo "Waiting for CRDs to be deleted..."
-        sleep 15
+        sleep 20
         
-        # Verify CRDs are gone
-        echo "Verifying CRDs are deleted..."
-        kubectl get crd | grep -E "(cnpg|redis)" || echo "All CRDs successfully deleted"
+        # Verify cleanup
+        echo "Remaining CRDs after cleanup:"
+        kubectl get crd
+        REMAINING=$(kubectl get crd -o name | grep -E "(cnpg.io|opstreelabs.in)" | wc -l)
+        if [ "$REMAINING" -gt 0 ]; then
+          echo "ERROR: $REMAINING CRDs still exist after cleanup!"
+          kubectl get crd | grep -E "(cnpg.io|opstreelabs.in)"
+          exit 1
+        else
+          echo "All CRDs successfully deleted"
+        fi
 
         # Reinstall operators with clean state
         echo "=== Reinstalling operators for Standard Mode ==="
