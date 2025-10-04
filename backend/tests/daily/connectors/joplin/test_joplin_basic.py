@@ -69,7 +69,7 @@ def test_joplin_connector_with_folder_filter() -> None:
     for doc_batch in connector.load_from_state():
         for doc in doc_batch:
             folder_path = doc.metadata.get("folder_path", "")
-            assert "Work" in folder_path or folder_path == "Root"
+            assert folder_path == "Work"
 
 
 def test_joplin_connector_validates_credentials() -> None:
