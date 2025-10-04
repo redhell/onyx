@@ -2,7 +2,8 @@ import math
 from datetime import datetime
 from datetime import timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
