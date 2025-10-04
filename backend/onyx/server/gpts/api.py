@@ -1,8 +1,7 @@
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
-from fastapi import APIRouter
-from fastapi import Depends
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -14,7 +13,6 @@ from onyx.llm.factory import get_default_llms
 from onyx.server.onyx_api.ingestion import api_key_dep
 from onyx.utils.logger import setup_logger
 
-
 logger = setup_logger()
 
 
@@ -24,7 +22,7 @@ router = APIRouter(prefix="/gpts")
 def time_ago(dt: datetime) -> str:
     # Calculate time difference
     now = datetime.now()
-    diff = now - dt
+    diff = now.astimezone(timezone.utc) - dt.astimezone(timezone.utc)
 
     # Convert difference to minutes
     minutes = diff.total_seconds() / 60
@@ -86,17 +84,9 @@ def gpt_search(
                 title=section.center_chunk.semantic_identifier,
                 content=section.center_chunk.content,
                 source_type=section.center_chunk.source_type,
-                link=(
-                    section.center_chunk.source_links.get(0, "")
-                    if section.center_chunk.source_links
-                    else ""
-                ),
+                link=(section.center_chunk.source_links.get(0, "") if section.center_chunk.source_links else ""),
                 metadata=section.center_chunk.metadata,
-                document_age=(
-                    time_ago(section.center_chunk.updated_at)
-                    if section.center_chunk.updated_at
-                    else "Unknown"
-                ),
+                document_age=(time_ago(section.center_chunk.updated_at) if section.center_chunk.updated_at else "Unknown"),
             )
             for section in top_sections
         ],
