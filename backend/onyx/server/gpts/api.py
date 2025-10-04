@@ -24,8 +24,8 @@ router = APIRouter(prefix="/gpts")
 
 def time_ago(dt: datetime) -> str:
     # Calculate time difference
-    now = datetime.now()
-    diff = now.astimezone(timezone.utc) - dt.astimezone(timezone.utc)
+    now = datetime.now(timezone.utc)
+    diff = now - dt.astimezone(timezone.utc)
 
     # Convert difference to minutes
     minutes = diff.total_seconds() / 60
