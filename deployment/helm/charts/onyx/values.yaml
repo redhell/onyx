@@ -7,9 +7,6 @@ global:
   version: "latest"
   # Global pull policy for all Onyx component images
   pullPolicy: "IfNotPresent"
-  # Use lightweight background worker mode (single consolidated worker)
-  # Set to false to use separate workers (heavy, kg_processing, monitoring, user_file_processing)
-  useLightweightBackgroundWorker: true
 
 postgresql:
   enabled: true
@@ -156,21 +153,40 @@ serviceAccount:
 
 nginx:
   enabled: true
-  containerPorts:
-    http: 1024
-  extraEnvVars:
-    - name: DOMAIN
-      value: localhost
-  service:
-    type: LoadBalancer
-    ports:
-      http: 80
-      onyx: 3000
-    targetPort:
-      http: http
-      onyx: http
+  controller:
+    containerPort:
+      http: 1024
 
-  existingServerBlockConfigmap: onyx-nginx-conf
+    # Propagate DOMAIN into nginx so server_name continues to use the same env var
+    extraEnvs:
+      - name: DOMAIN
+        value: localhost
+
+    config:
+      # Expose DOMAIN to the nginx config and pull in our custom snippets
+      main-snippet: |
+        env DOMAIN;
+      http-snippet: |
+        include /etc/nginx/custom-snippets/upstreams.conf;
+      server-snippet: |
+        include /etc/nginx/custom-snippets/server-snippet.conf;
+
+    # Mount the existing nginx ConfigMap that holds the upstream and server snippets
+    extraVolumes:
+      - name: nginx-config
+        configMap:
+          name: onyx-nginx-conf
+    extraVolumeMounts:
+      - name: nginx-config
+        mountPath: /etc/nginx/custom-snippets
+        readOnly: true
+
+    service:
+      type: LoadBalancer
+      ports:
+        http: 80
+      targetPorts:
+        http: http
 
 webserver:
   replicaCount: 1
@@ -387,41 +403,6 @@ celery_beat:
     limits:
       cpu: 1000m
       memory: 1Gi
-  volumes: []  # Additional volumes on the output Deployment definition.
-  volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-
-celery_worker_background:
-  replicaCount: 1
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 80
-    targetMemoryUtilizationPercentage: 80
-    # KEDA specific configurations (only used when autoscaling.engine is set to 'keda')
-    pollingInterval: 30  # seconds
-    cooldownPeriod: 300  # seconds
-    idleReplicaCount: 1  # minimum replicas when idle
-    failureThreshold: 3  # number of failures before fallback
-    fallbackReplicas: 1  # replicas to maintain on failure
-    # Custom triggers for advanced KEDA configurations
-    customTriggers: []
-  podAnnotations: {}
-  podLabels:
-    scope: onyx-backend-celery
-    app: celery-worker-background
-  deploymentLabels:
-    app: celery-worker-background
-  resources:
-    requests:
-      cpu: 2000m
-      memory: 6Gi
-    limits:
-      cpu: 4000m
-      memory: 12Gi
   volumes: []  # Additional volumes on the output Deployment definition.
   volumeMounts: []  # Additional volumeMounts on the output Deployment definition.
   nodeSelector: {}
