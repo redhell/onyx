@@ -113,11 +113,10 @@ jobs:
         helm dependency update
         helm lint .
 
-    - name: Run chart-testing (install) - Lightweight Mode
+    - name: Run chart-testing (install) with enhanced monitoring
       timeout-minutes: 25
       if: steps.list-changed.outputs.changed == 'true'
       run: |
-        echo "=== Testing LIGHTWEIGHT MODE (single background worker) ==="
         echo "=== Starting chart installation with monitoring ==="
         
         # Function to monitor cluster state
@@ -159,7 +158,7 @@ jobs:
         trap cleanup EXIT
         
         # Run the actual installation with detailed logging
-        echo "=== Starting ct install with LIGHTWEIGHT mode ==="
+        echo "=== Starting ct install ==="
         set +e
         ct install --all \
           --helm-extra-set-args="\
@@ -177,7 +176,6 @@ jobs:
             --set=inferenceCapability.replicaCount=0 \
             --set=indexCapability.replicaCount=0 \
             --set=celery_beat.replicaCount=0 \
-            --set=celery_worker_background.replicaCount=0 \
             --set=celery_worker_heavy.replicaCount=0 \
             --set=celery_worker_docfetching.replicaCount=0 \
             --set=celery_worker_docprocessing.replicaCount=0 \
@@ -185,152 +183,7 @@ jobs:
             --set=celery_worker_monitoring.replicaCount=0 \
             --set=celery_worker_primary.replicaCount=0 \
             --set=celery_worker_user_file_processing.replicaCount=0 \
-            --set=celery_worker_user_files_indexing.replicaCount=0 \
-            --set=global.useLightweightBackgroundWorker=true" \
-          --helm-extra-args="--timeout 900s --debug" \
-          --debug --config ct.yaml
-        CT_EXIT=$?
-        set -e
-
-        if [[ $CT_EXIT -ne 0 ]]; then
-          echo "ct install failed with exit code $CT_EXIT"
-          exit $CT_EXIT
-        else
-          echo "=== Installation completed successfully ==="
-        fi
-
-        kubectl get pods --all-namespaces
-
-        # Cleanup for next test (ct install may have already cleaned up)
-        echo "=== Cleaning up lightweight mode deployment ==="
-        helm list --all-namespaces
-        RELEASE_NAME=$(helm list --all-namespaces --output json | jq -r '.[0].name')
-        RELEASE_NAMESPACE=$(helm list --all-namespaces --output json | jq -r '.[0].namespace')
-        if [ -n "$RELEASE_NAME" ] && [ "$RELEASE_NAME" != "null" ]; then
-          echo "Uninstalling release: $RELEASE_NAME in namespace: $RELEASE_NAMESPACE"
-          helm uninstall $RELEASE_NAME -n $RELEASE_NAMESPACE || echo "Release already uninstalled"
-          kubectl delete namespace $RELEASE_NAMESPACE --timeout=120s || echo "Namespace already deleted"
-        else
-          echo "No Helm release found (already cleaned up by ct install)"
-        fi
-
-        # CRITICAL: Delete ALL CRDs to prevent ownership conflicts in next test
-        echo "=== Cleaning up CRDs for next test ==="
-        
-        # List all CRDs that exist
-        echo "Current CRDs in cluster:"
-        kubectl get crd
-        
-        # Delete all CloudNativePG CRDs dynamically
-        echo "Deleting all CloudNativePG CRDs..."
-        kubectl get crd -o name | grep cnpg.io | xargs -r kubectl delete || echo "No CloudNativePG CRDs to delete"
-        
-        # Delete all Redis operator CRDs dynamically
-        echo "Deleting all Redis operator CRDs..."
-        kubectl get crd -o name | grep opstreelabs.in | xargs -r kubectl delete || echo "No Redis CRDs to delete"
-        
-        # Uninstall Redis operator
-        echo "Uninstalling Redis operator..."
-        helm uninstall redis-operator -n redis-operator || echo "Redis operator already uninstalled"
-        kubectl delete namespace redis-operator --timeout=60s || echo "Redis operator namespace already deleted"
-
-        # Wait for CRDs to be fully deleted
-        echo "Waiting for CRDs to be deleted..."
-        sleep 20
-        
-        # Verify cleanup
-        echo "Remaining CRDs after cleanup:"
-        kubectl get crd
-        REMAINING=$(kubectl get crd -o name | grep -E "(cnpg.io|opstreelabs.in)" | wc -l)
-        if [ "$REMAINING" -gt 0 ]; then
-          echo "ERROR: $REMAINING CRDs still exist after cleanup!"
-          kubectl get crd | grep -E "(cnpg.io|opstreelabs.in)"
-          exit 1
-        else
-          echo "All CRDs successfully deleted"
-        fi
-
-        # Reinstall operators with clean state
-        echo "=== Reinstalling operators for Standard Mode ==="
-        helm upgrade --install redis-operator ot-container-kit/redis-operator \
-          --namespace redis-operator --create-namespace --wait --timeout 300s
-        
-        echo "=== Ready for Standard Mode test ==="
-
-    - name: Run chart-testing (install) - Standard Mode
-      timeout-minutes: 25
-      if: steps.list-changed.outputs.changed == 'true'
-      run: |
-        echo "=== Testing STANDARD MODE (separate background workers) ==="
-        echo "=== Starting chart installation with monitoring ==="
-
-        # Function to monitor cluster state
-        monitor_cluster() {
-          while true; do
-            echo "=== Cluster Status Check at $(date) ==="
-            # Only show non-running pods to reduce noise
-            NON_RUNNING_PODS=$(kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers 2>/dev/null | wc -l)
-            if [ "$NON_RUNNING_PODS" -gt 0 ]; then
-              echo "Non-running pods:"
-              kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded
-            else
-              echo "All pods running successfully"
-            fi
-            # Only show recent events if there are issues
-            RECENT_EVENTS=$(kubectl get events --sort-by=.lastTimestamp --all-namespaces --field-selector=type!=Normal 2>/dev/null | tail -5)
-            if [ -n "$RECENT_EVENTS" ]; then
-              echo "Recent warnings/errors:"
-              echo "$RECENT_EVENTS"
-            fi
-            sleep 60
-          done
-        }
-
-        # Start monitoring in background
-        monitor_cluster &
-        MONITOR_PID=$!
-
-        # Set up cleanup
-        cleanup() {
-          echo "=== Cleaning up monitoring process ==="
-          kill $MONITOR_PID 2>/dev/null || true
-          echo "=== Final cluster state ==="
-          kubectl get pods --all-namespaces
-          kubectl get events --all-namespaces --sort-by=.lastTimestamp | tail -20
-        }
-
-        # Trap cleanup on exit
-        trap cleanup EXIT
-
-        # Run the actual installation with detailed logging
-        echo "=== Starting ct install with STANDARD mode ==="
-        set +e
-        ct install --all \
-          --helm-extra-set-args="\
-            --set=nginx.enabled=false \
-            --set=minio.enabled=false \
-            --set=vespa.enabled=false \
-            --set=slackbot.enabled=false \
-            --set=postgresql.enabled=true \
-            --set=postgresql.nameOverride=cloudnative-pg \
-            --set=postgresql.cluster.storage.storageClass=standard \
-            --set=redis.enabled=true \
-            --set=redis.storageSpec.volumeClaimTemplate.spec.storageClassName=standard \
-            --set=webserver.replicaCount=1 \
-            --set=api.replicaCount=0 \
-            --set=inferenceCapability.replicaCount=0 \
-            --set=indexCapability.replicaCount=0 \
-            --set=celery_beat.replicaCount=0 \
-            --set=celery_worker_background.replicaCount=0 \
-            --set=celery_worker_heavy.replicaCount=0 \
-            --set=celery_worker_docfetching.replicaCount=0 \
-            --set=celery_worker_docprocessing.replicaCount=0 \
-            --set=celery_worker_light.replicaCount=0 \
-            --set=celery_worker_monitoring.replicaCount=0 \
-            --set=celery_worker_primary.replicaCount=0 \
-            --set=celery_worker_user_file_processing.replicaCount=0 \
-            --set=celery_worker_user_files_indexing.replicaCount=0 \
-            --set=global.useLightweightBackgroundWorker=false" \
+            --set=celery_worker_user_files_indexing.replicaCount=0" \
           --helm-extra-args="--timeout 900s --debug" \
           --debug --config ct.yaml
         CT_EXIT=$?
