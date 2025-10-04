@@ -49,7 +49,7 @@ def is_connected(chat_session_id: UUID, redis_client: Redis) -> bool:
     return not bool(whack_redis_client.exists(fence_key))
 
 
-def reset(chat_session_id: UUID, redis_client: Redis) -> None:
+def reset_cancel_status(chat_session_id: UUID, redis_client: Redis) -> None:
     """
     Clear the stop signal for a chat session.
 

@@ -3,6 +3,7 @@ from agents import ModelSettings
 
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.chat.stop_signal_checker import is_connected
+from onyx.chat.stop_signal_checker import reset_cancel_status
 from onyx.chat.turn.infra.chat_turn_event_stream import OnyxRunner
 from onyx.chat.turn.infra.chat_turn_orchestration import unified_event_stream
 from onyx.chat.turn.infra.packet_translation import default_packet_translation
@@ -20,6 +21,10 @@ from onyx.utils.threadpool_concurrency import wait_on_background
 
 @unified_event_stream
 def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
+    reset_cancel_status(
+        dependencies.dependencies_to_maybe_remove.chat_session_id,
+        dependencies.redis_client,
+    )
     ctx = ChatTurnContext(
         run_dependencies=dependencies,
         aggregated_context=AggregatedDRContext(
@@ -42,7 +47,6 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
     bridge, thread = OnyxRunner().run_streamed_in_background(
         agent, messages, context=ctx, max_turns=100
     )
-    connected = True
     for ev in bridge.events():
         connected = is_connected(
             dependencies.dependencies_to_maybe_remove.chat_session_id,
@@ -67,8 +71,7 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
         ),
         all_cited_documents=[],
     )
-    if connected:
-        wait_on_background(thread)
+    wait_on_background(thread)
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
     )
