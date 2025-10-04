@@ -269,7 +269,7 @@ export default function ProjectContextPanel({
         >
           <div className="flex flex-row gap-1 items-center">
             <SvgAddLines className="h-4 w-4 stroke-text-03" />
-            <Text text03 mainAction className="whitespace-nowrap">
+            <Text text03 mainUiAction className="whitespace-nowrap">
               Set Instructions
             </Text>
           </div>
@@ -292,7 +292,7 @@ export default function ProjectContextPanel({
           <FilePicker
             trigger={
               <LineItem icon={SvgPlusCircle}>
-                <Text text03 mainAction>
+                <Text text03 mainUiAction>
                   Add Files
                 </Text>
               </LineItem>

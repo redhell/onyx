@@ -90,7 +90,7 @@ export default function ProjectChatSessionList() {
                       <div className="flex items-center gap-1">
                         <Text
                           text03
-                          mainBody
+                          mainUiBody
                           nowrap
                           className="truncate"
                           title={chat.name}

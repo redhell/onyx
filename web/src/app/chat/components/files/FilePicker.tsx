@@ -76,7 +76,7 @@ export function FilePickerContents({
                   </div>
                   <Text
                     text03
-                    mainBody
+                    mainUiBody
                     nowrap
                     className="truncate max-w-[160px]"
                   >
@@ -123,7 +123,7 @@ export function FilePickerContents({
                   <div className="p-0.5">
                     <MoreHorizontal className="h-4 w-4 stroke-text-02" />
                   </div>
-                  <Text text03 mainBody>
+                  <Text text03 mainUiBody>
                     All Recent Files
                   </Text>
                 </Row>

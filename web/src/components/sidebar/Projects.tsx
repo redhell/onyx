@@ -163,7 +163,7 @@ function ProjectFolder({ project }: ProjectFolderProps) {
         ))}
       {open && project.chat_sessions.length === 0 && (
         <div className="flex justify-center items-center">
-          <Text mainMuted text01>
+          <Text mainUiMuted text01>
             No chat sessions yet.
           </Text>
         </div>
