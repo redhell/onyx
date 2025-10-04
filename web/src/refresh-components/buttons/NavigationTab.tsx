@@ -199,22 +199,33 @@ export default function NavigationTab({
               />
             </div>
           ) : typeof children === "string" ? (
-            <Truncated
-              side="right"
-              // We offset the "truncation popover" iff the popover "kebab menu" exists.
-              // This is because the popover would hover OVER the kebab menu, creating a weird UI.
-              // However, if no popover is specified, we don't need to offset anything.
-              offset={!!popover ? 40 : 0}
-              className={cn("text-left", textClasses(active)[variant])}
+            <div
+              className="w-full"
+              onClick={(e) => {
+                if (onTextClick) {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onTextClick(e);
+                }
+              }}
             >
               <Truncated
                 side="right"
-                offset={40}
+                // We offset the "truncation popover" iff the popover "kebab menu" exists.
+                // This is because the popover would hover OVER the kebab menu, creating a weird UI.
+                // However, if no popover is specified, we don't need to offset anything.
+                offset={!!popover ? 40 : 0}
                 className={cn("text-left", textClasses(active)[variant])}
               >
-                {children}
+                <Truncated
+                  side="right"
+                  offset={40}
+                  className={cn("text-left", textClasses(active)[variant])}
+                >
+                  {children}
+                </Truncated>
               </Truncated>
-            </Truncated>
+            </div>
           ) : (
             children
           ))}
