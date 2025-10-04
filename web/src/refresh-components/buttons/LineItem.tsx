@@ -20,6 +20,7 @@ export default function LineItem({
 }: LineItemProps) {
   return (
     <button
+      type="button"
       className={cn(
         "flex flex-col w-full justify-center items-start p-spacing-interline hover:bg-background-tint-02 rounded-08"
       )}

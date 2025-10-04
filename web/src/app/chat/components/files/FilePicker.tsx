@@ -6,21 +6,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Files } from "@phosphor-icons/react";
-import { FileIcon, Loader2, Eye } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import FilesList from "./FilesList";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CoreModal from "@/refresh-components/modals/CoreModal";
+import UserFilesModalContent from "@/components/modals/UserFilesModalContent";
 import { ProjectFile } from "../../projects/projectsService";
 import LineItem from "@/refresh-components/buttons/LineItem";
 import SvgPaperclip from "@/icons/paperclip";
-import IconButton from "@/refresh-components/buttons/IconButton";
+import SvgFiles from "@/icons/files";
 import MoreHorizontal from "@/icons/more-horizontal";
+import SvgFileText from "@/icons/file-text";
+import SvgExternalLink from "@/icons/external-link";
+import IconButton from "@/refresh-components/buttons/IconButton";
+import Text from "@/refresh-components/Text";
 
 // Small helper to render an icon + label row
 const Row = ({ children }: { children: React.ReactNode }) => (
@@ -54,17 +52,18 @@ export function FilePickerContents({
     <>
       {recentFiles.length > 0 && (
         <>
-          <label className="font-secondary-body text-text-02 mx-2 mt-2 mb-1">
+          <Text text02 secondaryBody className="mx-2 mt-2 mb-1">
             Recent Files
-          </label>
+          </Text>
 
           {recentFiles.slice(0, 3).map((f) => (
             <button
+              type="button"
               key={f.id}
               onClick={() =>
                 onPickRecent ? onPickRecent(f) : console.log("Picked recent", f)
               }
-              className="w-full rounded-lg hover:bg-background-neutral-02 hover:text-neutral-900 dark:hover:text-neutral-50 text-input-text group"
+              className="w-full rounded-lg hover:bg-background-neutral-02 group"
             >
               <div className="flex items-center w-full m-1 mt-2 p-0.5 group">
                 <Row>
@@ -72,35 +71,40 @@ export function FilePickerContents({
                     {String(f.status).toLowerCase() === "processing" ? (
                       <Loader2 className="h-4 w-4 animate-spin text-text-02" />
                     ) : (
-                      <FileIcon className="h-4 w-4 text-text-02" />
+                      <SvgFileText className="h-4 w-4 stroke-text-02" />
                     )}
                   </div>
-                  <span
-                    className="truncate max-w-[160px] text-text-03 font-main-body"
-                    title={f.name}
+                  <Text
+                    text03
+                    mainBody
+                    nowrap
+                    className="truncate max-w-[160px]"
                   >
                     {f.name}
-                  </span>
+                  </Text>
 
                   <div className="relative flex items-center ml-auto mr-2">
-                    <div className="p-0.5 text-text-02 font-secondary-body group-hover:opacity-0 transition-opacity duration-150">
+                    <Text
+                      text02
+                      secondaryBody
+                      className="p-0.5 group-hover:opacity-0 transition-opacity duration-150"
+                    >
                       {getFileExtension(f.name)}
-                    </div>
+                    </Text>
 
                     {onFileClick &&
                       String(f.status).toLowerCase() !== "processing" && (
-                        <button
-                          title="View file"
-                          aria-label="View file"
-                          className="absolute inset-0 flex items-center justify-center p-0.5 bg-transparent border-0 outline-none cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150"
+                        <IconButton
+                          internal
+                          icon={SvgExternalLink}
+                          tooltip="View file"
+                          className="absolute flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150 p-0 bg-transparent hover:bg-transparent"
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
                             onFileClick && onFileClick(f);
                           }}
-                        >
-                          <Eye className="h-4 w-4 stroke-text-03 hover:stroke-text-02" />
-                        </button>
+                        />
                       )}
                   </div>
                 </Row>
@@ -110,6 +114,7 @@ export function FilePickerContents({
 
           {recentFiles.length > 3 && (
             <button
+              type="button"
               onClick={() => setShowRecentFiles(true)}
               className="w-full rounded-lg hover:bg-background-neutral-02 hover:text-neutral-900 dark:hover:text-neutral-50"
             >
@@ -118,9 +123,9 @@ export function FilePickerContents({
                   <div className="p-0.5">
                     <MoreHorizontal className="h-4 w-4 stroke-text-02" />
                   </div>
-                  <span className="text-text-03 font-main-body">
+                  <Text text03 mainBody>
                     All Recent Files
-                  </span>
+                  </Text>
                 </Row>
               </div>
             </button>
@@ -209,27 +214,26 @@ export default function FilePicker({
         </PopoverContent>
       </Popover>
 
-      <Dialog open={showRecentFiles} onOpenChange={setShowRecentFiles}>
-        <DialogContent
-          className="w-full max-w-lg px-6 py-3 sm:px-6 sm:py-4 focus:outline-none focus-visible:outline-none"
-          tabIndex={-1}
-          onOpenAutoFocus={(e) => {
-            // Prevent auto-focus which can interfere with input
-            e.preventDefault();
-          }}
+      {showRecentFiles && (
+        <CoreModal
+          className="w-[32rem] rounded-16 border flex flex-col bg-background-tint-00"
+          onClickOutside={() => setShowRecentFiles(false)}
         >
-          <DialogHeader className="px-0 pt-0 pb-2">
-            <Files size={32} />
-            <DialogTitle>Recent Files</DialogTitle>
-          </DialogHeader>
-          <FilesList
+          <UserFilesModalContent
+            title="Recent Files"
+            description="Upload files or pick from your recent files."
+            icon={SvgFiles}
             recentFiles={recentFiles}
-            onPickRecent={onPickRecent}
-            onFileClick={onFileClick}
+            onPickRecent={(file) => {
+              onPickRecent && onPickRecent(file);
+              setShowRecentFiles(false);
+            }}
             handleUploadChange={handleUploadChange}
+            onFileClick={onFileClick}
+            onClose={() => setShowRecentFiles(false)}
           />
-        </DialogContent>
-      </Dialog>
+        </CoreModal>
+      )}
     </div>
   );
 }

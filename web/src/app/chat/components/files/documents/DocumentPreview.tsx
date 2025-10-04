@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { DocumentIcon } from "@/components/icons/CustomIcons";
+import SvgFileText from "@/icons/file-text";
 
 export function DocumentPreview({
   fileName,
@@ -35,7 +35,7 @@ export function DocumentPreview({
     >
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent">
         <div className="bg-accent-background p-2 rounded-lg shadow-sm">
-          <DocumentIcon className="h-5 w-5 text-onyx-muted" />
+          <SvgFileText className="h-5 w-5 stroke-text-02" />
         </div>
       </div>
       <div className="flex flex-col overflow-hidden">
@@ -72,7 +72,7 @@ export function InputDocumentPreview({
     >
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent">
         <div className="bg-accent-background p-2 rounded-lg shadow-sm">
-          <DocumentIcon className="h-5 w-5 text-onyx-muted" />
+          <SvgFileText className="h-5 w-5 stroke-text-02" />
         </div>
       </div>
       <div className="flex flex-col overflow-hidden">

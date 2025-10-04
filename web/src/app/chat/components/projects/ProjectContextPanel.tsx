@@ -1,27 +1,11 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { FileIcon, Loader2, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { RiPlayListAddFill } from "react-icons/ri";
 import { useProjectsContext } from "../../projects/ProjectsContext";
 import FilePicker from "../files/FilePicker";
-import FilesList from "../files/FilesList";
 import type {
   ProjectFile,
   CategorizedFiles,
@@ -30,16 +14,19 @@ import { UserFileStatus } from "../../projects/projectsService";
 import { ChatFileType } from "@/app/chat/interfaces";
 import { usePopup } from "@/components/admin/connectors/Popup";
 import { MinimalOnyxDocument } from "@/lib/search/interfaces";
-import {
-  MultipleFilesIcon,
-  OpenFolderIcon,
-  ListSettingsIcon,
-  DocumentIcon,
-} from "@/components/icons/CustomIcons";
 import Button from "@/refresh-components/buttons/Button";
 import SvgPlusCircle from "@/icons/plus-circle";
-import IconButton from "@/refresh-components/buttons/IconButton";
 import LineItem from "@/refresh-components/buttons/LineItem";
+import { useModal, ModalIds } from "@/refresh-components/contexts/ModalContext";
+import AddInstructionModal from "@/components/modals/AddInstructionModal";
+import UserFilesModalContent from "@/components/modals/UserFilesModalContent";
+import { useEscape } from "@/hooks/useKeyPress";
+import CoreModal from "@/refresh-components/modals/CoreModal";
+import Text from "@/refresh-components/Text";
+import SvgFileText from "@/icons/file-text";
+import SvgFolderOpen from "@/icons/folder-open";
+import SvgAddLines from "@/icons/add-lines";
+import SvgFiles from "@/icons/files";
 
 export function FileCard({
   file,
@@ -77,9 +64,9 @@ export function FileCard({
 
   return (
     <div
-      className={`relative group flex items-center gap-3 border border-border rounded-xl ${
-        isProcessing ? "bg-accent-background" : "bg-background-background"
-      } px-3 py-1 shadow-sm h-14 w-52 ${
+      className={`relative group flex items-center gap-3 border border-border-01 rounded-12 ${
+        isProcessing ? "bg-background-neutral-02" : "bg-background-tint-00"
+      } p-spacing-inline h-14 w-40 ${
         onFileClick && !isProcessing
           ? "cursor-pointer hover:bg-accent-background"
           : ""
@@ -100,26 +87,31 @@ export function FileCard({
           <X className="h-4 w-4 dark:text-dark-tremor-background-muted" />
         </button>
       )}
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent">
+      <div
+        className={`flex h-9 w-9 items-center justify-center rounded-08 p-spacing-interline
+      ${isProcessing ? "bg-background-neutral-03" : "bg-background-tint-01"}`}
+      >
         {isProcessing ? (
-          <Loader2 className="h-5 w-5 text-onyx-muted animate-spin" />
+          <Loader2 className="h-5 w-5 text-text-01 animate-spin" />
         ) : (
-          <div className="bg-accent-background p-2 rounded-lg shadow-sm">
-            <DocumentIcon className="h-5 w-5 text-onyx-muted" />
-          </div>
+          <SvgFileText className="h-5 w-5 stroke-text-02" />
         )}
       </div>
       <div className="flex flex-col overflow-hidden">
-        <span className="text-onyx-medium text-sm truncate" title={file.name}>
+        <span
+          className={`font-secondary-action truncate
+          ${isProcessing ? "text-text-03" : "text-text-04"}`}
+          title={file.name}
+        >
           {file.name}
         </span>
-        <span className="text-onyx-muted text-xs truncate">
+        <Text text03 secondaryBody nowrap className="truncate">
           {isProcessing
             ? file.status === UserFileStatus.UPLOADING
               ? "Uploading..."
               : "Processing..."
             : typeLabel}
-        </span>
+        </Text>
       </div>
     </div>
   );
@@ -134,11 +126,13 @@ export default function ProjectContextPanel({
   availableContextTokens?: number;
   setPresentingDocument?: (document: MinimalOnyxDocument) => void;
 }) {
-  const [isInstrOpen, setIsInstrOpen] = useState(false);
-  const [showProjectFiles, setShowProjectFiles] = useState(false);
-  const [instructionText, setInstructionText] = useState("");
   const { popup, setPopup } = usePopup();
   const [tempProjectFiles, setTempProjectFiles] = useState<ProjectFile[]>([]);
+  const { isOpen, toggleModal } = useModal();
+  const open = isOpen(ModalIds.ProjectFilesModal);
+
+  const onClose = () => toggleModal(ModalIds.ProjectFilesModal, false);
+  useEscape(onClose, open);
 
   // Convert ProjectFile to MinimalOnyxDocument format for viewing
   const handleFileClick = useCallback(
@@ -155,7 +149,6 @@ export default function ProjectContextPanel({
     [setPresentingDocument]
   );
   const {
-    upsertInstructions,
     currentProjectDetails,
     currentProjectId,
     uploadFiles,
@@ -219,11 +212,6 @@ export default function ProjectContextPanel({
     [currentProjectId, uploadFiles, setPopup]
   );
 
-  useEffect(() => {
-    const preset = currentProjectDetails?.project?.instructions ?? "";
-    setInstructionText(preset);
-  }, [currentProjectDetails?.project?.instructions ?? ""]);
-
   const totalFiles = (currentProjectDetails?.files || []).length;
   const displayFileCount = totalFiles > 100 ? "100+" : String(totalFiles);
 
@@ -253,35 +241,37 @@ export default function ProjectContextPanel({
   return (
     <div className="flex flex-col gap-6 w-full max-w-[800px] mx-auto mt-10 mb-[1.5rem]">
       <div className="flex flex-col gap-1 text-text-04">
-        <OpenFolderIcon size={32} />
-        <h1 className="font-heading-h2">
+        <SvgFolderOpen className="h-8 w-8 text-text-04" />
+        <Text headingH2 className="font-heading-h2">
           {currentProjectDetails?.project?.name || "Loading project..."}
-        </h1>
+        </Text>
       </div>
 
       <Separator className="my-0" />
       <div className="flex flex-row gap-2 justify-between">
         <div className="min-w-0">
-          <p className="font-heading-h3 text-text-04">Instructions</p>
+          <Text headingH3 text04>
+            Instructions
+          </Text>
           {currentProjectDetails?.project?.instructions ? (
-            <p
-              className="text-text-02 font-secondary-body truncate"
-              title={currentProjectDetails.project.instructions || ""}
-            >
+            <Text text02 secondaryBody className="truncate">
               {currentProjectDetails.project.instructions}
-            </p>
+            </Text>
           ) : (
-            <p className="text-text-02 font-secondary-body truncate">
+            <Text text02 secondaryBody className="truncate">
               Add instructions to tailor the response in this project.
-            </p>
+            </Text>
           )}
         </div>
-        <Button onClick={() => setIsInstrOpen(true)} tertiary>
+        <Button
+          onClick={() => toggleModal(ModalIds.AddInstructionModal, true)}
+          tertiary
+        >
           <div className="flex flex-row gap-1 items-center">
-            <ListSettingsIcon size={16} />
-            <p className="text-text-03 font-main-action whitespace-nowrap">
+            <SvgAddLines className="h-4 w-4 stroke-text-03" />
+            <Text text03 mainAction className="whitespace-nowrap">
               Set Instructions
-            </p>
+            </Text>
           </div>
         </Button>
       </div>
@@ -291,16 +281,20 @@ export default function ProjectContextPanel({
       >
         <div className="flex flex-row gap-2 justify-between">
           <div>
-            <p className="font-heading-h3 text-text-04">Files</p>
+            <Text headingH3 text04>
+              Files
+            </Text>
 
-            <p className="text-text-02 font-secondary-body">
+            <Text text02 secondaryBody>
               Chats in this project can access these files.
-            </p>
+            </Text>
           </div>
           <FilePicker
             trigger={
               <LineItem icon={SvgPlusCircle}>
-                <p className="text-text-03 font-main-action">Add Files</p>
+                <Text text03 mainAction>
+                  Add Files
+                </Text>
               </LineItem>
             }
             recentFiles={recentFiles}
@@ -325,24 +319,24 @@ export default function ProjectContextPanel({
             <div className="sm:hidden">
               <button
                 className="w-full rounded-xl px-3 py-3 text-left bg-transparent hover:bg-accent-background-hovered hover:dark:bg-neutral-800/75 transition-colors"
-                onClick={() => setShowProjectFiles(true)}
+                onClick={() => toggleModal(ModalIds.ProjectFilesModal, true)}
               >
                 <div className="flex flex-col overflow-hidden">
                   <div className="flex items-center justify-between gap-2 w-full">
-                    <span className="text-onyx-medium text-sm truncate flex-1">
+                    <Text text04 secondaryAction>
                       View files
-                    </span>
-                    <MultipleFilesIcon className="h-5 w-5 text-onyx-medium" />
+                    </Text>
+                    <SvgFiles className="h-5 w-5 stroke-text-02" />
                   </div>
-                  <span className="text-onyx-muted text-sm">
+                  <Text text03 secondaryBody>
                     {displayFileCount} files
-                  </span>
+                  </Text>
                 </div>
               </button>
             </div>
 
             {/* Desktop / larger screens: show previews with optional View All */}
-            <div className="hidden sm:flex gap-3">
+            <div className="hidden sm:flex gap-spacing-inline relative">
               {(() => {
                 const byId = new Map<string, ProjectFile>();
                 // Prefer backend files when available
@@ -354,9 +348,9 @@ export default function ProjectContextPanel({
                   if (!byId.has(f.id)) byId.set(f.id, f);
                 });
                 return Array.from(byId.values())
-                  .slice(0, 3)
+                  .slice(0, 4)
                   .map((f) => (
-                    <div key={f.id} className="w-52">
+                    <div key={f.id} className="w-40">
                       <FileCard
                         file={f}
                         removeFile={async (fileId: string) => {
@@ -368,36 +362,39 @@ export default function ProjectContextPanel({
                     </div>
                   ));
               })()}
-              {totalFiles > 3 && (
+              {totalFiles > 4 && (
                 <button
-                  className="rounded-xl px-3 py-1 text-left bg-transparent hover:bg-accent-background-hovered hover:dark:bg-neutral-800/75 transition-colors"
-                  onClick={() => setShowProjectFiles(true)}
+                  className="rounded-xl px-3 py-1 text-left transition-colors hover:bg-background-tint-02"
+                  onClick={() => toggleModal(ModalIds.ProjectFilesModal, true)}
                 >
                   <div className="flex flex-col overflow-hidden h-12 p-1">
                     <div className="flex items-center justify-between gap-2 w-full">
-                      <span className="text-onyx-medium text-sm truncate flex-1">
+                      <Text text04 secondaryAction>
                         View All
-                      </span>
-                      <MultipleFilesIcon className="h-5 w-5 text-onyx-medium" />
+                      </Text>
+                      <SvgFiles className="h-5 w-5 stroke-text-02" />
                     </div>
-                    <span className="text-onyx-muted text-sm">
+                    <Text text03 secondaryBody>
                       {displayFileCount} files
-                    </span>
+                    </Text>
                   </div>
                 </button>
               )}
+              {isDragActive && (
+                <div className="pointer-events-none absolute inset-0 rounded-lg border-2 border-dashed border-action-link-05" />
+              )}
             </div>
             {projectTokenCount > availableContextTokens && (
-              <p className="text-onyx-muted text-base">
+              <Text text02 secondaryBody>
                 This project exceeds the model&apos;s context limits. Sessions
                 will automatically search for relevant files first before
                 generating response.
-              </p>
+              </Text>
             )}
           </>
         ) : (
           <div
-            className={`h-12 rounded-lg border border-dashed${
+            className={`h-12 rounded-lg border border-dashed ${
               isDragActive
                 ? "bg-action-link-01 border-action-link-05"
                 : "border-border-01"
@@ -416,67 +413,29 @@ export default function ProjectContextPanel({
         )}
       </div>
 
-      <Dialog open={isInstrOpen} onOpenChange={setIsInstrOpen}>
-        <DialogContent className="w-[95%] max-w-2xl">
-          <DialogHeader>
-            <div className="flex flex-col gap-3">
-              <ListSettingsIcon size={22} />
-              <DialogTitle>Set Project Instructions</DialogTitle>
-            </div>
-            <DialogDescription>
-              Instruct specific behaviors, focus, tones, or formats for the
-              response in this project.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Textarea
-              value={instructionText}
-              onChange={(e) => setInstructionText(e.target.value)}
-              placeholder="Think step by step and show reasoning for complex problems. Use specific examples."
-              className="min-h-[140px]"
-            />
-            <div className="flex justify-end gap-4">
-              <Button onClick={() => setIsInstrOpen(false)}>Cancel</Button>
-              <Button
-                onClick={() => {
-                  setIsInstrOpen(false);
-                  upsertInstructions(instructionText);
-                }}
-              >
-                Save Instructions
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={showProjectFiles} onOpenChange={setShowProjectFiles}>
-        <DialogContent
-          className="w-full max-w-lg focus:outline-none focus-visible:outline-none"
-          tabIndex={-1}
-          onOpenAutoFocus={(e) => {
-            // Prevent auto-focus which can interfere with input
-            e.preventDefault();
-          }}
+      <AddInstructionModal />
+
+      {open && (
+        <CoreModal
+          className="w-[32rem] rounded-16 border flex flex-col bg-background-tint-00"
+          onClickOutside={onClose}
         >
-          <DialogHeader>
-            <MultipleFilesIcon className="h-8 w-8 text-onyx-ultra-strong" />
-            <DialogTitle>Project files</DialogTitle>
-            <DialogDescription>
-              Sessions in this project can access the files here.
-            </DialogDescription>
-          </DialogHeader>
-          <FilesList
-            recentFiles={(currentProjectDetails?.files || []) as any}
+          <UserFilesModalContent
+            title="Project files"
+            description="Sessions in this project can access the files here."
+            icon={SvgFiles}
+            recentFiles={currentProjectDetails?.files || []}
+            onFileClick={handleFileClick}
             handleUploadChange={handleUploadChange}
             showRemove
-            onRemove={async (file) => {
+            onRemove={async (file: ProjectFile) => {
               if (!currentProjectId) return;
               await unlinkFileFromProject(currentProjectId, file.id);
             }}
-            onFileClick={handleFileClick}
+            onClose={onClose}
           />
-        </DialogContent>
-      </Dialog>
+        </CoreModal>
+      )}
       {popup}
     </div>
   );

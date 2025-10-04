@@ -2,19 +2,14 @@
 
 import React, { useMemo } from "react";
 import Link from "next/link";
-import { ChatBubbleIcon } from "@/components/icons/CustomIcons";
 import { ChatSessionMorePopup } from "@/components/sidebar/ChatSessionMorePopup";
 import { useProjectsContext } from "../../projects/ProjectsContext";
 import { ChatSession } from "@/app/chat/interfaces";
 import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { useAssistantsContext } from "@/components/context/AssistantsContext";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import SvgBubbleText from "@/icons/bubble-text";
 import { formatRelativeTime } from "./project_utils";
+import Text from "@/refresh-components/Text";
 
 export default function ProjectChatSessionList() {
   const {
@@ -41,11 +36,15 @@ export default function ProjectChatSessionList() {
   return (
     <div className="flex flex-col gap-2 px-2 w-full max-w-[800px] mx-auto mt-6">
       <div className="flex items-center pl-spacing-interline">
-        <h2 className="text-text-02 font-secondary-body">Recent Chats</h2>
+        <Text text02 secondaryBody>
+          Recent Chats
+        </Text>
       </div>
 
       {projectChats.length === 0 ? (
-        <p className="text-text-02 font-secondary-body">No chats yet.</p>
+        <Text text02 secondaryBody className="p-spacing-interline">
+          No chats yet.
+        </Text>
       ) : (
         <div className="flex flex-col gap-2 max-h-[46vh] overflow-y-auto overscroll-y-none">
           {projectChats.map((chat) => (
@@ -82,19 +81,22 @@ export default function ProjectChatSessionList() {
                         }
                       }
                       return (
-                        <ChatBubbleIcon className="h-4 w-4 text-text-02" />
+                        <SvgBubbleText className="h-4 w-4 stroke-text-02" />
                       );
                     })()}
                   </div>
                   <div className="flex flex-col w-full">
                     <div className="flex items-center gap-1 w-full justify-between">
                       <div className="flex items-center gap-1">
-                        <span
-                          className="text-text-03 font-main-body truncate"
+                        <Text
+                          text03
+                          mainBody
+                          nowrap
+                          className="truncate"
                           title={chat.name}
                         >
                           {chat.name || "Unnamed Chat"}
-                        </span>
+                        </Text>
                       </div>
                       <div className="flex items-center">
                         <ChatSessionMorePopup
@@ -119,9 +121,9 @@ export default function ProjectChatSessionList() {
                         />
                       </div>
                     </div>
-                    <span className="text-text-03 font-secondary-body truncate">
+                    <Text text03 secondaryBody nowrap className="truncate">
                       Last message {formatRelativeTime(chat.time_updated)}
-                    </span>
+                    </Text>
                   </div>
                 </div>
               </div>
