@@ -488,7 +488,9 @@ export const ChatInputBar = React.memo(function ChatInputBar({
                 placeholder={
                   placeholder ||
                   (selectedAssistant.id === 0
-                    ? `How can ${settings?.enterpriseSettings?.application_name || "Onyx"} help you today`
+                    ? `How can ${
+                        settings?.enterpriseSettings?.application_name || "Onyx"
+                      } help you today`
                     : `How can ${selectedAssistant.name} help you today`)
                 }
                 value={message}

@@ -199,7 +199,10 @@ export function ChatSessionMorePopup({
                   )}
                   {projectId && (
                     <DefaultDropdownElement
-                      name={`Remove from ${projects.find((p) => p.id === projectId)?.name ?? "Project"}`}
+                      name={`Remove from ${
+                        projects.find((p) => p.id === projectId)?.name ??
+                        "Project"
+                      }`}
                       icon={HiOutlineArrowUturnRight}
                       onSelect={handleRemoveChatSessionFromProject}
                     />

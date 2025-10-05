@@ -97,10 +97,16 @@ export const renderMarkdown = (
   textSize: string = "text-base"
 ): JSX.Element => {
   return (
-    <div dir="auto" className={`prose dark:prose-invert max-w-full ${textSize}`}>
+    <div
+      dir="auto"
+      className={`prose dark:prose-invert max-w-full ${textSize}`}
+    >
       <ReactMarkdown
         components={markdownComponents}
-        remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }]]}
+        remarkPlugins={[
+          remarkGfm,
+          [remarkMath, { singleDollarTextMath: false }],
+        ]}
         rehypePlugins={[[rehypePrism, { ignoreMissing: true }], rehypeKatex]}
         urlTransform={transformLinkUri}
       >

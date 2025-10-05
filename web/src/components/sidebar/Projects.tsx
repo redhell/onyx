@@ -57,7 +57,9 @@ function CollapsibleFolder({
   return (
     <div className="w-full">
       <div
-        className={`w-full group flex items-center gap-x-1 px-1 rounded-md hover:bg-background-chat-hover ${isSelected ? "bg-background-chat-selected" : ""}`}
+        className={`w-full group flex items-center gap-x-1 px-1 rounded-md hover:bg-background-chat-hover ${
+          isSelected ? "bg-background-chat-selected" : ""
+        }`}
       >
         <button
           type="button"
@@ -130,7 +132,9 @@ function CollapsibleFolder({
           </button>
         )}
         <div
-          className={`ml-2 flex items-center gap-x-1 transition-opacity ${isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          className={`ml-2 flex items-center gap-x-1 transition-opacity ${
+            isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
         >
           {isEditing ? (
             <>
