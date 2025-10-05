@@ -233,7 +233,7 @@ def test_custom_tool_invocation(
     assert result[0].id == "custom_tool_response"
 
     assert len(mock_emitter.packet_history) == 3
-
+    print(mock_emitter.packet_history)
     start_packet = mock_emitter.packet_history[0]
     delta_packet = mock_emitter.packet_history[1]
     section_end_packet = mock_emitter.packet_history[2]

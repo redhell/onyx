@@ -1,5 +1,6 @@
 # create adapter from Tool to FunctionTool
 import json
+from typing import Any
 from typing import Union
 
 from agents import FunctionTool
@@ -26,8 +27,8 @@ def is_custom_or_mcp_tool(tool: Tool) -> bool:
 
 @tool_accounting
 async def _tool_run_wrapper(
-    tool: Tool, run_context: RunContextWrapper[ChatTurnContext], json_string: str
-):
+    run_context: RunContextWrapper[ChatTurnContext], tool: Tool, json_string: str
+) -> list[Any]:
     """
     Wrapper function to adapt Tool.run() to FunctionTool.on_invoke_tool() signature.
     """
@@ -76,7 +77,7 @@ def tool_to_function_tool(tool: Tool) -> FunctionTool:
         description=tool.description,
         params_json_schema=tool.tool_definition()["function"]["parameters"],
         on_invoke_tool=lambda context, json_string: _tool_run_wrapper(
-            tool, context, json_string
+            context, tool, json_string
         ),
     )
 
