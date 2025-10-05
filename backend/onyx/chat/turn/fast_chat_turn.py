@@ -1,3 +1,5 @@
+from queue import Queue
+
 from agents import Agent
 from agents import ModelSettings
 from agents import RawResponsesStreamEvent
@@ -99,6 +101,18 @@ def _emit_clean_up_packets(
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
     )
+
+
+class Emitter:
+    """Use this inside tools to emit arbitrary UI progress."""
+
+    def __init__(self, bus: Queue):
+        self.bus = bus
+        self.packet_history: list[Packet] = []
+
+    def emit(self, packet: Packet) -> None:
+        self.bus.put(packet)
+        self.packet_history.append(packet)
 
 
 def default_packet_translation(ev: object) -> PacketObj | None:
