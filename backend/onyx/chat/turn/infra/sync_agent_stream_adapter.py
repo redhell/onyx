@@ -16,6 +16,7 @@ T = TypeVar("T")
 class SyncAgentStream(Generic[T]):
     """
     Convert an async streamed run into a sync iterator with cooperative cancellation.
+    Runs the Agent in a background thread.
 
     Usage:
         adapter = SyncStreamAdapter(
