@@ -7,26 +7,22 @@ from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 from onyx.utils.logger import setup_logger
 
 logger = setup_logger()
 
 
-@function_tool
-def okta_profile_tool(run_context: RunContextWrapper[ChatTurnContext]) -> str:
-    """
-    Retrieve the current user's profile information from Okta.
-
-    This tool fetches user profile details including name, email, department,
-    location, title, manager, and other profile information from the Okta identity provider.
-    """
-    # Get the Okta profile tool from context
-    okta_profile_tool = run_context.context.run_dependencies.okta_profile_tool
-    if okta_profile_tool is None:
+@tool_accounting
+def _okta_profile_core(
+    run_context: RunContextWrapper[ChatTurnContext],
+    okta_profile_tool_instance,
+) -> dict:
+    """Core Okta profile logic that can be tested with dependency injection"""
+    if okta_profile_tool_instance is None:
         raise RuntimeError("Okta profile tool not available in context")
 
-    index = run_context.context.current_run_step + 1
+    index = run_context.context.current_run_step
     emitter = run_context.context.run_dependencies.emitter
 
     # Emit start event
@@ -52,7 +48,7 @@ def okta_profile_tool(run_context: RunContextWrapper[ChatTurnContext]) -> str:
 
     # Run the actual Okta profile tool
     profile_data = None
-    for tool_response in okta_profile_tool.run():
+    for tool_response in okta_profile_tool_instance.run():
         if tool_response.id == "okta_profile":
             profile_data = tool_response.response
             break
@@ -73,16 +69,21 @@ def okta_profile_tool(run_context: RunContextWrapper[ChatTurnContext]) -> str:
         )
     )
 
-    # Emit section end
-    emitter.emit(
-        Packet(
-            ind=index,
-            obj=SectionEnd(
-                type="section_end",
-            ),
-        )
-    )
+    return profile_data
 
-    run_context.context.current_run_step = index + 1
+
+@function_tool
+def okta_profile_tool(run_context: RunContextWrapper[ChatTurnContext]) -> str:
+    """
+    Retrieve the current user's profile information from Okta.
+
+    This tool fetches user profile details including name, email, department,
+    location, title, manager, and other profile information from the Okta identity provider.
+    """
+    # Get the Okta profile tool from context
+    okta_profile_tool_instance = run_context.context.run_dependencies.okta_profile_tool
+
+    # Call the core function
+    profile_data = _okta_profile_core(run_context, okta_profile_tool_instance)
 
     return json.dumps(profile_data)

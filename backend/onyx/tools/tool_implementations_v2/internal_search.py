@@ -12,29 +12,25 @@ from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
-from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.models import SearchToolOverrideKwargs
 from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_RESPONSE_SUMMARY_ID,
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
+from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 
 
-@function_tool
-def internal_search_tool(
-    run_context: RunContextWrapper[ChatTurnContext], query: str
-) -> str:
-    """
-    Tool for searching PRIVATE organizational knowledge from sources connected to the user.
-
-    Args:
-        query: The natural-language search query.
-    """
-    search_pipeline = run_context.context.run_dependencies.search_pipeline
-    if search_pipeline is None:
+@tool_accounting
+def _internal_search_core(
+    run_context: RunContextWrapper[ChatTurnContext],
+    query: str,
+    search_pipeline_instance,
+) -> list:
+    """Core internal search logic that can be tested with dependency injection"""
+    if search_pipeline_instance is None:
         raise RuntimeError("Search tool not available in context")
 
-    index = run_context.context.current_run_step + 1
+    index = run_context.context.current_run_step
     run_context.context.run_dependencies.emitter.emit(
         Packet(
             ind=index,
@@ -61,7 +57,7 @@ def internal_search_tool(
     )
 
     with get_session_with_current_tenant() as search_db_session:
-        for tool_response in search_pipeline.run(
+        for tool_response in search_pipeline_instance.run(
             query=query,
             override_kwargs=SearchToolOverrideKwargs(
                 force_no_rerank=True,
@@ -126,14 +122,23 @@ def internal_search_tool(
                         },
                     )
                 )
-                break
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=SectionEnd(
-                type="section_end",
-            ),
-        )
-    )
-    run_context.context.current_run_step = index + 1
+                return retrieved_docs
+    return []
+
+
+@function_tool
+def internal_search_tool(
+    run_context: RunContextWrapper[ChatTurnContext], query: str
+) -> str:
+    """
+    Tool for searching PRIVATE organizational knowledge from sources connected to the user.
+
+    Args:
+        query: The natural-language search query.
+    """
+    search_pipeline_instance = run_context.context.run_dependencies.search_pipeline
+
+    # Call the core function
+    retrieved_docs = _internal_search_core(run_context, query, search_pipeline_instance)
+
     return str(retrieved_docs)

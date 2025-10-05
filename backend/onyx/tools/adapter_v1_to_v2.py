@@ -9,11 +9,11 @@ from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
 from onyx.tools.tool import Tool
 from onyx.tools.tool_implementations.custom.custom_tool import CustomTool
 from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
+from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 
 # Type alias for tools that need custom handling
 CustomOrMcpTool = Union[CustomTool, MCPTool]
@@ -24,6 +24,7 @@ def is_custom_or_mcp_tool(tool: Tool) -> bool:
     return isinstance(tool, CustomTool) or isinstance(tool, MCPTool)
 
 
+@tool_accounting
 async def _tool_run_wrapper(
     tool: Tool, run_context: RunContextWrapper[ChatTurnContext], json_string: str
 ):
@@ -31,18 +32,16 @@ async def _tool_run_wrapper(
     Wrapper function to adapt Tool.run() to FunctionTool.on_invoke_tool() signature.
     """
     args = json.loads(json_string) if json_string else {}
-    index = run_context.context.current_run_step + 1
-    if is_custom_or_mcp_tool(tool):
-        run_context.context.run_dependencies.emitter.emit(
-            Packet(
-                ind=index,
-                obj=CustomToolStart(type="custom_tool_start", tool_name=tool.name),
-            )
+    index = run_context.context.current_run_step
+    run_context.context.run_dependencies.emitter.emit(
+        Packet(
+            ind=index,
+            obj=CustomToolStart(type="custom_tool_start", tool_name=tool.name),
         )
+    )
     results = []
     for result in tool.run(**args):
         results.append(result)
-    if is_custom_or_mcp_tool(tool):
         # Extract data from CustomToolCallSummary within the ToolResponse
         custom_summary = result.response
         data = None
@@ -68,10 +67,6 @@ async def _tool_run_wrapper(
                 ),
             )
         )
-        run_context.context.run_dependencies.emitter.emit(
-            Packet(ind=index, obj=SectionEnd(type="section_end"))
-        )
-    run_context.context.current_run_step = index + 1
     return results
 
 
