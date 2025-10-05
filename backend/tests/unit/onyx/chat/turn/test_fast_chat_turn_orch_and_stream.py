@@ -812,11 +812,6 @@ def test_fast_chat_turn_cancellation(
     from onyx.chat.stop_signal_checker import set_fence
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
-    # Mock get_current_tenant_id to return a test tenant ID
-    monkeypatch.setattr(
-        "onyx.chat.stop_signal_checker.get_current_tenant_id", lambda: "test-tenant"
-    )
-
     # Replace the model with our cancellation model that triggers stop signal during streaming
     cancellation_model = FakeCancellationModel(
         set_fence_func=set_fence,
@@ -861,11 +856,6 @@ def test_fast_chat_turn_tool_call_cancellation(
     from onyx.chat.stop_signal_checker import set_fence
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
     from onyx.server.query_and_chat.streaming_models import MessageStart
-
-    # Mock get_current_tenant_id to return a test tenant ID
-    monkeypatch.setattr(
-        "onyx.chat.stop_signal_checker.get_current_tenant_id", lambda: "test-tenant"
-    )
 
     # Replace the model with our tool call model
     cancellation_model = FakeToolCallModel(
