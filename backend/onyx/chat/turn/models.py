@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationInstructions
-from onyx.chat.turn.infra.chat_turn_event_stream import Emitter
+from onyx.chat.turn.infra.emitter import Emitter
 from onyx.llm.interfaces import LLM
 from onyx.tools.tool_implementations.images.image_generation_tool import (
     ImageGenerationTool,

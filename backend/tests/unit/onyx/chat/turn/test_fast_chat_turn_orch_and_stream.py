@@ -562,6 +562,28 @@ class FakeFailingModel(Model):
         prompt=None,
     ) -> AsyncIterator[object]:
         async def _gen() -> AsyncIterator[object]:
+            yield ResponseCreatedEvent(
+                response="hi", sequence_number=1, type="response.created"
+            )
+
+            # 2) stream some text (delta) - trigger stop signal during streaming
+            for i in range(5):
+                yield ResponseCustomToolCallInputDeltaEvent(
+                    delta="fake response",
+                    item_id="fake-item-id",
+                    output_index=0,
+                    sequence_number=2,
+                    type="response.custom_tool_call_input.delta",
+                )
+
+                # Trigger stop signal after a few deltas to ensure there are message_delta packets in history
+                if (
+                    i == 2
+                    and self.set_fence_func
+                    and self.chat_session_id
+                    and self.redis_client
+                ):
+                    self.set_fence_func(self.chat_session_id, self.redis_client, True)
             raise Exception("Fake exception")
 
         return _gen()
