@@ -1,13 +1,17 @@
-import json
 from typing import List
+from typing import Optional
 
 from agents import function_tool
 from agents import RunContextWrapper
+from pydantic import BaseModel
 
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.agents.agent_search.dr.sub_agents.web_search.providers import (
     get_default_provider,
+)
+from onyx.agents.agent_search.dr.sub_agents.web_search.providers import (
+    WebSearchProvider,
 )
 from onyx.agents.agent_search.dr.sub_agents.web_search.utils import (
     dummy_inference_section_from_internet_content,
@@ -19,11 +23,100 @@ from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
-from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
+
+
+class WebSearchResult(BaseModel):
+    tag: str
+    title: str
+    link: str
+    snippet: str
+    author: Optional[str] = None
+    published_date: Optional[str] = None
+
+
+class WebSearchResponse(BaseModel):
+    results: List[WebSearchResult]
+
+
+class WebFetchResult(BaseModel):
+    tag: str
+    title: str
+    link: str
+    full_content: str
+    published_date: Optional[str] = None
+
+
+class WebFetchResponse(BaseModel):
+    results: List[WebFetchResult]
 
 
 def short_tag(link: str, i: int) -> str:
     return f"S{i+1}"
+
+
+@tool_accounting
+def _web_search_core(
+    run_context: RunContextWrapper[ChatTurnContext],
+    query: str,
+    search_provider: WebSearchProvider,
+) -> WebSearchResponse:
+    # TODO: Find better way to track index that isn't so implicit
+    # based on number of tool calls
+    index = run_context.context.current_run_step
+    run_context.context.run_dependencies.emitter.emit(
+        Packet(
+            ind=index,
+            obj=SearchToolStart(
+                type="internal_search_tool_start", is_internet_search=True
+            ),
+        )
+    )
+    run_context.context.run_dependencies.emitter.emit(
+        Packet(
+            ind=index,
+            obj=SearchToolDelta(
+                type="internal_search_tool_delta", queries=[query], documents=None
+            ),
+        )
+    )
+    run_context.context.iteration_instructions.append(
+        IterationInstructions(
+            iteration_nr=index,
+            plan="plan",
+            purpose="Searching the web for information",
+            reasoning=f"I am now using Web Search to gather information on {query}",
+        )
+    )
+    hits = search_provider.search(query)
+    results = []
+    for i, r in enumerate(hits):
+        results.append(
+            WebSearchResult(
+                tag=short_tag(r.link, i),
+                title=r.title,
+                link=r.link,
+                snippet=r.snippet,
+                author=r.author,
+                published_date=(
+                    r.published_date.isoformat() if r.published_date else None
+                ),
+            )
+        )
+    run_context.context.aggregated_context.global_iteration_responses.append(
+        IterationAnswer(
+            tool="web_search",
+            tool_id=18,
+            iteration_nr=index,
+            parallelization_nr=0,
+            question=query,
+            reasoning=f"I am now using Web Search to gather information on {query}",
+            answer="Cool",
+            cited_documents={},
+            claims=["web_search"],
+        )
+    )
+    return WebSearchResponse(results=results)
 
 
 @function_tool
@@ -62,77 +155,100 @@ def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str)
           "published_date": "2025-10-01T12:34:56Z"
           // intentionally NO full content
         }
-      ],
-      "must_fetch_next": true,
-      "next_actions": "Select 3–8 strongest URLs and call web_fetch_tool before answering."
+      ]
     }
     """
     search_provider = get_default_provider()
+    response = _web_search_core(run_context, query, search_provider)
+    return response.model_dump_json()
+
+
+@tool_accounting
+def _web_fetch_core(
+    run_context: RunContextWrapper[ChatTurnContext],
+    urls: List[str],
+    search_provider: WebSearchProvider,
+) -> WebFetchResponse:
     # TODO: Find better way to track index that isn't so implicit
     # based on number of tool calls
-    index = run_context.context.current_run_step + 1
+    index = run_context.context.current_run_step
+
+    # Create SavedSearchDoc objects from URLs for the FetchToolStart event
+    saved_search_docs = [
+        SavedSearchDoc(
+            db_doc_id=0,
+            document_id=url,
+            chunk_ind=0,
+            semantic_identifier=url,
+            link=url,
+            blurb="",  # Will be populated after fetching
+            source_type=DocumentSource.WEB,
+            boost=1,
+            hidden=False,
+            metadata={},
+            score=0.0,
+            is_relevant=None,
+            relevance_explanation=None,
+            match_highlights=[],
+            updated_at=None,
+            primary_owners=None,
+            secondary_owners=None,
+            is_internet=True,
+        )
+        for url in urls
+    ]
+
     run_context.context.run_dependencies.emitter.emit(
         Packet(
             ind=index,
-            obj=SearchToolStart(
-                type="internal_search_tool_start", is_internet_search=True
-            ),
+            obj=FetchToolStart(type="fetch_tool_start", documents=saved_search_docs),
         )
     )
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=SearchToolDelta(
-                type="internal_search_tool_delta", queries=[query], documents=None
-            ),
+
+    docs = search_provider.contents(urls)
+    out = []
+    for i, d in enumerate(docs):
+        out.append(
+            WebFetchResult(
+                tag=short_tag(d.link, i),  # <-- add a tag
+                title=d.title,
+                link=d.link,
+                full_content=d.full_content,
+                published_date=(
+                    d.published_date.isoformat() if d.published_date else None
+                ),
+            )
         )
-    )
     run_context.context.iteration_instructions.append(
         IterationInstructions(
             iteration_nr=index,
             plan="plan",
-            purpose="Searching the web for information",
-            reasoning=f"I am now using Web Search to gather information on {query}",
+            purpose="Fetching content from URLs",
+            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
         )
     )
-    hits = search_provider.search(query)
-    results = []
-    for i, r in enumerate(hits):
-        results.append(
-            {
-                "tag": short_tag(r.link, i),
-                "title": r.title,
-                "link": r.link,
-                "snippet": r.snippet,
-                "author": r.author,
-                "published_date": (
-                    r.published_date.isoformat() if r.published_date else None
-                ),
-            }
-        )
+
+    inference_sections = [
+        dummy_inference_section_from_internet_content(d) for d in docs
+    ]
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
-            tool="web_search",
+            tool="web_fetch",
             tool_id=18,
             iteration_nr=index,
             parallelization_nr=0,
-            question=query,
-            reasoning=f"I am now using Web Search to gather information on {query}",
+            question=f"Fetch content from URLs: {', '.join(urls)}",
+            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
             answer="Cool",
-            cited_documents={},
-            claims=["web_search"],
+            cited_documents={
+                i: inference_section
+                for i, inference_section in enumerate(inference_sections)
+            },
+            claims=["web_fetch"],
         )
     )
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=SectionEnd(
-                type="section_end",
-            ),
-        )
-    )
-    run_context.context.current_run_step = index + 1
-    return json.dumps({"results": results})
+
+    return WebFetchResponse(results=out)
 
 
 @function_tool
@@ -173,94 +289,6 @@ def web_fetch_tool(
       ]
     }
     """
-    # TODO: Find better way to track index that isn't so implicit
-    # based on number of tool calls
-    index = run_context.context.current_run_step + 1
-
-    # Create SavedSearchDoc objects from URLs for the FetchToolStart event
-    saved_search_docs = [
-        SavedSearchDoc(
-            db_doc_id=0,
-            document_id=url,
-            chunk_ind=0,
-            semantic_identifier=url,
-            link=url,
-            blurb="",  # Will be populated after fetching
-            source_type=DocumentSource.WEB,
-            boost=1,
-            hidden=False,
-            metadata={},
-            score=0.0,
-            is_relevant=None,
-            relevance_explanation=None,
-            match_highlights=[],
-            updated_at=None,
-            primary_owners=None,
-            secondary_owners=None,
-            is_internet=True,
-        )
-        for url in urls
-    ]
-
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=FetchToolStart(type="fetch_tool_start", documents=saved_search_docs),
-        )
-    )
-
     search_provider = get_default_provider()
-    docs = search_provider.contents(urls)
-    out = []
-    for i, d in enumerate(docs):
-        out.append(
-            {
-                "tag": short_tag(d.link, i),  # <-- add a tag
-                "title": d.title,
-                "link": d.link,
-                "full_content": d.full_content,
-                "published_date": (
-                    d.published_date.isoformat() if d.published_date else None
-                ),
-            }
-        )
-    run_context.context.iteration_instructions.append(
-        IterationInstructions(
-            iteration_nr=index,
-            plan="plan",
-            purpose="Fetching content from URLs",
-            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
-        )
-    )
-
-    inference_sections = [
-        dummy_inference_section_from_internet_content(d) for d in docs
-    ]
-    run_context.context.aggregated_context.global_iteration_responses.append(
-        IterationAnswer(
-            tool="web_fetch",
-            tool_id=18,
-            iteration_nr=index,
-            parallelization_nr=0,
-            question=f"Fetch content from URLs: {', '.join(urls)}",
-            reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
-            answer="Cool",
-            cited_documents={
-                i: inference_section
-                for i, inference_section in enumerate(inference_sections)
-            },
-            claims=["web_fetch"],
-        )
-    )
-
-    run_context.context.run_dependencies.emitter.emit(
-        Packet(
-            ind=index,
-            obj=SectionEnd(
-                type="section_end",
-            ),
-        )
-    )
-
-    run_context.context.current_run_step = index + 1
-    return json.dumps({"results": out})
+    response = _web_fetch_core(run_context, urls, search_provider)
+    return response.model_dump_json()

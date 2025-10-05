@@ -28,7 +28,7 @@ class InternetContent(BaseModel):
     published_date: datetime | None = None
 
 
-class InternetSearchProvider(ABC):
+class WebSearchProvider(ABC):
     @abstractmethod
     def search(self, query: str) -> list[InternetSearchResult]:
         pass

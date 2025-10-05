@@ -1,0 +1,336 @@
+from datetime import datetime
+from typing import List
+
+import pytest
+from agents import RunContextWrapper
+
+from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.agents.agent_search.dr.models import IterationInstructions
+from onyx.agents.agent_search.dr.sub_agents.web_search.models import InternetContent
+from onyx.agents.agent_search.dr.sub_agents.web_search.models import (
+    InternetSearchResult,
+)
+from onyx.agents.agent_search.dr.sub_agents.web_search.models import WebSearchProvider
+from onyx.chat.turn.models import ChatTurnContext
+from onyx.configs.constants import DocumentSource
+from onyx.server.query_and_chat.streaming_models import FetchToolStart
+from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.server.query_and_chat.streaming_models import SearchToolDelta
+from onyx.server.query_and_chat.streaming_models import SearchToolStart
+from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations_v2.web import _web_fetch_core
+from onyx.tools.tool_implementations_v2.web import _web_search_core
+from onyx.tools.tool_implementations_v2.web import WebFetchResponse
+from onyx.tools.tool_implementations_v2.web import WebSearchResponse
+
+
+class MockWebSearchProvider(WebSearchProvider):
+    """Mock implementation of WebSearchProvider for dependency injection"""
+
+    def __init__(
+        self,
+        search_results: List[InternetSearchResult] = None,
+        content_results: List[InternetContent] = None,
+        should_raise_exception: bool = False,
+    ):
+        self.search_results = search_results or []
+        self.content_results = content_results or []
+        self.should_raise_exception = should_raise_exception
+
+    def search(self, query: str) -> List[InternetSearchResult]:
+        if self.should_raise_exception:
+            raise Exception("Test exception from search provider")
+        return self.search_results
+
+    def contents(self, urls: List[str]) -> List[InternetContent]:
+        if self.should_raise_exception:
+            raise Exception("Test exception from search provider")
+        return self.content_results
+
+
+class MockEmitter:
+    """Mock emitter for dependency injection"""
+
+    def __init__(self):
+        self.emitted_events = []
+
+    def emit(self, packet: Packet):
+        self.emitted_events.append(packet)
+
+
+class MockAggregatedContext:
+    """Mock aggregated context for dependency injection"""
+
+    def __init__(self):
+        self.global_iteration_responses = []
+
+
+class MockRunDependencies:
+    """Mock run dependencies for dependency injection"""
+
+    def __init__(self):
+        self.emitter = MockEmitter()
+
+
+def create_test_run_context(
+    current_run_step: int = 0,
+    iteration_instructions: List[IterationInstructions] = None,
+    global_iteration_responses: List[IterationAnswer] = None,
+) -> RunContextWrapper[ChatTurnContext]:
+    """Create a real RunContextWrapper with test dependencies"""
+
+    # Create test dependencies
+    emitter = MockEmitter()
+    aggregated_context = MockAggregatedContext()
+    if global_iteration_responses:
+        aggregated_context.global_iteration_responses = global_iteration_responses
+
+    run_dependencies = MockRunDependencies()
+    run_dependencies.emitter = emitter
+
+    # Create the actual context object
+    context = ChatTurnContext(
+        current_run_step=current_run_step,
+        iteration_instructions=iteration_instructions or [],
+        aggregated_context=aggregated_context,
+        run_dependencies=run_dependencies,
+    )
+
+    # Create the run context wrapper
+    run_context = RunContextWrapper(context=context)
+
+    return run_context
+
+
+def test_web_search_core_basic_functionality():
+    """Test basic functionality of _web_search_core function"""
+    # Arrange
+    test_run_context = create_test_run_context()
+    query = "test search query"
+
+    # Create test search results
+    test_search_results = [
+        InternetSearchResult(
+            title="Test Result 1",
+            link="https://example.com/1",
+            author="Test Author",
+            published_date=datetime(2024, 1, 1, 12, 0, 0),
+            snippet="This is a test snippet 1",
+        ),
+        InternetSearchResult(
+            title="Test Result 2",
+            link="https://example.com/2",
+            author=None,
+            published_date=None,
+            snippet="This is a test snippet 2",
+        ),
+    ]
+
+    test_provider = MockWebSearchProvider(search_results=test_search_results)
+
+    # Act
+    result = _web_search_core(test_run_context, query, test_provider)
+
+    # Assert
+    assert isinstance(result, WebSearchResponse)
+    assert len(result.results) == 2
+
+    # Check first result
+    assert result.results[0].tag == "S1"
+    assert result.results[0].title == "Test Result 1"
+    assert result.results[0].link == "https://example.com/1"
+    assert result.results[0].author == "Test Author"
+    assert result.results[0].published_date == "2024-01-01T12:00:00"
+    assert result.results[0].snippet == "This is a test snippet 1"
+
+    # Check second result
+    assert result.results[1].tag == "S2"
+    assert result.results[1].title == "Test Result 2"
+    assert result.results[1].link == "https://example.com/2"
+    assert result.results[1].author is None
+    assert result.results[1].published_date is None
+    assert result.results[1].snippet == "This is a test snippet 2"
+
+    # Verify context was updated
+    assert test_run_context.context.current_run_step == 2
+    assert len(test_run_context.context.iteration_instructions) == 1
+    assert (
+        len(test_run_context.context.aggregated_context.global_iteration_responses) == 1
+    )
+
+    # Check iteration instruction
+    instruction = test_run_context.context.iteration_instructions[0]
+    assert isinstance(instruction, IterationInstructions)
+    assert instruction.iteration_nr == 1
+    assert instruction.purpose == "Searching the web for information"
+    assert (
+        "Web Search to gather information on test search query" in instruction.reasoning
+    )
+
+    # Check iteration answer
+    answer = test_run_context.context.aggregated_context.global_iteration_responses[0]
+    assert isinstance(answer, IterationAnswer)
+    assert answer.tool == "web_search"
+    assert answer.iteration_nr == 1
+    assert answer.question == query
+
+    # Verify emitter events were captured
+    emitter = test_run_context.context.run_dependencies.emitter
+    assert len(emitter.emitted_events) == 3
+
+    # Check the types of emitted events
+    assert isinstance(emitter.emitted_events[0].obj, SearchToolStart)
+    assert isinstance(emitter.emitted_events[1].obj, SearchToolDelta)
+    assert isinstance(emitter.emitted_events[2].obj, SectionEnd)
+
+
+def test_web_fetch_core_basic_functionality():
+    """Test basic functionality of _web_fetch_core function"""
+    # Arrange
+    test_run_context = create_test_run_context()
+    urls = ["https://example.com/1", "https://example.com/2"]
+
+    # Create test content results
+    test_content_results = [
+        InternetContent(
+            title="Test Content 1",
+            link="https://example.com/1",
+            full_content="This is the full content of the first page",
+            published_date=datetime(2024, 1, 1, 12, 0, 0),
+        ),
+        InternetContent(
+            title="Test Content 2",
+            link="https://example.com/2",
+            full_content="This is the full content of the second page",
+            published_date=None,
+        ),
+    ]
+
+    test_provider = MockWebSearchProvider(content_results=test_content_results)
+
+    # Act
+    result = _web_fetch_core(test_run_context, urls, test_provider)
+
+    # Assert
+    assert isinstance(result, WebFetchResponse)
+    assert len(result.results) == 2
+
+    # Check first result
+    assert result.results[0].tag == "S1"
+    assert result.results[0].title == "Test Content 1"
+    assert result.results[0].link == "https://example.com/1"
+    assert (
+        result.results[0].full_content == "This is the full content of the first page"
+    )
+    assert result.results[0].published_date == "2024-01-01T12:00:00"
+
+    # Check second result
+    assert result.results[1].tag == "S2"
+    assert result.results[1].title == "Test Content 2"
+    assert result.results[1].link == "https://example.com/2"
+    assert (
+        result.results[1].full_content == "This is the full content of the second page"
+    )
+    assert result.results[1].published_date is None
+
+    # Verify context was updated
+    assert test_run_context.context.current_run_step == 2
+    assert len(test_run_context.context.iteration_instructions) == 1
+    assert (
+        len(test_run_context.context.aggregated_context.global_iteration_responses) == 1
+    )
+
+    # Check iteration instruction
+    instruction = test_run_context.context.iteration_instructions[0]
+    assert isinstance(instruction, IterationInstructions)
+    assert instruction.iteration_nr == 1
+    assert instruction.purpose == "Fetching content from URLs"
+    assert (
+        "Web Fetch to gather information on https://example.com/1, https://example.com/2"
+        in instruction.reasoning
+    )
+
+    # Check iteration answer
+    answer = test_run_context.context.aggregated_context.global_iteration_responses[0]
+    assert isinstance(answer, IterationAnswer)
+    assert answer.tool == "web_fetch"
+    assert answer.iteration_nr == 1
+    assert (
+        answer.question
+        == "Fetch content from URLs: https://example.com/1, https://example.com/2"
+    )
+    assert len(answer.cited_documents) == 2
+
+    # Verify emitter events were captured
+    emitter = test_run_context.context.run_dependencies.emitter
+    assert len(emitter.emitted_events) == 2
+
+    # Check the types of emitted events
+    assert isinstance(emitter.emitted_events[0].obj, FetchToolStart)
+    assert isinstance(emitter.emitted_events[1].obj, SectionEnd)
+
+    # Verify the FetchToolStart event contains the correct SavedSearchDoc objects
+    fetch_start_event = emitter.emitted_events[0].obj
+    assert len(fetch_start_event.documents) == 2
+    assert fetch_start_event.documents[0].link == "https://example.com/1"
+    assert fetch_start_event.documents[1].link == "https://example.com/2"
+    assert fetch_start_event.documents[0].source_type == DocumentSource.WEB
+
+
+def test_web_search_core_exception_handling():
+    """Test that _web_search_core handles exceptions properly - should still emit section end and update current_run_step"""
+    # Arrange
+    test_run_context = create_test_run_context()
+    query = "test search query"
+
+    # Create a provider that will raise an exception
+    test_provider = MockWebSearchProvider(should_raise_exception=True)
+
+    # Act & Assert
+    with pytest.raises(Exception, match="Test exception from search provider"):
+        _web_search_core(test_run_context, query, test_provider)
+
+    # Verify that even though an exception was raised, we still emitted the initial events
+    # and the SectionEnd packet was emitted by the decorator
+    emitter = test_run_context.context.run_dependencies.emitter
+    assert (
+        len(emitter.emitted_events) == 3
+    )  # SearchToolStart, SearchToolDelta, and SectionEnd
+
+    # Check the types of emitted events
+    assert isinstance(emitter.emitted_events[0].obj, SearchToolStart)
+    assert isinstance(emitter.emitted_events[1].obj, SearchToolDelta)
+    assert isinstance(emitter.emitted_events[2].obj, SectionEnd)
+
+    # Verify that the decorator properly handled the exception and updated current_run_step
+    assert (
+        test_run_context.context.current_run_step == 2
+    )  # Should be 2 after proper handling
+
+
+def test_web_fetch_core_exception_handling():
+    """Test that _web_fetch_core handles exceptions properly - should still emit section end and update current_run_step"""
+    # Arrange
+    test_run_context = create_test_run_context()
+    urls = ["https://example.com/1", "https://example.com/2"]
+
+    # Create a provider that will raise an exception
+    test_provider = MockWebSearchProvider(should_raise_exception=True)
+
+    # Act & Assert
+    with pytest.raises(Exception, match="Test exception from search provider"):
+        _web_fetch_core(test_run_context, urls, test_provider)
+
+    # Verify that even though an exception was raised, we still emitted the initial events
+    # and the SectionEnd packet was emitted by the decorator
+    emitter = test_run_context.context.run_dependencies.emitter
+    assert len(emitter.emitted_events) == 2  # FetchToolStart and SectionEnd
+
+    # Check the types of emitted events
+    assert isinstance(emitter.emitted_events[0].obj, FetchToolStart)
+    assert isinstance(emitter.emitted_events[1].obj, SectionEnd)
+
+    # Verify that the decorator properly handled the exception and updated current_run_step
+    assert (
+        test_run_context.context.current_run_step == 2
+    )  # Should be 2 after proper handling
