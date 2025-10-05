@@ -812,13 +812,6 @@ def test_fast_chat_turn_cancellation(
     from onyx.chat.stop_signal_checker import set_fence
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
-    # Mock get_redis_client to return our fake redis client
-    # This is needed because set_fence and is_connected use get_redis_client() directly
-    monkeypatch.setattr(
-        "onyx.chat.stop_signal_checker.get_redis_client",
-        lambda: chat_turn_dependencies.redis_client,
-    )
-
     # Mock get_current_tenant_id to return a test tenant ID
     monkeypatch.setattr(
         "onyx.chat.stop_signal_checker.get_current_tenant_id", lambda: "test-tenant"
@@ -868,13 +861,6 @@ def test_fast_chat_turn_tool_call_cancellation(
     from onyx.chat.stop_signal_checker import set_fence
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
     from onyx.server.query_and_chat.streaming_models import MessageStart
-
-    # Mock get_redis_client to return our fake redis client
-    # This is needed because set_fence and is_connected use get_redis_client() directly
-    monkeypatch.setattr(
-        "onyx.chat.stop_signal_checker.get_redis_client",
-        lambda: chat_turn_dependencies.redis_client,
-    )
 
     # Mock get_current_tenant_id to return a test tenant ID
     monkeypatch.setattr(
