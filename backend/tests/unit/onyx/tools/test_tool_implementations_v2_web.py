@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from unittest.mock import MagicMock
 
 import pytest
 from agents import RunContextWrapper
@@ -18,10 +19,19 @@ from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
 from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
 from onyx.tools.tool_implementations_v2.web import _web_fetch_core
 from onyx.tools.tool_implementations_v2.web import _web_search_core
 from onyx.tools.tool_implementations_v2.web import WebFetchResponse
 from onyx.tools.tool_implementations_v2.web import WebSearchResponse
+
+
+class MockTool:
+    """Mock Tool object for testing"""
+
+    def __init__(self, tool_id: int = 1, name: str = WebSearchTool.__name__):
+        self.id = tool_id
+        self.name = name
 
 
 class MockWebSearchProvider(WebSearchProvider):
@@ -70,6 +80,11 @@ class MockRunDependencies:
 
     def __init__(self):
         self.emitter = MockEmitter()
+        # Set up mock database session
+        self.db_session = MagicMock()
+        # Configure the scalar method to return our mock tool
+        mock_tool = MockTool()
+        self.db_session.scalar.return_value = mock_tool
 
 
 def create_test_run_context(
@@ -170,7 +185,7 @@ def test_web_search_core_basic_functionality():
     # Check iteration answer
     answer = test_run_context.context.aggregated_context.global_iteration_responses[0]
     assert isinstance(answer, IterationAnswer)
-    assert answer.tool == "web_search"
+    assert answer.tool == WebSearchTool.__name__
     assert answer.iteration_nr == 1
     assert answer.question == query
 
@@ -253,7 +268,7 @@ def test_web_fetch_core_basic_functionality():
     # Check iteration answer
     answer = test_run_context.context.aggregated_context.global_iteration_responses[0]
     assert isinstance(answer, IterationAnswer)
-    assert answer.tool == "web_fetch"
+    assert answer.tool == WebSearchTool.__name__
     assert answer.iteration_nr == 1
     assert (
         answer.question

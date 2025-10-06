@@ -5,6 +5,7 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import GeneratedImage
 from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.file_store.utils import build_frontend_file_url
 from onyx.file_store.utils import save_files
@@ -93,14 +94,22 @@ def _image_generation_core(
     if not generated_images:
         raise RuntimeError("No images were generated")
 
+    run_context.context.iteration_instructions.append(
+        IterationInstructions(
+            iteration_nr=index,
+            plan="Generating images",
+            purpose="Generating images",
+            reasoning="Generating images",
+        )
+    )
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
-            tool="image_generation_tool",
-            tool_id=2,
+            tool=image_generation_tool_instance.name,
+            tool_id=image_generation_tool_instance.id,
             iteration_nr=run_context.context.current_run_step,
             parallelization_nr=0,
             question=prompt,
-            answer=generated_images[0].url,
+            answer="",
             reasoning="",
             claims=[],
             generated_images=generated_images,

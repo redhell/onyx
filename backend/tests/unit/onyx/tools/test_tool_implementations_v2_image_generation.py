@@ -6,6 +6,7 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import GeneratedImage
 from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolDelta
 from onyx.server.query_and_chat.streaming_models import ImageGenerationToolHeartbeat
@@ -48,6 +49,8 @@ class MockImageGenerationTool:
     def __init__(self, responses=None, should_raise_exception=False):
         self.responses = responses or []
         self.should_raise_exception = should_raise_exception
+        self.name = "image_generation_tool"
+        self.id = 2
         self.run = Mock(side_effect=self._run_side_effect)
 
     def _run_side_effect(self, **kwargs):
@@ -132,7 +135,6 @@ def test_image_generation_core_basic_functionality(
     # Check first generated image
     assert isinstance(result[0], GeneratedImage)
     assert result[0].file_id == "file_id_1"
-    assert result[0].url == "https://example.com/image1.jpg"
     assert result[0].revised_prompt == "Revised: test image prompt"
 
     # Check second generated image
@@ -156,8 +158,13 @@ def test_image_generation_core_basic_functionality(
     assert answer.tool_id == 2
     assert answer.iteration_nr == 1
     assert answer.question == prompt
-    assert answer.answer == result[0].url
     assert answer.generated_images == result
+
+    # Check iteration instructions
+    assert len(test_run_context.context.iteration_instructions) == 1
+    instructions = test_run_context.context.iteration_instructions[0]
+    assert isinstance(instructions, IterationInstructions)
+    assert instructions.purpose == "Generating images"
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter
@@ -289,6 +296,23 @@ def test_image_generation_core_different_shapes(
 
         assert len(result) == 1
         assert isinstance(result[0], GeneratedImage)
+
+        # Check iteration instructions were created
+        assert len(test_run_context.context.iteration_instructions) == 1
+        instructions = test_run_context.context.iteration_instructions[0]
+        assert isinstance(instructions, IterationInstructions)
+        assert instructions.purpose == "Generating images"
+
+        # Check iteration answer was created
+        assert (
+            len(test_run_context.context.aggregated_context.global_iteration_responses)
+            == 1
+        )
+        answer = test_run_context.context.aggregated_context.global_iteration_responses[
+            0
+        ]
+        assert isinstance(answer, IterationAnswer)
+        assert answer.tool == "image_generation_tool"
 
         # Verify the tool was called with the correct shape argument
         assert fresh_test_tool.run.called

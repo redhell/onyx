@@ -18,11 +18,13 @@ from onyx.agents.agent_search.dr.sub_agents.web_search.utils import (
 )
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.configs.constants import DocumentSource
+from onyx.db.tools import get_tool_by_name
 from onyx.server.query_and_chat.streaming_models import FetchToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
+from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
 from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 
 
@@ -105,8 +107,10 @@ def _web_search_core(
         )
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
-            tool="web_search",
-            tool_id=18,
+            tool=WebSearchTool.__name__,
+            tool_id=get_tool_by_name(
+                WebSearchTool.__name__, run_context.context.run_dependencies.db_session
+            ).id,
             iteration_nr=index,
             parallelization_nr=0,
             question=query,
@@ -233,8 +237,11 @@ def _web_fetch_core(
     ]
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
-            tool="web_fetch",
-            tool_id=18,
+            # TODO: For now, we're using the web_search_tool_name since the web_fetch_tool_name is not a built-in tool
+            tool=WebSearchTool.__name__,
+            tool_id=get_tool_by_name(
+                WebSearchTool.__name__, run_context.context.run_dependencies.db_session
+            ).id,
             iteration_nr=index,
             parallelization_nr=0,
             question=f"Fetch content from URLs: {', '.join(urls)}",

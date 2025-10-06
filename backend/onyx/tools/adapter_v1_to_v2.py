@@ -10,7 +10,7 @@ from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import CustomToolDelta
 from onyx.server.query_and_chat.streaming_models import CustomToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.tools.built_in_tools import BUILT_IN_TOOL_MAP_V2
+from onyx.tools.built_in_tools_v2 import BUILT_IN_TOOL_MAP_V2
 from onyx.tools.tool import Tool
 from onyx.tools.tool_implementations.custom.custom_tool import CustomTool
 from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
@@ -83,8 +83,6 @@ def tool_to_function_tool(tool: Tool) -> FunctionTool:
 
 
 def tools_to_function_tools(tools: list[Tool]) -> list[FunctionTool]:
-    pass
-
     onyx_tools: list[list[FunctionTool]] = [
         BUILT_IN_TOOL_MAP_V2[type(tool).__name__]
         for tool in tools
