@@ -18,6 +18,7 @@ from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_RESPONSE_SUMMARY_ID,
 )
+from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
 # =============================================================================
@@ -49,6 +50,21 @@ class FakeRunDependencies:
         self.emitter = FakeEmitter()
         self.dependencies_to_maybe_remove = None
         self.redis_client = None
+        # Set up mock database session
+        from unittest.mock import MagicMock
+
+        self.db_session = MagicMock()
+        # Configure the scalar method to return our mock tool
+        mock_tool = FakeTool()
+        self.db_session.scalar.return_value = mock_tool
+
+
+class FakeTool:
+    """Mock Tool object for testing"""
+
+    def __init__(self, tool_id: int = 1, name: str = SearchTool.__name__):
+        self.id = tool_id
+        self.name = name
 
 
 class FakeSearchPipeline:
@@ -320,13 +336,18 @@ def run_internal_search_core_with_dependencies(
     # Patch the dependencies that the real function uses
     with patch(
         "onyx.tools.tool_implementations_v2.internal_search.get_session_with_current_tenant"
-    ) as mock_get_session:
+    ) as mock_get_session, patch(
+        "onyx.tools.tool_implementations_v2.internal_search.get_tool_by_name"
+    ) as mock_get_tool_by_name:
 
         # Set up the session context manager mock
         if session_context_manager:
             mock_get_session.return_value = session_context_manager
         else:
             mock_get_session.return_value = FakeSessionContextManager()
+
+        # Set up the get_tool_by_name mock to return our fake tool
+        mock_get_tool_by_name.return_value = FakeTool()
 
         # Set up the Redis client in the run context if provided
         if redis_client:
@@ -454,7 +475,7 @@ def test_internal_search_core_basic_functionality(
     # Check iteration answer
     answer = fake_run_context.context.aggregated_context.global_iteration_responses[0]
     assert isinstance(answer, IterationAnswer)
-    assert answer.tool == "internal_search"
+    assert answer.tool == SearchTool.__name__
     assert answer.tool_id == 1
     assert answer.iteration_nr == 1
     assert answer.question == query

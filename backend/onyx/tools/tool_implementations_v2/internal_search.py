@@ -8,6 +8,7 @@ from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
+from onyx.db.tools import get_tool_by_name
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
@@ -17,6 +18,7 @@ from onyx.tools.tool_implementations.search.search_tool import (
     SEARCH_RESPONSE_SUMMARY_ID,
 )
 from onyx.tools.tool_implementations.search.search_tool import SearchResponseSummary
+from onyx.tools.tool_implementations.search.search_tool import SearchTool
 from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 
 
@@ -109,8 +111,11 @@ def _internal_search_core(
                 )
                 run_context.context.aggregated_context.global_iteration_responses.append(
                     IterationAnswer(
-                        tool="internal_search",
-                        tool_id=1,
+                        tool=SearchTool.__name__,
+                        tool_id=get_tool_by_name(
+                            SearchTool.__name__,
+                            run_context.context.run_dependencies.db_session,
+                        ).id,
                         iteration_nr=index,
                         parallelization_nr=0,
                         question=query,
