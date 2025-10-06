@@ -22,7 +22,7 @@ from onyx.connectors.interfaces import CheckpointedConnector
 from onyx.connectors.interfaces import CheckpointOutput
 from onyx.connectors.interfaces import GenerateSlimDocumentOutput
 from onyx.connectors.interfaces import SecondsSinceUnixEpoch
-from onyx.connectors.interfaces import SlimConnector
+from onyx.connectors.interfaces import SlimConnectorWithPermSync
 from onyx.connectors.models import ConnectorCheckpoint
 from onyx.connectors.models import ConnectorFailure
 from onyx.connectors.models import ConnectorMissingCredentialError
@@ -51,7 +51,7 @@ class TeamsCheckpoint(ConnectorCheckpoint):
 
 class TeamsConnector(
     CheckpointedConnector[TeamsCheckpoint],
-    SlimConnector,
+    SlimConnectorWithPermSync,
 ):
     MAX_WORKERS = 10
     AUTHORITY_URL_PREFIX = "https://login.microsoftonline.com/"
@@ -59,7 +59,7 @@ class TeamsConnector(
     def __init__(
         self,
         # TODO: (chris) move from "Display Names" to IDs, since display names
-        # are NOT guaranteed to be unique
+        # are not necessarily guaranteed to be unique
         teams: list[str] = [],
         max_workers: int = MAX_WORKERS,
     ) -> None:
@@ -228,9 +228,9 @@ class TeamsConnector(
             has_more=bool(todos),
         )
 
-    # impls for SlimConnector
+    # impls for SlimConnectorWithPermSync
 
-    def retrieve_all_slim_documents(
+    def retrieve_all_slim_docs_perm_sync(
         self,
         start: SecondsSinceUnixEpoch | None = None,
         end: SecondsSinceUnixEpoch | None = None,
@@ -284,12 +284,20 @@ class TeamsConnector(
                         yield slim_doc_buffer
                         slim_doc_buffer = []
 
+                # Flush any remaining slim documents collected for this channel
+                if slim_doc_buffer:
+                    yield slim_doc_buffer
+                    slim_doc_buffer = []
+
 
 def _construct_semantic_identifier(channel: Channel, top_message: Message) -> str:
     top_message_user_name: str
 
     if top_message.from_ and top_message.from_.user:
-        top_message_user_name = top_message.from_.user.display_name
+        user_display_name = top_message.from_.user.display_name
+        top_message_user_name = (
+            user_display_name if user_display_name else "Unknown User"
+        )
     else:
         logger.warn(f"Message {top_message=} has no `from.user` field")
         top_message_user_name = "Unknown User"
@@ -564,7 +572,7 @@ if __name__ == "__main__":
     )
     teams_connector.validate_connector_settings()
 
-    for slim_doc in teams_connector.retrieve_all_slim_documents():
+    for slim_doc in teams_connector.retrieve_all_slim_docs_perm_sync():
         ...
 
     for doc in load_everything_from_checkpoint_connector(

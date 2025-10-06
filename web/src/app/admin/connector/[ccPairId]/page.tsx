@@ -23,7 +23,7 @@ import {
   ConfigDisplay,
 } from "./ConfigDisplay";
 import DeletionErrorStatus from "./DeletionErrorStatus";
-import { IndexingAttemptsTable } from "./IndexingAttemptsTable";
+import { IndexAttemptsTable } from "./IndexAttemptsTable";
 
 import { buildCCPairInfoUrl, triggerIndexing } from "./lib";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -61,7 +61,8 @@ import { FiSettings } from "react-icons/fi";
 import { timeAgo } from "@/lib/time";
 import { useStatusChange } from "./useStatusChange";
 import { useReIndexModal } from "./ReIndexModal";
-import { Button } from "@/components/ui/button";
+import Button from "@/refresh-components/buttons/Button";
+import SvgSettings from "@/icons/settings";
 
 // synchronize these validations with the SQLAlchemy connector class until we have a
 // centralized schema for both frontend and backend
@@ -112,17 +113,6 @@ function Main({ ccPairId }: { ccPairId: number }) {
     endpoint: `${buildCCPairInfoUrl(ccPairId)}/index-attempts`,
   });
 
-  // need to always have the most recent index attempts around
-  // so just kick off a separate fetch
-  const {
-    currentPageData: mostRecentIndexAttempts,
-    isLoading: isLoadingMostRecentIndexAttempts,
-  } = usePaginatedFetch<IndexAttemptSnapshot>({
-    itemsPerPage: ITEMS_PER_PAGE,
-    pagesPerBatch: 1,
-    endpoint: `${buildCCPairInfoUrl(ccPairId)}/index-attempts`,
-  });
-
   const { currentPageData: indexAttemptErrorsPage } =
     usePaginatedFetch<IndexAttemptError>({
       itemsPerPage: 10,
@@ -132,8 +122,8 @@ function Main({ ccPairId }: { ccPairId: number }) {
 
   // Initialize hooks at top level to avoid conditional hook calls
   const { showReIndexModal, ReIndexModal } = useReIndexModal(
-    ccPair?.connector?.id || null,
-    ccPair?.credential?.id || null,
+    ccPair?.connector?.id ?? null,
+    ccPair?.credential?.id ?? null,
     ccPairId,
     setPopup
   );
@@ -351,11 +341,7 @@ function Main({ ccPairId }: { ccPairId: number }) {
     }
   };
 
-  if (
-    isLoadingCCPair ||
-    isLoadingIndexAttempts ||
-    isLoadingMostRecentIndexAttempts
-  ) {
+  if (isLoadingCCPair || isLoadingIndexAttempts) {
     return <ThreeDotsLoader />;
   }
 
@@ -461,12 +447,11 @@ function Main({ ccPairId }: { ccPairId: number }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
-                  size="sm"
+                  leftIcon={SvgSettings}
                   className="flex items-center gap-x-1"
+                  secondary
                 >
-                  <FiSettings className="h-4 w-4" />
-                  <span className="text-sm ml-1">Manage</span>
+                  Manage
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -728,7 +713,7 @@ function Main({ ccPairId }: { ccPairId: number }) {
               Indexing Attempts
             </Title>
             {indexAttempts && (
-              <IndexingAttemptsTable
+              <IndexAttemptsTable
                 ccPair={ccPair}
                 indexAttempts={indexAttempts}
                 currentPage={currentPage}

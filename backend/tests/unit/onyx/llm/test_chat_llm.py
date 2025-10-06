@@ -45,7 +45,7 @@ def default_multi_llm() -> DefaultMultiLLM:
 
 def test_multiple_tool_calls(default_multi_llm: DefaultMultiLLM) -> None:
     # Mock the litellm.completion function
-    with patch("onyx.llm.chat_llm.litellm.completion") as mock_completion:
+    with patch("litellm.completion") as mock_completion:
         # Create a mock response with multiple tool calls using litellm objects
         mock_response = litellm.ModelResponse(
             id="chatcmpl-123",
@@ -148,7 +148,6 @@ def test_multiple_tool_calls(default_multi_llm: DefaultMultiLLM) -> None:
             ],
             tools=tools,
             tool_choice=None,
-            max_tokens=None,
             stream=False,
             temperature=0.0,  # Default value from GEN_AI_TEMPERATURE
             timeout=30,
@@ -159,7 +158,7 @@ def test_multiple_tool_calls(default_multi_llm: DefaultMultiLLM) -> None:
 
 def test_multiple_tool_calls_streaming(default_multi_llm: DefaultMultiLLM) -> None:
     # Mock the litellm.completion function
-    with patch("onyx.llm.chat_llm.litellm.completion") as mock_completion:
+    with patch("litellm.completion") as mock_completion:
         # Create a mock response with multiple tool calls using litellm objects
         mock_response = [
             litellm.ModelResponse(
@@ -294,7 +293,6 @@ def test_multiple_tool_calls_streaming(default_multi_llm: DefaultMultiLLM) -> No
             ],
             tools=tools,
             tool_choice=None,
-            max_tokens=None,
             stream=True,
             temperature=0.0,  # Default value from GEN_AI_TEMPERATURE
             timeout=30,

@@ -5,9 +5,11 @@ import {
   ErrorMessage,
   Field,
   FieldArray,
+  FastField,
   useField,
   useFormikContext,
 } from "formik";
+import { FileUpload } from "@/components/admin/connectors/FileUpload";
 import * as Yup from "yup";
 import { FormBodyBuilder } from "./admin/connectors/types";
 import { StringOrNumberOption } from "@/components/Dropdown";
@@ -27,16 +29,23 @@ import {
 } from "@/components/ui/tooltip";
 import ReactMarkdown from "react-markdown";
 import { FaMarkdown } from "react-icons/fa";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo, useRef } from "react";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import { CheckboxField } from "@/components/ui/checkbox";
+import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { CheckedState } from "@radix-ui/react-checkbox";
 
 import { transformLinkUri } from "@/lib/utils";
 import FileInput from "@/app/admin/connectors/[connector]/pages/ConnectorInput/FileInput";
 import { DatePicker } from "./ui/datePicker";
 import { Textarea, TextareaProps } from "./ui/textarea";
+import { RichTextSubtext } from "./RichTextSubtext";
+import {
+  TypedFile,
+  createTypedFile,
+  getFileTypeDefinitionForField,
+  FILE_TYPE_DEFINITIONS,
+} from "@/lib/connectors/fileTypes";
 
 export function SectionHeader({
   children,
@@ -50,14 +59,17 @@ export function Label({
   children,
   small,
   className,
+  htmlFor,
 }: {
   children: string | JSX.Element;
   small?: boolean;
   className?: string;
+  htmlFor?: string;
 }) {
   return (
     <label
-      className={`block font-medium text-text-700 dark:text-neutral-100 ${className} ${
+      {...(htmlFor ? { htmlFor } : {})}
+      className={`block font-medium ${className} ${
         small ? "text-sm" : "text-base"
       }`}
     >
@@ -82,10 +94,29 @@ export function LabelWithTooltip({
 }
 
 export function SubLabel({ children }: { children: string | JSX.Element }) {
+  // Add whitespace-pre-wrap for multiline descriptions (when children is a string with newlines)
+  const hasNewlines = typeof children === "string" && children.includes("\n");
+
+  // If children is a string, use RichTextSubtext to parse and render links
+  if (typeof children === "string") {
+    return (
+      <span className="block text-sm text-neutral-600 dark:text-neutral-300 mb-2">
+        <RichTextSubtext
+          text={children}
+          className={hasNewlines ? "whitespace-pre-wrap" : ""}
+        />
+      </span>
+    );
+  }
+
   return (
-    <div className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">
+    <span
+      className={`block text-sm text-neutral-600 dark:text-neutral-300 mb-2 ${
+        hasNewlines ? "whitespace-pre-wrap" : ""
+      }`}
+    >
       {children}
-    </div>
+    </span>
   );
 }
 
@@ -245,9 +276,10 @@ export function TextFormField({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setValue(e.target.value);
     if (onChange) {
       onChange(e as React.ChangeEvent<HTMLInputElement>);
+    } else {
+      setValue(e.target.value);
     }
   };
   const textSizeClasses = {
@@ -300,13 +332,9 @@ export function TextFormField({
             w-full
             rounded-md
             border
-            border-neutral-200
-            bg-white
             px-3
             py-2
             mt-1
-            text-base
-
             file:border-0
             file:bg-transparent
             file:text-sm
@@ -323,17 +351,18 @@ export function TextFormField({
             disabled:cursor-not-allowed
             disabled:opacity-50
             md:text-sm
-            dark:border-neutral-700
-            dark:bg-transparent
-            dark:ring-offset-neutral-950
-            dark:file:text-neutral-50
-            dark:placeholder:text-neutral-400
+            border-neutral-700
+            ring-offset-neutral-950
+            file:text-neutral-50
+            text-text-04
+            placeholder:text-text-02
 
             ${heightString}
             ${sizeClass.input}
             ${disabled ? "bg-neutral-100 dark:bg-neutral-800" : ""}
             ${isCode ? "font-mono" : ""}
             ${className}
+            bg-background-neutral-00
           `}
           disabled={disabled}
           placeholder={placeholder}
@@ -377,6 +406,120 @@ export function FileUploadFormField({
     <div className="w-full">
       <FieldLabel name={name} label={label} subtext={subtext} />
       <FileInput name={fileName} multiple={false} hideError />
+    </div>
+  );
+}
+
+export function TypedFileUploadFormField({
+  name,
+  label,
+  subtext,
+}: {
+  name: string;
+  label: string;
+  subtext?: string | JSX.Element;
+}) {
+  const [field, , helpers] = useField<TypedFile | null>(name);
+  const [customError, setCustomError] = useState<string>("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [description, setDescription] = useState<string>("");
+
+  useEffect(() => {
+    const typeDefinitionKey = getFileTypeDefinitionForField(name);
+    if (typeDefinitionKey) {
+      setDescription(
+        FILE_TYPE_DEFINITIONS[typeDefinitionKey].description || ""
+      );
+    }
+  }, [name]);
+
+  useEffect(() => {
+    const validateFile = async () => {
+      if (!field.value) {
+        setIsValidating(false);
+        return;
+      }
+
+      setIsValidating(true);
+
+      try {
+        const validation = await field.value.validate();
+        if (validation?.isValid) {
+          setCustomError("");
+        } else {
+          setCustomError(validation?.errors.join(", ") || "Unknown error");
+          helpers.setValue(null);
+        }
+      } catch (error) {
+        setCustomError(
+          error instanceof Error ? error.message : "Validation error"
+        );
+        helpers.setValue(null);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
+    validateFile();
+  }, [field.value, helpers]);
+
+  const handleFileSelection = async (files: File[]) => {
+    if (files.length === 0) {
+      helpers.setValue(null);
+      setCustomError("");
+      return;
+    }
+
+    const file = files[0];
+    if (!file) {
+      setCustomError("File selection error");
+      return;
+    }
+
+    const typeDefinitionKey = getFileTypeDefinitionForField(name);
+
+    if (!typeDefinitionKey) {
+      setCustomError(`No file type definition found for field: ${name}`);
+      return;
+    }
+
+    try {
+      const typedFile = createTypedFile(file, name, typeDefinitionKey);
+      helpers.setValue(typedFile);
+      setCustomError("");
+    } catch (error) {
+      setCustomError(error instanceof Error ? error.message : "Unknown error");
+      helpers.setValue(null);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <FieldLabel name={name} label={label} subtext={subtext} />
+      {description && (
+        <div className="text-sm text-gray-500 mb-2">{description}</div>
+      )}
+      <FileUpload
+        selectedFiles={field.value ? [field.value.file] : []}
+        setSelectedFiles={handleFileSelection}
+        multiple={false}
+      />
+      {/* Validation feedback */}
+      {isValidating && (
+        <div className="text-blue-500 text-sm mt-1">Validating file...</div>
+      )}
+
+      {customError ? (
+        <div className="text-red-500 text-sm mt-1">{customError}</div>
+      ) : (
+        <ErrorMessage
+          name={name}
+          component="div"
+          className="text-red-500 text-sm mt-1"
+        />
+      )}
     </div>
   );
 }
@@ -539,7 +682,7 @@ interface BooleanFormFieldProps {
   onChange?: (checked: boolean) => void;
 }
 
-export const BooleanFormField = ({
+export const BooleanFormField = memo(function BooleanFormField({
   name,
   label,
   subtext,
@@ -551,36 +694,33 @@ export const BooleanFormField = ({
   tooltip,
   disabledTooltip,
   onChange,
-}: BooleanFormFieldProps) => {
-  const { setFieldValue } = useFormikContext<any>();
-
-  const handleChange = useCallback(
-    (checked: CheckedState) => {
-      if (!disabled) {
-        setFieldValue(name, checked);
-      }
-      if (onChange) {
-        onChange(checked === true);
-      }
-    },
-    [disabled, name, setFieldValue, onChange]
-  );
+}: BooleanFormFieldProps) {
+  // Generate a stable, valid id from the field name for label association
+  const checkboxId = `checkbox-${name.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 
   return (
     <div>
-      <label className="flex items-center text-sm cursor-pointer">
+      <div className="flex items-center text-sm">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <CheckboxField
-                name={name}
-                size="sm"
-                className={`
-                  ${disabled ? "opacity-50" : ""}
-                  ${removeIndent ? "mr-2" : "mx-3"}`}
-                onCheckedChange={handleChange}
-              />
-            </TooltipTrigger>
+            <FastField name={name} type="checkbox">
+              {({ field, form }: any) => (
+                <TooltipTrigger asChild>
+                  <Checkbox
+                    id={checkboxId}
+                    size="sm"
+                    className={`
+                      ${disabled ? "opacity-50" : ""}
+                      ${removeIndent ? "mr-2" : "mx-3"}`}
+                    checked={Boolean(field.value)}
+                    onCheckedChange={(checked) => {
+                      if (!disabled) form.setFieldValue(name, checked === true);
+                      if (onChange) onChange(checked === true);
+                    }}
+                  />
+                </TooltipTrigger>
+              )}
+            </FastField>
             {disabled && disabledTooltip && (
               <TooltipContent side="top" align="center">
                 <p className="bg-background-900 max-w-[200px] mb-1 text-sm rounded-lg p-1.5 text-white">
@@ -593,16 +733,21 @@ export const BooleanFormField = ({
         {!noLabel && (
           <div>
             <div className="flex items-center gap-x-2">
-              <Label small={small}>{`${label}${
-                optional ? " (Optional)" : ""
-              }`}</Label>
+              <Label
+                htmlFor={checkboxId}
+                small={small}
+                className="cursor-pointer"
+              >{`${label}${optional ? " (Optional)" : ""}`}</Label>
               {tooltip && <ToolTipDetails>{tooltip}</ToolTipDetails>}
             </div>
-
-            {subtext && <SubLabel>{subtext}</SubLabel>}
+            {subtext && (
+              <label htmlFor={checkboxId} className="cursor-pointer">
+                <SubLabel>{subtext}</SubLabel>
+              </label>
+            )}
           </div>
         )}
-      </label>
+      </div>
 
       <ErrorMessage
         name={name}
@@ -611,7 +756,7 @@ export const BooleanFormField = ({
       />
     </div>
   );
-};
+});
 
 interface TextArrayFieldProps<T extends Yup.AnyObject> {
   name: string;

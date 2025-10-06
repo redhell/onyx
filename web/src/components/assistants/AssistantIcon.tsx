@@ -4,18 +4,19 @@ import {
   MinimalPersonaSnapshot,
   Persona,
 } from "@/app/admin/assistants/interfaces";
-import { buildImgUrl } from "@/app/chat/files/images/utils";
+import { buildImgUrl } from "@/app/chat/components/files/images/utils";
 import {
   ArtAsistantIcon,
   GeneralAssistantIcon,
   SearchAssistantIcon,
-} from "../icons/icons";
+} from "@/components/icons/icons";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Text from "@/refresh-components/Text";
 type IconSize = number | "xs" | "small" | "medium" | "large" | "header";
 
 function md5ToBits(str: string): number[] {
@@ -54,7 +55,7 @@ export function generateIdenticon(str: string, dimension: number) {
             y={yPos - 0.5}
             width={cellSize + 1}
             height={cellSize + 1}
-            fill="currentColor"
+            fill="var(--theme-primary-05)"
           />
         );
 
@@ -68,7 +69,7 @@ export function generateIdenticon(str: string, dimension: number) {
               y={yPos - 0.5}
               width={cellSize + 1}
               height={cellSize + 1}
-              fill="currentColor"
+              fill="var(--theme-primary-05)"
             />
           );
         }
@@ -94,12 +95,14 @@ export function AssistantIcon({
   border,
   className,
   disableToolip,
+  colorOverride,
 }: {
   assistant: MinimalPersonaSnapshot | Persona;
   size?: IconSize;
   className?: string;
   border?: boolean;
   disableToolip?: boolean;
+  colorOverride?: string;
 }) {
   const dimension =
     typeof size === "number"
@@ -130,7 +133,13 @@ export function AssistantIcon({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={className + " text-[#000] dark:text-[#fff]"}>
+          <div
+            className={
+              (className || "") + colorOverride
+                ? ` ${colorOverride}`
+                : " text-[#000] dark:text-[#fff]"
+            }
+          >
             {assistant.id == -3 ? (
               <ArtAsistantIcon size={dimension} />
             ) : assistant.id == 0 ? (
@@ -157,7 +166,7 @@ export function AssistantIcon({
         </TooltipTrigger>
         {!disableToolip && assistant.description && (
           <TooltipContent>
-            <p className="text-left">{assistant.description}</p>
+            <Text inverted>{assistant.description}</Text>
           </TooltipContent>
         )}
       </Tooltip>

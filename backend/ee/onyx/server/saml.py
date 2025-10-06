@@ -37,6 +37,19 @@ from onyx.utils.logger import setup_logger
 logger = setup_logger()
 router = APIRouter(prefix="/auth/saml")
 
+# Azure AD / Entra ID often returns the email attribute under different keys.
+# Keep a list of common variations so we can fall back gracefully if the IdP
+# does not send the plain "email" attribute name.
+EMAIL_ATTRIBUTE_KEYS = {
+    "email",
+    "emailaddress",
+    "mail",
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/mail",
+    "http://schemas.microsoft.com/identity/claims/emailaddress",
+}
+EMAIL_ATTRIBUTE_KEYS_LOWER = {key.lower() for key in EMAIL_ATTRIBUTE_KEYS}
+
 
 async def upsert_saml_user(email: str) -> User:
     """
@@ -110,7 +123,6 @@ async def upsert_saml_user(email: str) -> User:
 
 
 async def prepare_from_fastapi_request(request: Request) -> dict[str, Any]:
-    form_data = await request.form()
     if request.client is None:
         raise ValueError("Invalid request for SAML")
 
@@ -125,14 +137,27 @@ async def prepare_from_fastapi_request(request: Request) -> dict[str, Any]:
         "post_data": {},
         "get_data": {},
     }
+
+    # Handle query parameters (for GET requests)
     if request.query_params:
-        rv["get_data"] = (request.query_params,)
-    if "SAMLResponse" in form_data:
-        SAMLResponse = form_data["SAMLResponse"]
-        rv["post_data"]["SAMLResponse"] = SAMLResponse
-    if "RelayState" in form_data:
-        RelayState = form_data["RelayState"]
-        rv["post_data"]["RelayState"] = RelayState
+        rv["get_data"] = dict(request.query_params)
+
+    # Handle form data (for POST requests)
+    if request.method == "POST":
+        form_data = await request.form()
+        if "SAMLResponse" in form_data:
+            SAMLResponse = form_data["SAMLResponse"]
+            rv["post_data"]["SAMLResponse"] = SAMLResponse
+        if "RelayState" in form_data:
+            RelayState = form_data["RelayState"]
+            rv["post_data"]["RelayState"] = RelayState
+    else:
+        # For GET requests, check if SAMLResponse is in query params
+        if "SAMLResponse" in request.query_params:
+            rv["get_data"]["SAMLResponse"] = request.query_params["SAMLResponse"]
+        if "RelayState" in request.query_params:
+            rv["get_data"]["RelayState"] = request.query_params["RelayState"]
+
     return rv
 
 
@@ -148,10 +173,27 @@ async def saml_login(request: Request) -> SAMLAuthorizeResponse:
     return SAMLAuthorizeResponse(authorization_url=callback_url)
 
 
+@router.get("/callback")
+async def saml_login_callback_get(
+    request: Request,
+    db_session: Session = Depends(get_session),
+) -> Response:
+    """Handle SAML callback via HTTP-Redirect binding (GET request)"""
+    return await _process_saml_callback(request, db_session)
+
+
 @router.post("/callback")
 async def saml_login_callback(
     request: Request,
     db_session: Session = Depends(get_session),
+) -> Response:
+    """Handle SAML callback via HTTP-POST binding (POST request)"""
+    return await _process_saml_callback(request, db_session)
+
+
+async def _process_saml_callback(
+    request: Request,
+    db_session: Session,
 ) -> Response:
     req = await prepare_from_fastapi_request(request)
     auth = OneLogin_Saml2_Auth(req, custom_base_path=SAML_CONF_DIR)
@@ -175,16 +217,37 @@ async def saml_login_callback(
             detail=detail,
         )
 
-    user_email = auth.get_attribute("email")
-    if not user_email:
-        detail = "SAML is not set up correctly, email attribute must be provided."
-        logger.error(detail)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail,
-        )
+    user_email: str | None = None
 
-    user_email = user_email[0]
+    # The OneLogin toolkit normalizes attribute keys, but still performs a
+    # case-sensitive lookup. Try the common keys first and then fall back to a
+    # case-insensitive scan of all returned attributes.
+    for attribute_key in EMAIL_ATTRIBUTE_KEYS:
+        attribute_values = auth.get_attribute(attribute_key)
+        if attribute_values:
+            user_email = attribute_values[0]
+            break
+
+    if not user_email:
+        # Fallback: perform a case-insensitive lookup across all attributes in
+        # case the IdP sent the email claim with a different capitalization.
+        attributes = auth.get_attributes()
+        for key, values in attributes.items():
+            if key.lower() in EMAIL_ATTRIBUTE_KEYS_LOWER:
+                if values:
+                    user_email = values[0]
+                    break
+        if not user_email:
+            detail = "SAML is not set up correctly, email attribute must be provided."
+            logger.error(detail)
+            logger.debug(
+                "Received SAML attributes without email: %s",
+                list(attributes.keys()),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=detail,
+            )
 
     user = await upsert_saml_user(email=user_email)
 

@@ -10,6 +10,11 @@ import {
 import { openDocument } from "@/lib/search/utils";
 import { SubQuestionDetail } from "@/app/chat/interfaces";
 import { getFileIconFromFileNameAndLink } from "@/lib/assistantIconUtils";
+import { getSourceDisplayName } from "@/lib/sources";
+import { ValidSources } from "@/lib/types";
+import Text from "@/refresh-components/Text";
+
+const MAX_CITATION_TEXT_LENGTH = 40;
 
 export interface DocumentCardProps {
   document: LoadedOnyxDocument;
@@ -20,6 +25,11 @@ export interface DocumentCardProps {
 export interface QuestionCardProps {
   question: SubQuestionDetail;
   openQuestion: (question: SubQuestionDetail) => void;
+}
+
+function truncateText(str: string, maxLength: number) {
+  if (str.length <= maxLength) return str;
+  return str.slice(0, maxLength) + "...";
 }
 
 export function Citation({
@@ -52,15 +62,24 @@ export function Citation({
   if (!document_info && !question_info) {
     return <>{children}</>;
   }
+  const sourceType = document_info?.document?.source_type;
   const icon = document_info?.document
     ? getFileIconFromFileNameAndLink(
         document_info.document.semantic_identifier || "",
-        document_info.document.link || ""
+        sourceType === ValidSources.UserFile
+          ? ""
+          : document_info.document.link || ""
       )
     : null;
 
+  const title = document_info?.document?.semantic_identifier;
+  const citationText =
+    (sourceType && sourceType != ValidSources.Web
+      ? getSourceDisplayName(sourceType)
+      : truncateText(title || "", MAX_CITATION_TEXT_LENGTH)) || "Unknown";
+
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <span
@@ -74,18 +93,21 @@ export function Citation({
                   ? question_info.openQuestion(question_info.question)
                   : null;
             }}
-            className="inline-flex items-center cursor-pointer transition-all duration-200 ease-in-out"
+            className="inline-flex items-center cursor-pointer transition-all duration-200 ease-in-out mr-1"
           >
             <span
-              className="flex items-center justify-center  px-1 h-4 text-[10px] font-medium text-text-700 bg-background-100 rounded-full border border-background-300 hover:bg-background-200 hover:text-text-900 shadow-sm"
+              className="flex items-center justify-center p-spacing-inline h-4
+                         bg-background-tint-03 rounded-full
+                         hover:bg-background-tint-04 shadow-sm"
               style={{ transform: "translateY(-10%)", lineHeight: "1" }}
             >
-              {innerText}
+              <Text figureSmallValue>{citationText}</Text>
             </span>
           </span>
         </TooltipTrigger>
         <TooltipContent
-          className="border border-neutral-300  hover:text-neutral-900 bg-neutral-100 dark:!bg-[#000] dark:border-neutral-700"
+          className="border border-neutral-300 hover:text-neutral-900 
+                     bg-neutral-100 dark:!bg-[#000] dark:border-neutral-700"
           width="mb-2 max-w-lg"
         >
           {document_info?.document ? (
