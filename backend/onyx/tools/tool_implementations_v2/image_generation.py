@@ -1,4 +1,3 @@
-import json
 from typing import cast
 
 from agents import function_tool
@@ -32,10 +31,6 @@ def _image_generation_core(
     shape: str,
     image_generation_tool_instance: ImageGenerationTool,
 ) -> list[GeneratedImage]:
-    """Core image generation logic that can be tested with dependency injection"""
-    if image_generation_tool_instance is None:
-        raise RuntimeError("Image generation tool not available in context")
-
     index = run_context.context.current_run_step
     emitter = run_context.context.run_dependencies.emitter
 
@@ -129,7 +124,10 @@ def _image_generation_core(
     return generated_images
 
 
-@function_tool
+# failure_error_function=None causes error to be re-raised instead of passing error
+# message back to the LLM. This is needed for image_generation since we configure our agent
+# to stop at this tool.
+@function_tool(failure_error_function=None)
 def image_generation_tool(
     run_context: RunContextWrapper[ChatTurnContext], prompt: str, shape: str = "square"
 ) -> str:
@@ -140,24 +138,13 @@ def image_generation_tool(
         prompt: The text description of the image to generate
         shape: The desired image shape - 'square', 'portrait', or 'landscape'
     """
-    # Get the image generation tool from context
     image_generation_tool_instance: ImageGenerationTool = (
         run_context.context.run_dependencies.image_generation_tool
     )
 
-    # Call the core function
     generated_images: list[GeneratedImage] = _image_generation_core(
         run_context, prompt, shape, image_generation_tool_instance
     )
 
-    # Return all generated images data
-    return json.dumps(
-        [
-            {
-                "file_id": image.file_id,
-                "revised_prompt": image.revised_prompt,
-                "url": image.url,
-            }
-            for image in generated_images
-        ]
-    )
+    # We should stop after this tool is called, so it doesn't matter what it returns
+    return f"Successfully generated {len(generated_images)} images"

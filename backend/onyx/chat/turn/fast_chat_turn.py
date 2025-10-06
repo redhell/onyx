@@ -3,6 +3,7 @@ from queue import Queue
 from agents import Agent
 from agents import ModelSettings
 from agents import RawResponsesStreamEvent
+from agents import StopAtTools
 
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.chat.stop_signal_checker import is_connected
@@ -19,6 +20,7 @@ from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import PacketObj
 from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations_v2.image_generation import image_generation_tool
 from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 
 
@@ -46,6 +48,7 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
             temperature=0.0,
             include_usage=True,
         ),
+        tool_use_behavior=StopAtTools(stop_at_tool_names=[image_generation_tool.name]),
     )
     agent_stream = SyncAgentStream(
         agent=agent,

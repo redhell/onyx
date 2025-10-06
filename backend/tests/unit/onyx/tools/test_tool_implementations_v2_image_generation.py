@@ -250,28 +250,6 @@ def test_image_generation_core_exception_handling():
     assert test_run_context.context.current_run_step == 2
 
 
-def test_image_generation_core_none_tool():
-    """Test that _image_generation_core handles None tool properly"""
-    # Arrange
-    test_run_context = create_test_run_context()
-    prompt = "test image prompt"
-    shape = "square"
-
-    # Act & Assert
-    with pytest.raises(
-        RuntimeError, match="Image generation tool not available in context"
-    ):
-        _image_generation_core(test_run_context, prompt, shape, None)
-
-    # Verify that even though an exception was raised, we still emitted the SectionEnd packet
-    emitter = test_run_context.context.run_dependencies.emitter
-    assert len(emitter.emitted_events) == 1
-    assert isinstance(emitter.emitted_events[0].obj, SectionEnd)
-
-    # Verify that the decorator properly handled the exception and updated current_run_step
-    assert test_run_context.context.current_run_step == 2
-
-
 @patch("onyx.tools.tool_implementations_v2.image_generation.save_files")
 @patch("onyx.tools.tool_implementations_v2.image_generation.build_frontend_file_url")
 def test_image_generation_core_different_shapes(
