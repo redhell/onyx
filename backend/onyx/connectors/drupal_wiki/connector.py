@@ -69,7 +69,7 @@ class DrupalWikiConnector(
         Initialize the Drupal Wiki connector.
 
         Args:
-            base_url: The base URL of the Drupal Wiki instance (e.g., https://help.drupal-wiki.com/)
+            base_url: The base URL of the Drupal Wiki instance (e.g., https://help.drupal-wiki.com)
             spaces: List of space IDs to index. If None and include_all_spaces is False, no spaces will be indexed.
             pages: List of page IDs to index. If provided, only these specific pages will be indexed.
             include_all_spaces: If True, all spaces will be indexed regardless of the spaces parameter.
@@ -989,19 +989,6 @@ class DrupalWikiConnector(
         if slim_docs:
             logger.info(f"Yielding final batch of {len(slim_docs)} slim documents")
             yield slim_docs
-
-    def retrieve_all_slim_documents(
-        self,
-        start: SecondsSinceUnixEpoch | None = None,
-        end: SecondsSinceUnixEpoch | None = None,
-        callback: IndexingHeartbeatInterface | None = None,
-    ) -> GenerateSlimDocumentOutput:
-        """Backward compatible wrapper for legacy callers."""
-        return self.retrieve_all_slim_docs(
-            start=start,
-            end=end,
-            callback=callback,
-        )
 
     def validate_connector_settings(self) -> None:
         """

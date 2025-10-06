@@ -835,7 +835,7 @@ export const connectorConfigs: Record<
         name: "base_url",
         optional: false,
         description:
-          "The base URL of your Drupal Wiki instance (e.g., https://help.drupal-wiki.com)",
+          "The base URL of your Drupal Wiki instance (e.g., https://help.drupal-wiki.com )",
       },
       {
         type: "tab",
