@@ -8,12 +8,6 @@ from onyx.configs.app_configs import INTEGRATION_TESTS_MODE
 from onyx.configs.constants import DocumentSource
 from onyx.configs.llm_configs import get_image_extraction_and_analysis_enabled
 from onyx.connectors.credentials_provider import OnyxDBCredentialsProvider
-from onyx.connectors.discord.connector import DiscordConnector
-from onyx.connectors.discourse.connector import DiscourseConnector
-from onyx.connectors.document360.connector import Document360Connector
-from onyx.connectors.dropbox.connector import DropboxConnector
-from onyx.connectors.drupal_wiki.connector import DrupalWikiConnector
-from onyx.connectors.egnyte.connector import EgnyteConnector
 from onyx.connectors.exceptions import ConnectorValidationError
 from onyx.connectors.interfaces import BaseConnector
 from onyx.connectors.interfaces import CheckpointedConnector
