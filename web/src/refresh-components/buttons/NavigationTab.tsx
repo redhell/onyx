@@ -217,13 +217,7 @@ export default function NavigationTab({
                 offset={!!popover ? 40 : 0}
                 className={cn("text-left", textClasses(active)[variant])}
               >
-                <Truncated
-                  side="right"
-                  offset={40}
-                  className={cn("text-left", textClasses(active)[variant])}
-                >
-                  {children}
-                </Truncated>
+                {children}
               </Truncated>
             </div>
           ) : (
