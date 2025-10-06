@@ -72,6 +72,9 @@ class ImageGenerationToolDelta(BaseObj):
 
 class ImageGenerationToolHeartbeat(BaseObj):
     type: Literal["image_generation_tool_heartbeat"] = "image_generation_tool_heartbeat"
+    shape: str | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 class CustomToolStart(BaseObj):

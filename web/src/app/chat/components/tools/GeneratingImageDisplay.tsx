@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function GeneratingImageDisplay({ isCompleted = false }) {
+type GeneratingImageDisplayProps = {
+  isCompleted?: boolean;
+  width?: number | null;
+  height?: number | null;
+};
+
+export default function GeneratingImageDisplay({
+  isCompleted = false,
+  width,
+  height,
+}: GeneratingImageDisplayProps) {
   const [progress, setProgress] = useState(0);
   const progressRef = useRef(0);
   const animationRef = useRef<number>();
@@ -55,8 +65,16 @@ export default function GeneratingImageDisplay({ isCompleted = false }) {
     }
   }, [isCompleted]);
 
+  const aspectWidth = width && width > 0 ? width : null;
+  const aspectHeight = height && height > 0 ? height : null;
+  const aspectRatio =
+    aspectWidth && aspectHeight ? `${aspectWidth} / ${aspectHeight}` : "1 / 1";
+
   return (
-    <div className="object-cover object-center border border-background-200 bg-background-100 items-center justify-center overflow-hidden flex rounded-lg w-96 h-96 transition-opacity duration-300 opacity-100">
+    <div
+      className="border border-background-200 bg-background-100 items-center justify-center overflow-hidden flex rounded-lg w-full max-w-96 transition-opacity duration-300 opacity-100"
+      style={{ aspectRatio }}
+    >
       <div className="m-auto relative flex">
         <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 100 100">
           <circle
