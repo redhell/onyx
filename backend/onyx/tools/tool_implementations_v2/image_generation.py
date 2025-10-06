@@ -16,6 +16,9 @@ from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.tools.tool_implementations.images.image_generation_tool import (
     ImageGenerationResponse,
 )
+from onyx.tools.tool_implementations.images.image_generation_tool import (
+    ImageGenerationTool,
+)
 from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 from onyx.utils.logger import setup_logger
 
@@ -27,7 +30,7 @@ def _image_generation_core(
     run_context: RunContextWrapper[ChatTurnContext],
     prompt: str,
     shape: str,
-    image_generation_tool_instance,
+    image_generation_tool_instance: ImageGenerationTool,
 ) -> list[GeneratedImage]:
     """Core image generation logic that can be tested with dependency injection"""
     if image_generation_tool_instance is None:
@@ -50,7 +53,7 @@ def _image_generation_core(
         tool_args["shape"] = shape
 
     # Run the actual image generation tool with heartbeat handling
-    generated_images = []
+    generated_images: list[GeneratedImage] = []
     heartbeat_count = 0
 
     for tool_response in image_generation_tool_instance.run(**tool_args):
@@ -138,12 +141,12 @@ def image_generation_tool(
         shape: The desired image shape - 'square', 'portrait', or 'landscape'
     """
     # Get the image generation tool from context
-    image_generation_tool_instance = (
+    image_generation_tool_instance: ImageGenerationTool = (
         run_context.context.run_dependencies.image_generation_tool
     )
 
     # Call the core function
-    generated_images = _image_generation_core(
+    generated_images: list[GeneratedImage] = _image_generation_core(
         run_context, prompt, shape, image_generation_tool_instance
     )
 

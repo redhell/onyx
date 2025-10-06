@@ -8,7 +8,6 @@ from typing import cast
 from typing import Protocol
 from uuid import UUID
 
-from agents.extensions.models.litellm_model import LitellmModel
 from redis.client import Redis
 from sqlalchemy.orm import Session
 
@@ -851,6 +850,7 @@ def _fast_message_stream(
     from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
         OktaProfileTool,
     )
+    from onyx.llm.litellm_singleton import LitellmModel
 
     image_generation_tool_instance = None
     okta_profile_tool_instance = None
