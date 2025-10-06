@@ -263,7 +263,7 @@ def test_drupal_wiki_connector_slim(drupal_wiki_connector: DrupalWikiConnector) 
 
         # Get all doc IDs from the slim connector
         all_slim_doc_ids = set()
-        for slim_doc_batch in drupal_wiki_connector.retrieve_all_slim_documents():
+        for slim_doc_batch in drupal_wiki_connector.retrieve_all_slim_docs():
             all_slim_doc_ids.update([doc.id for doc in slim_doc_batch])
 
         # The set of full doc IDs should always be a subset of the slim doc IDs
