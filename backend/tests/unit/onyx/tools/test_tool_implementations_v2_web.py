@@ -6,11 +6,11 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
-from onyx.agents.agent_search.dr.sub_agents.web_search.models import InternetContent
-from onyx.agents.agent_search.dr.sub_agents.web_search.models import (
-    InternetSearchResult,
-)
+from onyx.agents.agent_search.dr.sub_agents.web_search.models import WebContent
 from onyx.agents.agent_search.dr.sub_agents.web_search.models import WebSearchProvider
+from onyx.agents.agent_search.dr.sub_agents.web_search.models import (
+    WebSearchResult,
+)
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.configs.constants import DocumentSource
 from onyx.server.query_and_chat.streaming_models import FetchToolStart
@@ -29,20 +29,20 @@ class MockWebSearchProvider(WebSearchProvider):
 
     def __init__(
         self,
-        search_results: List[InternetSearchResult] = None,
-        content_results: List[InternetContent] = None,
+        search_results: List[WebSearchResult] = None,
+        content_results: List[WebContent] = None,
         should_raise_exception: bool = False,
     ):
         self.search_results = search_results or []
         self.content_results = content_results or []
         self.should_raise_exception = should_raise_exception
 
-    def search(self, query: str) -> List[InternetSearchResult]:
+    def search(self, query: str) -> List[WebSearchResult]:
         if self.should_raise_exception:
             raise Exception("Test exception from search provider")
         return self.search_results
 
-    def contents(self, urls: List[str]) -> List[InternetContent]:
+    def contents(self, urls: List[str]) -> List[WebContent]:
         if self.should_raise_exception:
             raise Exception("Test exception from search provider")
         return self.content_results
@@ -110,14 +110,14 @@ def test_web_search_core_basic_functionality():
 
     # Create test search results
     test_search_results = [
-        InternetSearchResult(
+        WebSearchResult(
             title="Test Result 1",
             link="https://example.com/1",
             author="Test Author",
             published_date=datetime(2024, 1, 1, 12, 0, 0),
             snippet="This is a test snippet 1",
         ),
-        InternetSearchResult(
+        WebSearchResult(
             title="Test Result 2",
             link="https://example.com/2",
             author=None,
@@ -192,13 +192,13 @@ def test_web_fetch_core_basic_functionality():
 
     # Create test content results
     test_content_results = [
-        InternetContent(
+        WebContent(
             title="Test Content 1",
             link="https://example.com/1",
             full_content="This is the full content of the first page",
             published_date=datetime(2024, 1, 1, 12, 0, 0),
         ),
-        InternetContent(
+        WebContent(
             title="Test Content 2",
             link="https://example.com/2",
             full_content="This is the full content of the second page",
