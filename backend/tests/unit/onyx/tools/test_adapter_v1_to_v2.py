@@ -5,6 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
+from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.db.enums import MCPAuthenticationType
 from onyx.db.enums import MCPTransport
 from onyx.db.models import MCPServer
@@ -318,6 +320,280 @@ def test_mcp_tool_invocation(mock_call_mcp_tool: MagicMock, mcp_tool: MCPTool) -
     assert getattr(start_packet.obj, "type", None) == "custom_tool_start"
     assert getattr(delta_packet.obj, "type", None) == "custom_tool_delta"
     assert getattr(section_end_packet.obj, "type", None) == "section_end"
+
+
+@patch("onyx.tools.tool_implementations.custom.custom_tool.requests.request")
+def test_custom_tool_iteration_instructions_and_answers(
+    mock_request: MagicMock,
+    openapi_schema: dict[str, Any],
+    dynamic_schema_info: DynamicSchemaInfo,
+) -> None:
+    """
+    Test that IterationInstructions and IterationAnswer are properly added to context
+    during custom tool execution.
+    Verifies that the adapter correctly updates the context with iteration tracking data.
+    """
+    tools = build_custom_tools_from_openapi_schema_and_headers(
+        tool_id=-1,  # dummy tool id
+        openapi_schema=openapi_schema,
+        dynamic_schema_info=dynamic_schema_info,
+    )
+
+    v1_tool = tools[0]
+    v2_tool = tool_to_function_tool(v1_tool)
+
+    # Create a mock emitter that tracks packet history
+    mock_emitter = MockEmitter()
+
+    # Mock the tool context with iteration tracking lists
+    mock_context = MagicMock()
+    mock_context.context = MagicMock()
+    mock_context.context.run_dependencies = MagicMock()
+    mock_context.context.run_dependencies.emitter = mock_emitter
+    mock_context.context.current_run_step = 0
+
+    # Initialize empty lists for iteration tracking
+    mock_context.context.iteration_instructions = []
+    mock_context.context.aggregated_context = MagicMock()
+    mock_context.context.aggregated_context.global_iteration_responses = []
+
+    # Mock the HTTP response to return realistic data
+    mock_response = MagicMock()
+    mock_response.headers = {"Content-Type": "application/json"}
+    mock_response.json.return_value = {
+        "id": "456",
+        "name": "Test Item",
+        "status": "active",
+        "created_at": "2024-01-01T00:00:00Z",
+        "metadata": {"category": "test", "priority": "high"},
+    }
+    mock_request.return_value = mock_response
+
+    # Test the on_invoke_tool method
+    test_args = '{"test_id": "456"}'
+
+    import asyncio
+
+    async def test_invoke():
+        return await v2_tool.on_invoke_tool(mock_context, test_args)
+
+    # Run the async function
+    asyncio.run(test_invoke())
+
+    # Verify the HTTP request was made correctly
+    expected_url = f"http://localhost:8080/{dynamic_schema_info.chat_session_id}/test/{dynamic_schema_info.message_id}/test/456"
+    mock_request.assert_called_once_with("GET", expected_url, json=None, headers={})
+
+    # Verify IterationInstructions was added
+    assert len(mock_context.context.iteration_instructions) == 1
+    iteration_instruction = mock_context.context.iteration_instructions[0]
+    assert isinstance(iteration_instruction, IterationInstructions)
+    assert iteration_instruction.iteration_nr == 1
+    assert iteration_instruction.plan == f"Running {v1_tool.name}"
+    assert iteration_instruction.purpose == f"Running {v1_tool.name}"
+    assert iteration_instruction.reasoning == f"Running {v1_tool.name}"
+
+    # Verify IterationAnswer was added with realistic data from the tool response
+    assert len(mock_context.context.aggregated_context.global_iteration_responses) == 1
+    iteration_answer = (
+        mock_context.context.aggregated_context.global_iteration_responses[0]
+    )
+    assert isinstance(iteration_answer, IterationAnswer)
+    assert iteration_answer.tool == v1_tool.name
+    assert iteration_answer.tool_id == v1_tool.id
+    assert iteration_answer.iteration_nr == 1
+    assert iteration_answer.parallelization_nr == 0
+    assert iteration_answer.question == '{"test_id": "456"}'
+    assert iteration_answer.reasoning == f"Running {v1_tool.name}"
+    # The answer should be the string representation of the JSON response data
+    expected_answer = str(
+        {
+            "id": "456",
+            "name": "Test Item",
+            "status": "active",
+            "created_at": "2024-01-01T00:00:00Z",
+            "metadata": {"category": "test", "priority": "high"},
+        }
+    )
+    assert iteration_answer.answer == expected_answer
+    assert iteration_answer.cited_documents == {}
+    assert iteration_answer.additional_data is None
+
+
+@patch("onyx.tools.tool_implementations.custom.custom_tool.requests.request")
+def test_custom_tool_csv_response_with_file_ids(
+    mock_request: MagicMock,
+    openapi_schema: dict[str, Any],
+    dynamic_schema_info: DynamicSchemaInfo,
+) -> None:
+    """
+    Test that IterationAnswer is properly created when custom tool returns CSV data with file_ids.
+    Verifies that the adapter correctly handles file-based responses (CSV/image) in iteration tracking.
+    """
+    tools = build_custom_tools_from_openapi_schema_and_headers(
+        tool_id=-1,  # dummy tool id
+        openapi_schema=openapi_schema,
+        dynamic_schema_info=dynamic_schema_info,
+    )
+
+    v1_tool = tools[0]
+    v2_tool = tool_to_function_tool(v1_tool)
+
+    # Create a mock emitter that tracks packet history
+    mock_emitter = MockEmitter()
+
+    # Mock the tool context with iteration tracking lists
+    mock_context = MagicMock()
+    mock_context.context = MagicMock()
+    mock_context.context.run_dependencies = MagicMock()
+    mock_context.context.run_dependencies.emitter = mock_emitter
+    mock_context.context.current_run_step = 2  # Test with different step number
+
+    # Initialize empty lists for iteration tracking
+    mock_context.context.iteration_instructions = []
+    mock_context.context.aggregated_context = MagicMock()
+    mock_context.context.aggregated_context.global_iteration_responses = []
+
+    # Mock the HTTP response to return CSV data
+    mock_response = MagicMock()
+    mock_response.headers = {"Content-Type": "text/csv"}
+    # Mock the CSV content - this would normally be saved to file storage
+    mock_response.content = (
+        b"name,age,city\nJohn,30,New York\nJane,25,Los Angeles\nBob,35,Chicago"
+    )
+    mock_request.return_value = mock_response
+
+    # Mock the file storage and UUID generation
+    with patch(
+        "onyx.tools.tool_implementations.custom.custom_tool.get_default_file_store"
+    ) as mock_file_store, patch("uuid.uuid4") as mock_uuid:
+
+        # Mock UUID to return a predictable ID
+        mock_uuid.return_value = uuid.UUID("12345678-1234-5678-9abc-123456789012")
+
+        mock_store_instance = MagicMock()
+        mock_file_store.return_value = mock_store_instance
+        mock_store_instance.save_file.return_value = "csv_file_123"
+
+        # Test the on_invoke_tool method
+        test_args = '{"test_id": "789"}'
+
+        import asyncio
+
+        async def test_invoke():
+            return await v2_tool.on_invoke_tool(mock_context, test_args)
+
+        # Run the async function
+        asyncio.run(test_invoke())
+
+    # Verify the HTTP request was made correctly
+    expected_url = f"http://localhost:8080/{dynamic_schema_info.chat_session_id}/test/{dynamic_schema_info.message_id}/test/789"
+    mock_request.assert_called_once_with("GET", expected_url, json=None, headers={})
+
+    # Verify IterationInstructions was added
+    assert len(mock_context.context.iteration_instructions) == 1
+    iteration_instruction = mock_context.context.iteration_instructions[0]
+    assert isinstance(iteration_instruction, IterationInstructions)
+    assert iteration_instruction.iteration_nr == 3  # Should match current_run_step + 1
+    assert iteration_instruction.plan == f"Running {v1_tool.name}"
+    assert iteration_instruction.purpose == f"Running {v1_tool.name}"
+    assert iteration_instruction.reasoning == f"Running {v1_tool.name}"
+
+    # Verify IterationAnswer was added with CSV file_ids data
+    assert len(mock_context.context.aggregated_context.global_iteration_responses) == 1
+    iteration_answer = (
+        mock_context.context.aggregated_context.global_iteration_responses[0]
+    )
+    assert isinstance(iteration_answer, IterationAnswer)
+    assert iteration_answer.tool == v1_tool.name
+    assert iteration_answer.tool_id == v1_tool.id
+    assert iteration_answer.iteration_nr == 3  # Should match current_run_step + 1
+    assert iteration_answer.parallelization_nr == 0
+    assert iteration_answer.question == '{"test_id": "789"}'
+    assert iteration_answer.reasoning == f"Running {v1_tool.name}"
+    # For CSV responses, data should be None and file_ids should contain the file reference
+    assert iteration_answer.data is None
+    assert iteration_answer.file_ids == ["12345678-1234-5678-9abc-123456789012"]
+    assert iteration_answer.response_type == "csv"
+    # The answer should be the string representation of the file_ids
+    assert iteration_answer.answer == "['12345678-1234-5678-9abc-123456789012']"
+    assert iteration_answer.cited_documents == {}
+    assert iteration_answer.additional_data is None
+
+    # Verify that the file was saved
+    mock_store_instance.save_file.assert_called_once()
+
+
+@patch("onyx.tools.tool_implementations.mcp.mcp_tool.call_mcp_tool")
+def test_mcp_tool_iteration_instructions_and_answers(
+    mock_call_mcp_tool: MagicMock, mcp_tool: MCPTool
+) -> None:
+    """
+    Test that IterationInstructions and IterationAnswer are properly added to context
+    during MCP tool execution.
+    Verifies that the adapter correctly updates the context with iteration tracking data for MCP tools.
+    """
+    # Mock the MCP tool call response
+    mock_call_mcp_tool.return_value = "MCP search results: test query"
+
+    v2_tool = tool_to_function_tool(mcp_tool)
+
+    # Create a mock emitter that tracks packet history
+    mock_emitter = MockEmitter()
+
+    # Mock the tool context with iteration tracking lists
+    mock_context = MagicMock()
+    mock_context.context = MagicMock()
+    mock_context.context.run_dependencies = MagicMock()
+    mock_context.context.run_dependencies.emitter = mock_emitter
+    mock_context.context.current_run_step = 1  # Test with different step number
+
+    # Initialize empty lists for iteration tracking
+    mock_context.context.iteration_instructions = []
+    mock_context.context.aggregated_context = MagicMock()
+    mock_context.context.aggregated_context.global_iteration_responses = []
+
+    # Test the on_invoke_tool method
+    test_args = '{"query": "test mcp search"}'
+
+    import asyncio
+
+    async def test_invoke():
+        return await v2_tool.on_invoke_tool(mock_context, test_args)
+
+    # Run the async function
+    asyncio.run(test_invoke())
+
+    # Verify IterationInstructions was added
+    assert len(mock_context.context.iteration_instructions) == 1
+    iteration_instruction = mock_context.context.iteration_instructions[0]
+    assert isinstance(iteration_instruction, IterationInstructions)
+    assert (
+        iteration_instruction.iteration_nr == 2
+    )  # Should match current_run_step after accounting
+    assert iteration_instruction.plan == f"Running {mcp_tool.name}"
+    assert iteration_instruction.purpose == f"Running {mcp_tool.name}"
+    assert iteration_instruction.reasoning == f"Running {mcp_tool.name}"
+
+    # Verify IterationAnswer was added
+    assert len(mock_context.context.aggregated_context.global_iteration_responses) == 1
+    iteration_answer = (
+        mock_context.context.aggregated_context.global_iteration_responses[0]
+    )
+    assert isinstance(iteration_answer, IterationAnswer)
+    assert iteration_answer.tool == mcp_tool.name
+    assert iteration_answer.tool_id == mcp_tool.id
+    assert (
+        iteration_answer.iteration_nr == 2
+    )  # Should match current_run_step after accounting
+    assert iteration_answer.parallelization_nr == 0
+    assert iteration_answer.question == '{"query": "test mcp search"}'
+    assert iteration_answer.reasoning == f"Running {mcp_tool.name}"
+    assert (
+        iteration_answer.answer == '{"tool_result": "MCP search results: test query"}'
+    )
+    assert iteration_answer.cited_documents == {}
+    assert iteration_answer.additional_data is None
 
 
 def test_tools_to_function_tools_comprehensive(
