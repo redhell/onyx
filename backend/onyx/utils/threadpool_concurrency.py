@@ -23,7 +23,7 @@ from typing import Protocol
 from typing import TypeVar
 
 from pydantic import GetCoreSchemaHandler
-from pydantic.type_adapter import T
+from pydantic.types import T
 from pydantic_core import core_schema
 
 from onyx.utils.logger import setup_logger
