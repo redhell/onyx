@@ -5,6 +5,7 @@ import {
   ImageGenerationToolPacket,
   ImageGenerationToolStart,
   ImageGenerationToolDelta,
+  ImageGenerationToolHeartbeat,
   SectionEnd,
 } from "../../../services/streamingModels";
 import { MessageRenderer, RenderType } from "../interfaces";
@@ -21,6 +22,11 @@ function constructCurrentImageState(packets: ImageGenerationToolPacket[]) {
       (packet) => packet.obj.type === PacketType.IMAGE_GENERATION_TOOL_DELTA
     )
     .map((packet) => packet.obj as ImageGenerationToolDelta);
+  const imageHeartbeats = packets
+    .filter(
+      (packet) => packet.obj.type === PacketType.IMAGE_GENERATION_TOOL_HEARTBEAT
+    )
+    .map((packet) => packet.obj as ImageGenerationToolHeartbeat);
   const imageEnd = packets.find(
     (packet) => packet.obj.type === PacketType.SECTION_END
   )?.obj as SectionEnd | null;
@@ -29,6 +35,14 @@ function constructCurrentImageState(packets: ImageGenerationToolPacket[]) {
   const images = imageDeltas.flatMap((delta) => delta?.images || []);
   const isGenerating = imageStart && !imageEnd;
   const isComplete = imageStart && imageEnd;
+  const latestHeartbeat =
+    imageHeartbeats.length > 0
+      ? imageHeartbeats[imageHeartbeats.length - 1]
+      : null;
+  const firstImage = images[0];
+  const width = firstImage?.width ?? latestHeartbeat?.width ?? null;
+  const height = firstImage?.height ?? latestHeartbeat?.height ?? null;
+  const shape = firstImage?.shape ?? latestHeartbeat?.shape ?? null;
 
   return {
     prompt,
@@ -36,6 +50,9 @@ function constructCurrentImageState(packets: ImageGenerationToolPacket[]) {
     isGenerating,
     isComplete,
     error: false, // For now, we don't have error state in the packets
+    width,
+    height,
+    shape,
   };
 }
 
@@ -43,7 +60,7 @@ export const ImageToolRenderer: MessageRenderer<
   ImageGenerationToolPacket,
   {}
 > = ({ packets, onComplete, renderType, children }) => {
-  const { prompt, images, isGenerating, isComplete, error } =
+  const { prompt, images, isGenerating, isComplete, error, width, height } =
     constructCurrentImageState(packets);
 
   useEffect(() => {
@@ -73,7 +90,11 @@ export const ImageToolRenderer: MessageRenderer<
         content: (
           <div className="flex flex-col">
             <div>
-              <GeneratingImageDisplay isCompleted={false} />
+              <GeneratingImageDisplay
+                isCompleted={false}
+                width={width ?? undefined}
+                height={height ?? undefined}
+              />
             </div>
           </div>
         ),
@@ -96,7 +117,13 @@ export const ImageToolRenderer: MessageRenderer<
                     key={image.file_id || index}
                     className="transition-all group"
                   >
-                    {image.file_id && <InMessageImage fileId={image.file_id} />}
+                    {image.file_id && (
+                      <InMessageImage
+                        fileId={image.file_id}
+                        width={image.width ?? undefined}
+                        height={image.height ?? undefined}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

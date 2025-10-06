@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FiDownload } from "react-icons/fi";
 import { FullImageModal } from "./FullImageModal";
 import { buildImgUrl } from "./utils";
 
-export function InMessageImage({ fileId }: { fileId: string }) {
+type InMessageImageProps = {
+  fileId: string;
+  width?: number | null;
+  height?: number | null;
+};
+
+export function InMessageImage({ fileId, width, height }: InMessageImageProps) {
   const [fullImageShowing, setFullImageShowing] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [naturalDimensions, setNaturalDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the full image modal
@@ -26,6 +36,20 @@ export function InMessageImage({ fileId }: { fileId: string }) {
     }
   };
 
+  const resolvedDimensions = useMemo(() => {
+    if (width && height) {
+      return { width, height };
+    }
+    if (naturalDimensions) {
+      return naturalDimensions;
+    }
+    return null;
+  }, [width, height, naturalDimensions]);
+
+  const aspectRatio = resolvedDimensions
+    ? `${resolvedDimensions.width} / ${resolvedDimensions.height}`
+    : "1 / 1";
+
   return (
     <>
       <FullImageModal
@@ -34,7 +58,7 @@ export function InMessageImage({ fileId }: { fileId: string }) {
         onOpenChange={(open) => setFullImageShowing(open)}
       />
 
-      <div className="relative w-full h-full max-w-96 max-h-96 group">
+      <div className="relative w-full max-w-96 group" style={{ aspectRatio }}>
         {!imageLoaded && (
           <div className="absolute inset-0 bg-background-200 animate-pulse rounded-lg" />
         )}
@@ -43,7 +67,18 @@ export function InMessageImage({ fileId }: { fileId: string }) {
           width={1200}
           height={1200}
           alt="Chat Message Image"
-          onLoad={() => setImageLoaded(true)}
+          onLoad={(event) => {
+            setImageLoaded(true);
+            if (!width || !height) {
+              const { naturalWidth, naturalHeight } = event.currentTarget;
+              if (naturalWidth && naturalHeight) {
+                setNaturalDimensions({
+                  width: naturalWidth,
+                  height: naturalHeight,
+                });
+              }
+            }
+          }}
           className={`
             object-contain 
             object-left 
@@ -51,8 +86,6 @@ export function InMessageImage({ fileId }: { fileId: string }) {
             rounded-lg 
             w-full 
             h-full 
-            max-w-96 
-            max-h-96 
             transition-opacity 
             duration-300 
             cursor-pointer

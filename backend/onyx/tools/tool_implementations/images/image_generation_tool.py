@@ -76,16 +76,28 @@ class ImageFormat(str, Enum):
 _DEFAULT_OUTPUT_FORMAT = ImageFormat(IMAGE_GENERATION_OUTPUT_FORMAT)
 
 
-class ImageGenerationResponse(BaseModel):
-    revised_prompt: str
-    url: str | None
-    image_data: str | None
+def _parse_size(size: str) -> tuple[int | None, int | None]:
+    try:
+        width_str, height_str = size.split("x")
+        return int(width_str), int(height_str)
+    except (ValueError, AttributeError):
+        logger.debug("Unable to parse image size '%s'", size)
+        return None, None
 
 
 class ImageShape(str, Enum):
     SQUARE = "square"
     PORTRAIT = "portrait"
     LANDSCAPE = "landscape"
+
+
+class ImageGenerationResponse(BaseModel):
+    revised_prompt: str
+    url: str | None
+    image_data: str | None
+    width: int | None = None
+    height: int | None = None
+    shape: ImageShape | None = None
 
 
 # override_kwargs is not supported for image generation tools
@@ -257,6 +269,8 @@ class ImageGenerationTool(Tool[None]):
                 size = "1024x1792"
         else:
             size = "1024x1024"
+
+        width, height = _parse_size(size)
         logger.debug(
             f"Generating image with model: {self.model}, size: {size}, format: {format}"
         )
@@ -293,6 +307,9 @@ class ImageGenerationTool(Tool[None]):
                 revised_prompt=revised_prompt,
                 url=url,
                 image_data=image_data,
+                width=width,
+                height=height,
+                shape=shape,
             )
 
         except requests.RequestException as e:

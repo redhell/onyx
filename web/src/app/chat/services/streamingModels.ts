@@ -18,6 +18,7 @@ export enum PacketType {
   SEARCH_TOOL_DELTA = "internal_search_tool_delta",
   IMAGE_GENERATION_TOOL_START = "image_generation_tool_start",
   IMAGE_GENERATION_TOOL_DELTA = "image_generation_tool_delta",
+  IMAGE_GENERATION_TOOL_HEARTBEAT = "image_generation_tool_heartbeat",
 
   // Custom tool packets
   CUSTOM_TOOL_START = "custom_tool_start",
@@ -76,6 +77,9 @@ interface GeneratedImage {
   file_id: string;
   url: string;
   revised_prompt: string;
+  width?: number | null;
+  height?: number | null;
+  shape?: string | null;
 }
 
 export interface ImageGenerationToolStart extends BaseObj {
@@ -85,6 +89,13 @@ export interface ImageGenerationToolStart extends BaseObj {
 export interface ImageGenerationToolDelta extends BaseObj {
   type: "image_generation_tool_delta";
   images: GeneratedImage[];
+}
+
+export interface ImageGenerationToolHeartbeat extends BaseObj {
+  type: "image_generation_tool_heartbeat";
+  shape?: string | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 // Custom Tool Packets
@@ -137,6 +148,7 @@ export type SearchToolObj = SearchToolStart | SearchToolDelta | SectionEnd;
 export type ImageGenerationToolObj =
   | ImageGenerationToolStart
   | ImageGenerationToolDelta
+  | ImageGenerationToolHeartbeat
   | SectionEnd;
 export type CustomToolObj = CustomToolStart | CustomToolDelta | SectionEnd;
 export type NewToolObj = SearchToolObj | ImageGenerationToolObj | CustomToolObj;
