@@ -824,7 +824,8 @@ class DrupalWikiConnector(
         """
         return DrupalWikiCheckpoint.model_validate_json(checkpoint_json)
 
-    def retrieve_all_slim_documents(
+    @override
+    def retrieve_all_slim_docs(
         self,
         start: SecondsSinceUnixEpoch | None = None,
         end: SecondsSinceUnixEpoch | None = None,
@@ -843,7 +844,7 @@ class DrupalWikiConnector(
         """
         slim_docs: List[SlimDocument] = []
         logger.info(
-            f"Starting retrieve_all_slim_documents with include_all_spaces={self.include_all_spaces}, spaces={self.spaces}"
+            f"Starting retrieve_all_slim_docs with include_all_spaces={self.include_all_spaces}, spaces={self.spaces}"
         )
 
         # Process specific page IDs if provided
@@ -903,7 +904,7 @@ class DrupalWikiConnector(
                         if callback and callback.should_stop():
                             return
                         if callback:
-                            callback.progress("retrieve_all_slim_documents", 1)
+                            callback.progress("retrieve_all_slim_docs", 1)
 
                 except Exception as e:
                     logger.error(
@@ -982,12 +983,25 @@ class DrupalWikiConnector(
                         if callback and callback.should_stop():
                             return
                         if callback:
-                            callback.progress("retrieve_all_slim_documents", 1)
+                            callback.progress("retrieve_all_slim_docs", 1)
 
         # Yield remaining documents
         if slim_docs:
             logger.info(f"Yielding final batch of {len(slim_docs)} slim documents")
             yield slim_docs
+
+    def retrieve_all_slim_documents(
+        self,
+        start: SecondsSinceUnixEpoch | None = None,
+        end: SecondsSinceUnixEpoch | None = None,
+        callback: IndexingHeartbeatInterface | None = None,
+    ) -> GenerateSlimDocumentOutput:
+        """Backward compatible wrapper for legacy callers."""
+        return self.retrieve_all_slim_docs(
+            start=start,
+            end=end,
+            callback=callback,
+        )
 
     def validate_connector_settings(self) -> None:
         """
