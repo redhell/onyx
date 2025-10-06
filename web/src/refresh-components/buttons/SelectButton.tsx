@@ -9,6 +9,8 @@ import SvgX from "@/icons/x";
 import SvgChevronDownSmall from "@/icons/chevron-down-small";
 
 const MARGIN = 5;
+const HOVER_ENTER_DELAY_MS = 120;
+const HOVER_LEAVE_DELAY_MS = 160;
 
 const baseClassNames = (active?: boolean) =>
   ({
@@ -84,6 +86,61 @@ export default function SelectButton({
   const measureRef = useRef<HTMLDivElement>(null);
   const [foldedContentWidth, setFoldedContentWidth] = useState<number>(0);
   const [hovered, setHovered] = useState<boolean>(false);
+  const hoverEnterTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const hoverLeaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  useEffect(() => {
+    return () => {
+      if (hoverEnterTimeoutRef.current) {
+        clearTimeout(hoverEnterTimeoutRef.current);
+      }
+      if (hoverLeaveTimeoutRef.current) {
+        clearTimeout(hoverLeaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (folded) {
+      if (hoverLeaveTimeoutRef.current) {
+        clearTimeout(hoverLeaveTimeoutRef.current);
+        hoverLeaveTimeoutRef.current = null;
+      }
+      if (hoverEnterTimeoutRef.current || hovered) {
+        return;
+      }
+      hoverEnterTimeoutRef.current = setTimeout(() => {
+        setHovered(true);
+        hoverEnterTimeoutRef.current = null;
+      }, HOVER_ENTER_DELAY_MS);
+      return;
+    }
+
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (folded) {
+      if (hoverEnterTimeoutRef.current) {
+        clearTimeout(hoverEnterTimeoutRef.current);
+        hoverEnterTimeoutRef.current = null;
+      }
+      if (hoverLeaveTimeoutRef.current) {
+        clearTimeout(hoverLeaveTimeoutRef.current);
+      }
+      hoverLeaveTimeoutRef.current = setTimeout(() => {
+        setHovered(false);
+        hoverLeaveTimeoutRef.current = null;
+      }, HOVER_LEAVE_DELAY_MS);
+      return;
+    }
+
+    setHovered(false);
+  };
   const content = useMemo(
     () => (
       <div className="flex flex-row items-center justify-center">
@@ -134,9 +191,9 @@ export default function SelectButton({
         )}
         onClick={disabled ? undefined : onClick}
         disabled={disabled}
-        onMouseEnter={() => setHovered(true)}
-        onMouseOver={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseOver={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Static icon component */}
         <LeftIcon
