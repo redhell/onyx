@@ -215,7 +215,8 @@ export default function UserFilesModalContent({
             >
               <div className="flex items-center justify-between p-spacing-inline">
                 <div className="flex h-9 w-9 items-center justify-center p-spacing-interline bg-background-tint-01 rounded-08">
-                  {String((f as any).status).toLowerCase() === "processing" ? (
+                  {String((f as ProjectFile).status).toLowerCase() ===
+                  "processing" ? (
                     <Loader2 className="h-5 w-5 text-text-02 animate-spin" />
                   ) : (
                     <>
@@ -254,7 +255,7 @@ export default function UserFilesModalContent({
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            onFileClick && onFileClick(f);
+                            onFileClick(f);
                           }}
                         />
                       )}

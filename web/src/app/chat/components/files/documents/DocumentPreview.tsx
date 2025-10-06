@@ -1,6 +1,5 @@
-import { X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
 import SvgFileText from "@/icons/file-text";
+import { getFileExtension } from "../files_utils";
 
 export function DocumentPreview({
   fileName,
@@ -13,14 +12,7 @@ export function DocumentPreview({
   maxWidth?: string;
   alignBubble?: boolean;
 }) {
-  const typeLabel = (() => {
-    const name = String(fileName || "");
-    const lastDotIndex = name.lastIndexOf(".");
-    if (lastDotIndex <= 0 || lastDotIndex === name.length - 1) {
-      return "";
-    }
-    return name.slice(lastDotIndex + 1).toUpperCase();
-  })();
+  const typeLabel = getFileExtension(fileName);
 
   return (
     <div
@@ -57,14 +49,7 @@ export function InputDocumentPreview({
   maxWidth?: string;
   alignBubble?: boolean;
 }) {
-  const typeLabel = (() => {
-    const name = String(fileName || "");
-    const lastDotIndex = name.lastIndexOf(".");
-    if (lastDotIndex <= 0 || lastDotIndex === name.length - 1) {
-      return "";
-    }
-    return name.slice(lastDotIndex + 1).toUpperCase();
-  })();
+  const typeLabel = getFileExtension(fileName);
 
   return (
     <div

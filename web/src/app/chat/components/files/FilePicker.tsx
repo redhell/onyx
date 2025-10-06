@@ -60,9 +60,11 @@ export function FilePickerContents({
             <button
               type="button"
               key={f.id}
-              onClick={() =>
-                onPickRecent ? onPickRecent(f) : console.log("Picked recent", f)
-              }
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onPickRecent && onPickRecent(f);
+              }}
               className="w-full rounded-lg hover:bg-background-neutral-02 group"
             >
               <div className="flex items-center w-full m-1 mt-2 p-0.5 group">
@@ -102,7 +104,7 @@ export function FilePickerContents({
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            onFileClick && onFileClick(f);
+                            onFileClick(f);
                           }}
                         />
                       )}

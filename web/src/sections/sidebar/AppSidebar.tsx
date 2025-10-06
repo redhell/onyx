@@ -386,6 +386,7 @@ function ChatButtonInner({
 
   return (
     <>
+      {popup}
       {deleteConfirmationModalOpen && (
         <ConfirmationModal
           title="Delete Chat"
@@ -584,6 +585,7 @@ function AppSidebarInner() {
   const combinedSettings = useSettingsContext();
   const { refreshCurrentProjectDetails, fetchProjects, currentProjectId } =
     useProjectsContext();
+  const { popup, setPopup } = usePopup();
 
   // State for custom agent modal
   const [pendingMoveChatSession, setPendingMoveChatSession] =
@@ -657,6 +659,7 @@ function AppSidebarInner() {
       await Promise.all([refreshChatSessions(), projectRefreshPromise]);
     } catch (error) {
       console.error("Failed to move chat:", error);
+      throw error;
     }
   }
 
@@ -699,7 +702,14 @@ function AppSidebarInner() {
           return;
         }
 
-        await performChatMove(targetProject.id, chatSession);
+        try {
+          await performChatMove(targetProject.id, chatSession);
+        } catch (error) {
+          showErrorNotification(
+            setPopup,
+            "Failed to move chat. Please try again."
+          );
+        }
       }
 
       // Check if we're dragging a chat from a project to the Recents section
@@ -743,8 +753,42 @@ function AppSidebarInner() {
 
   return (
     <>
+      {popup}
       <AgentsModal />
       <CreateProjectModal />
+
+      {showMoveCustomAgentModal && (
+        <MoveCustomAgentChatModal
+          onCancel={() => {
+            setShowMoveCustomAgentModal(false);
+            setPendingMoveChatSession(null);
+            setPendingMoveProjectId(null);
+          }}
+          onConfirm={async (doNotShowAgain: boolean) => {
+            if (doNotShowAgain && typeof window !== "undefined") {
+              window.localStorage.setItem(
+                LOCAL_STORAGE_KEYS.HIDE_MOVE_CUSTOM_AGENT_MODAL,
+                "true"
+              );
+            }
+            const chat = pendingMoveChatSession;
+            const target = pendingMoveProjectId;
+            setShowMoveCustomAgentModal(false);
+            setPendingMoveChatSession(null);
+            setPendingMoveProjectId(null);
+            if (chat && target != null) {
+              try {
+                await performChatMove(target, chat);
+              } catch (error) {
+                showErrorNotification(
+                  setPopup,
+                  "Failed to move chat. Please try again."
+                );
+              }
+            }
+          }}
+        />
+      )}
 
       <SidebarWrapper folded={folded} setFolded={setFolded}>
         <div className="flex flex-col gap-spacing-interline">

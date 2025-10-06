@@ -77,7 +77,6 @@ function ProjectFolder({ project }: ProjectFolderProps) {
   };
 
   const handleTextClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log("handleTextClick", project.id);
     e.stopPropagation();
     route({ projectId: project.id });
   };
