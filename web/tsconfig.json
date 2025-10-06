@@ -21,7 +21,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+
+      "@app/*": ["./src/app/*"],
+      "@refresh/*": ["./src/refresh-components/*"],
+      "@sec/*": ["./src/sections/*"],
+      "@tests/*": ["./tests/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

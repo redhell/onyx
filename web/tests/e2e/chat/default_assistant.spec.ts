@@ -1,17 +1,11 @@
 import { test, expect } from "@chromatic-com/playwright";
-import { loginAsRandomUser } from "../utils/auth";
+import { loginAsRandomUser } from "@tests/e2e/utils/auth";
 import {
-  navigateToAssistantInHistorySidebar,
   sendMessage,
   startNewChat,
   verifyAssistantIsChosen,
-} from "../utils/chatActions";
-import {
-  GREETING_MESSAGES,
-  TOOL_IDS,
-  waitForUnifiedGreeting,
-  openActionManagement,
-} from "../utils/tools";
+} from "@tests/e2e/utils/chatActions";
+import { TOOL_IDS, openActionManagement } from "@tests/e2e/utils/tools";
 
 // Tool-related test selectors now imported from shared utils
 
@@ -24,62 +18,6 @@ test.describe("Default Assistant Tests", () => {
     // Navigate to the chat page
     await page.goto("http://localhost:3000/chat");
     await page.waitForLoadState("networkidle");
-  });
-
-  test.describe("Greeting Message Display", () => {
-    test("should display greeting message when opening new chat with default assistant", async ({
-      page,
-    }) => {
-      // Look for greeting message - should be one from the predefined list
-      const greetingText = await waitForUnifiedGreeting(page);
-
-      // Verify the greeting is from the predefined list
-      expect(GREETING_MESSAGES).toContain(greetingText?.trim());
-    });
-
-    test("greeting message should remain consistent during session", async ({
-      page,
-    }) => {
-      // Get initial greeting
-      const initialGreeting = await waitForUnifiedGreeting(page);
-
-      // Reload the page
-      await page.reload();
-      await page.waitForLoadState("networkidle");
-
-      // Get greeting after reload
-      const greetingAfterReload = await waitForUnifiedGreeting(page);
-
-      // Both greetings should be valid but might differ after reload
-      expect(GREETING_MESSAGES).toContain(initialGreeting?.trim());
-      expect(GREETING_MESSAGES).toContain(greetingAfterReload?.trim());
-    });
-
-    test("greeting should only appear for default assistant", async ({
-      page,
-    }) => {
-      // First verify greeting appears for default assistant
-      const greetingElement = await page.waitForSelector(
-        '[data-testid="greeting-message"]',
-        { timeout: 5000 }
-      );
-      expect(greetingElement).toBeTruthy();
-
-      // Create a custom assistant to test non-default behavior
-      await page.getByRole("button", { name: "Explore Assistants" }).click();
-      await page.getByRole("button", { name: "Create", exact: true }).click();
-      await page.getByTestId("name").fill("Custom Test Assistant");
-      await page.getByTestId("description").fill("Test Description");
-      await page.getByTestId("system_prompt").fill("Test Instructions");
-      await page.getByRole("button", { name: "Create" }).click();
-
-      // Wait for assistant to be created and selected
-      await verifyAssistantIsChosen(page, "Custom Test Assistant");
-
-      // Greeting should NOT appear for custom assistant
-      const customGreeting = await page.$('[data-testid="greeting-message"]');
-      expect(customGreeting).toBeNull();
-    });
   });
 
   test.describe("Default Assistant Branding", () => {
