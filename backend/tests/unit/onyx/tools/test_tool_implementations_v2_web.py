@@ -14,6 +14,7 @@ from onyx.agents.agent_search.dr.sub_agents.web_search.models import (
 )
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.configs.constants import DocumentSource
+from onyx.context.search.models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import FetchToolStart
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
@@ -366,3 +367,24 @@ def test_web_fetch_core_exception_handling():
     assert (
         test_run_context.context.current_run_step == 2
     )  # Should be 2 after proper handling
+
+
+def test_saved_search_doc_from_url():
+    """Test that SavedSearchDoc.from_url creates a properly formatted document for internet search"""
+    # Arrange
+    test_url = "https://example.com/test-page"
+
+    # Act
+    doc = SavedSearchDoc.from_url(test_url)
+
+    # Assert
+    assert doc.document_id == "INTERNET_SEARCH_DOC_" + test_url
+    assert doc.link == test_url
+    assert doc.semantic_identifier == test_url
+    assert doc.source_type == DocumentSource.WEB
+    assert doc.is_internet is True
+    assert doc.db_doc_id == 0
+    assert doc.chunk_ind == 0
+    assert doc.boost == 1
+    assert doc.hidden is False
+    assert doc.score == 0.0
