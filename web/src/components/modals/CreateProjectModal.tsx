@@ -27,8 +27,7 @@ export default function CreateProjectModal() {
     if (!name) return;
 
     try {
-      const newProject = await createProject(name);
-      route({ projectId: newProject.id });
+      await createProject(name);
     } catch (e) {
       console.error(`Failed to create the project ${name}`);
     }

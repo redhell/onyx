@@ -184,20 +184,22 @@ export default function ProjectContextPanel({
           Array.from(files),
           currentProjectId
         );
-        // Replace temp entries with backend entries (by index) so keys become backend IDs. This will prevent flickering.
+        // Replace the first N temp entries with backend entries so they stay at the front
         setTempProjectFiles((prev) => [
-          ...prev.slice(0, -tempFiles.length),
           ...result.user_files,
+          ...prev.slice(tempFiles.length),
         ]);
         const unsupported = result?.unsupported_files || [];
         const nonAccepted = result?.non_accepted_files || [];
         if (unsupported.length > 0 || nonAccepted.length > 0) {
           const parts: string[] = [];
           if (unsupported.length > 0) {
-            parts.push(`Unsupported: ${unsupported.join(", ")}`);
+            parts.push(`File type not supported: ${unsupported.join(", ")}`);
           }
           if (nonAccepted.length > 0) {
-            parts.push(`Not accepted: ${nonAccepted.join(", ")}`);
+            parts.push(
+              `Content exceeds allowed token limit: ${nonAccepted.join(", ")}`
+            );
           }
           setPopup({
             type: "warning",
@@ -212,7 +214,8 @@ export default function ProjectContextPanel({
     [currentProjectId, uploadFiles, setPopup]
   );
 
-  const totalFiles = (currentProjectDetails?.files || []).length;
+  const totalFiles =
+    (currentProjectDetails?.files || []).length + tempProjectFiles.length;
   const displayFileCount = totalFiles > 100 ? "100+" : String(totalFiles);
 
   const handleUploadChange = useCallback(
@@ -339,13 +342,11 @@ export default function ProjectContextPanel({
             <div className="hidden sm:flex gap-spacing-inline relative">
               {(() => {
                 const byId = new Map<string, ProjectFile>();
-                // Prefer backend files when available
-                (currentProjectDetails?.files || []).forEach((f) =>
-                  byId.set(f.id, f)
-                );
-                // Add temp files only if a backend file with same id doesn't exist yet
-                tempProjectFiles.forEach((f) => {
-                  if (!byId.has(f.id)) byId.set(f.id, f);
+                // Insert temp files first so new uploads appear at the front immediately
+                tempProjectFiles.forEach((f) => byId.set(f.id, f));
+                // Then insert backend files to overwrite temp entries while keeping order
+                (currentProjectDetails?.files || []).forEach((f) => {
+                  byId.set(f.id, f);
                 });
                 return Array.from(byId.values())
                   .slice(0, 4)
@@ -424,7 +425,10 @@ export default function ProjectContextPanel({
             title="Project files"
             description="Sessions in this project can access the files here."
             icon={SvgFiles}
-            recentFiles={currentProjectDetails?.files || []}
+            recentFiles={[
+              ...tempProjectFiles,
+              ...(currentProjectDetails?.files || []),
+            ]}
             onFileClick={handleFileClick}
             handleUploadChange={handleUploadChange}
             showRemove

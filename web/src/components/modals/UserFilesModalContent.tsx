@@ -19,6 +19,7 @@ import SvgFileText from "@/icons/file-text";
 import SvgImage from "@/icons/image";
 import SvgTrash from "@/icons/trash";
 import Truncated from "@/refresh-components/Truncated";
+import { isImageExtension } from "@/app/chat/components/files/files_utils";
 
 interface UserFilesModalProps {
   title: string;
@@ -217,21 +218,15 @@ export default function UserFilesModalContent({
               <div className="flex items-center p-spacing-inline flex-1 min-w-0">
                 <div className="flex h-9 w-9 items-center justify-center p-spacing-interline bg-background-tint-01 rounded-08">
                   {String((f as ProjectFile).status).toLowerCase() ===
-                  "processing" ? (
+                    "processing" ||
+                  String((f as ProjectFile).status).toLowerCase() ===
+                    "uploading" ? (
                     <Loader2 className="h-5 w-5 text-text-02 animate-spin" />
                   ) : (
                     <>
                       {(() => {
                         const ext = getFileExtension(f.name).toLowerCase();
-                        const isImage = [
-                          "png",
-                          "jpg",
-                          "jpeg",
-                          "gif",
-                          "webp",
-                          "svg",
-                          "bmp",
-                        ].includes(ext);
+                        const isImage = isImageExtension(ext);
                         return isImage ? (
                           <SvgImage className="h-5 w-5 stroke-text-02" />
                         ) : (
@@ -254,7 +249,8 @@ export default function UserFilesModalContent({
                       </Truncated>
                     </div>
                     {onFileClick &&
-                      String(f.status).toLowerCase() !== "processing" && (
+                      String(f.status).toLowerCase() !== "processing" &&
+                      String(f.status).toLowerCase() !== "uploading" && (
                         <IconButton
                           internal
                           icon={SvgExternalLink}
@@ -274,6 +270,7 @@ export default function UserFilesModalContent({
                       const s = String(f.status || "").toLowerCase();
                       const typeLabel = getFileExtension(f.name);
                       if (s === "processing") return "Processing...";
+                      if (s === "uploading") return "Uploading...";
                       if (s === "completed") return typeLabel;
                       return f.status ? f.status : typeLabel;
                     })()}

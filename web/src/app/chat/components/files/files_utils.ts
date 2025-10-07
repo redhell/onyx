@@ -10,3 +10,28 @@ export function getFileExtension(fileName: string): string {
   }
   return name.slice(lastDotIndex + 1).toUpperCase();
 }
+
+// Centralized list of image file extensions (lowercase, no leading dots)
+export const IMAGE_EXTENSIONS = [
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "svg",
+  "bmp",
+] as const;
+
+export type ImageExtension = (typeof IMAGE_EXTENSIONS)[number];
+
+// Checks whether a provided extension string corresponds to an image extension.
+// Accepts values with any casing and without a leading dot.
+export function isImageExtension(
+  extension: string | null | undefined
+): boolean {
+  if (!extension) {
+    return false;
+  }
+  const normalized = extension.toLowerCase();
+  return (IMAGE_EXTENSIONS as readonly string[]).includes(normalized);
+}
