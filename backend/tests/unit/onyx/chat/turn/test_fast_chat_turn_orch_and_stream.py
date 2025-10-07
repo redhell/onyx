@@ -262,9 +262,7 @@ def run_fast_chat_turn(
 def assert_packets_contain_stop(packets: list[Packet]) -> None:
     """Assert that packets contain an OverallStop packet at the end."""
     assert len(packets) >= 1, f"Expected at least 1 packet, got {len(packets)}"
-    assert packets[-1] == Packet(
-        ind=0, obj=OverallStop(type="stop")
-    ), "Last packet should be OverallStop"
+    assert isinstance(packets[-1].obj, OverallStop), "Last packet should be OverallStop"
 
 
 def assert_cancellation_packets(
@@ -837,6 +835,12 @@ class FakeCitationModelWithContext(StreamableFakeModel):
         response_id: str = "fake-response-id",
     ) -> AsyncIterator[object]:
         """Create stream events with citation text."""
+        from openai.types.responses.response_stream_event import (
+            ResponseContentPartAddedEvent,
+        )
+        from openai.types.responses.response_stream_event import (
+            ResponseContentPartDoneEvent,
+        )
 
         async def _gen() -> AsyncIterator[object]:
             # Create message with citation text
@@ -850,7 +854,17 @@ class FakeCitationModelWithContext(StreamableFakeModel):
                 response=final_response, sequence_number=1, type="response.created"
             )
 
-            # 2) stream the citation text in chunks
+            # 2) content_part.added - this triggers MessageStart
+            yield ResponseContentPartAddedEvent(
+                content_index=0,
+                item_id="fake-item-id",
+                output_index=0,
+                part=ResponseOutputText(text="", type="output_text", annotations=[]),
+                sequence_number=2,
+                type="response.content_part.added",
+            )
+
+            # 3) stream the citation text in chunks
             words = citation_text.split()
             for word in words:
                 yield ResponseTextDeltaEvent(
@@ -859,13 +873,25 @@ class FakeCitationModelWithContext(StreamableFakeModel):
                     item_id="fake-item-id",
                     logprobs=[],
                     output_index=0,
-                    sequence_number=2,
+                    sequence_number=3,
                     type="response.output_text.delta",
                 )
 
-            # 3) completed
+            # 4) content_part.done - this triggers SectionEnd for the message
+            yield ResponseContentPartDoneEvent(
+                content_index=0,
+                item_id="fake-item-id",
+                output_index=0,
+                part=ResponseOutputText(
+                    text=citation_text, type="output_text", annotations=[]
+                ),
+                sequence_number=4,
+                type="response.content_part.done",
+            )
+
+            # 5) completed
             yield ResponseCompletedEvent(
-                response=final_response, sequence_number=3, type="response.completed"
+                response=final_response, sequence_number=5, type="response.completed"
             )
 
         return _gen()
@@ -885,6 +911,7 @@ def test_fast_chat_turn_citation_processing(
     from datetime import datetime
     from onyx.chat.turn.fast_chat_turn import _fast_chat_turn_core
     from onyx.chat.turn.infra.chat_turn_event_stream import unified_event_stream
+    from onyx.server.query_and_chat.streaming_models import MessageStart
 
     # Create a fake inference section with cited documents
     fake_chunk = InferenceChunk(
@@ -938,25 +965,49 @@ def test_fast_chat_turn_citation_processing(
     def test_fast_chat_turn_core(
         messages: list[dict], dependencies: ChatTurnDependencies
     ) -> None:
+        # Manually populate cited_documents from the iteration answer for this test
+        # In real usage, cited_documents would be populated by the tool implementations
+        context_docs = list(fake_iteration_answer.cited_documents.values())
+
         _fast_chat_turn_core(
-            messages, dependencies, global_iteration_responses=[fake_iteration_answer]
+            messages,
+            dependencies,
+            starter_global_iteration_responses=[fake_iteration_answer],
+            starter_cited_documents=context_docs,
         )
 
     # Run the test with the core function
     generator = test_fast_chat_turn_core(sample_messages, chat_turn_dependencies)
     packets = list(generator)
-    print(packets)
+
     # Verify we get the expected packets including citation events
     assert_packets_contain_stop(packets)
 
-    # Look for citation events in the packets
+    # Look for message start and citation events in the packets
+    message_start_found = False
+    message_start_has_final_docs = False
     citation_start_found = False
     citation_delta_found = False
     citation_section_end_found = False
+    message_start_index = None
+    citation_start_index = None
+    message_delta_index = None
 
     for packet in packets:
-        if isinstance(packet.obj, CitationStart):
+        if isinstance(packet.obj, MessageStart):
+            message_start_found = True
+            message_start_index = packet.ind
+            # Verify that final_documents is populated with cited documents
+            if (
+                packet.obj.final_documents is not None
+                and len(packet.obj.final_documents) > 0
+            ):
+                message_start_has_final_docs = True
+                # Verify the document ID matches our test document
+                assert packet.obj.final_documents[0].document_id == "test-doc-1"
+        elif isinstance(packet.obj, CitationStart):
             citation_start_found = True
+            citation_start_index = packet.ind
         elif isinstance(packet.obj, CitationDelta):
             citation_delta_found = True
             # Verify citation info is present
@@ -966,14 +1017,30 @@ def test_fast_chat_turn_citation_processing(
             citation = packet.obj.citations[0]
             assert citation.document_id == "test-doc-1"
             assert citation.citation_num == 1
+            # Verify citation packet has the same index as citation start
+            assert packet.ind == citation_start_index
         elif (
             isinstance(packet.obj, SectionEnd)
             and citation_start_found
             and citation_delta_found
         ):
             citation_section_end_found = True
+            # Verify citation section end has the same index
+            assert packet.ind == citation_start_index
+        elif packet.obj.type == "message_delta" and message_delta_index is None:
+            # Track the first message delta index
+            message_delta_index = packet.ind
 
-    # Verify citation events were emitted
+    # Verify all expected events were emitted
+    assert message_start_found, "MessageStart event should be emitted"
+    assert (
+        message_start_has_final_docs
+    ), "MessageStart should contain final_documents with cited docs"
     assert citation_start_found, "CitationStart event should be emitted"
     assert citation_delta_found, "CitationDelta event should be emitted"
     assert citation_section_end_found, "Citation section should end with SectionEnd"
+
+    # Verify that citation packets are emitted after message packets (higher index)
+    assert (
+        citation_start_index > message_start_index
+    ), f"Citation packets (index {citation_start_index}) > message start (index {message_start_index})"

@@ -73,6 +73,7 @@ class MockAggregatedContext:
 
     def __init__(self):
         self.global_iteration_responses = []
+        self.cited_documents = []
 
 
 class MockRunDependencies:
@@ -151,7 +152,7 @@ def test_web_search_core_basic_functionality():
     assert len(result.results) == 2
 
     # Check first result
-    assert result.results[0].tag == "S1"
+    assert result.results[0].tag == "1"
     assert result.results[0].title == "Test Result 1"
     assert result.results[0].link == "https://example.com/1"
     assert result.results[0].author == "Test Author"
@@ -159,7 +160,7 @@ def test_web_search_core_basic_functionality():
     assert result.results[0].snippet == "This is a test snippet 1"
 
     # Check second result
-    assert result.results[1].tag == "S2"
+    assert result.results[1].tag == "2"
     assert result.results[1].title == "Test Result 2"
     assert result.results[1].link == "https://example.com/2"
     assert result.results[1].author is None
@@ -231,7 +232,7 @@ def test_web_fetch_core_basic_functionality():
     assert len(result.results) == 2
 
     # Check first result
-    assert result.results[0].tag == "S1"
+    assert result.results[0].tag == "1"
     assert result.results[0].title == "Test Content 1"
     assert result.results[0].link == "https://example.com/1"
     assert (
@@ -240,7 +241,7 @@ def test_web_fetch_core_basic_functionality():
     assert result.results[0].published_date == "2024-01-01T12:00:00"
 
     # Check second result
-    assert result.results[1].tag == "S2"
+    assert result.results[1].tag == "2"
     assert result.results[1].title == "Test Content 2"
     assert result.results[1].link == "https://example.com/2"
     assert (
@@ -275,6 +276,22 @@ def test_web_fetch_core_basic_functionality():
         == "Fetch content from URLs: https://example.com/1, https://example.com/2"
     )
     assert len(answer.cited_documents) == 2
+
+    # Verify cited_documents were added to aggregated_context
+    assert len(test_run_context.context.aggregated_context.cited_documents) == 2
+    # Web documents have "INTERNET_SEARCH_DOC_" prefix added to the URL
+    assert (
+        test_run_context.context.aggregated_context.cited_documents[
+            0
+        ].center_chunk.document_id
+        == "INTERNET_SEARCH_DOC_https://example.com/1"
+    )
+    assert (
+        test_run_context.context.aggregated_context.cited_documents[
+            1
+        ].center_chunk.document_id
+        == "INTERNET_SEARCH_DOC_https://example.com/2"
+    )
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter

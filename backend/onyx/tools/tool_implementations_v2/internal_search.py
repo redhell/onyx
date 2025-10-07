@@ -109,6 +109,9 @@ def _internal_search_core(
                         ),
                     )
                 )
+                run_context.context.aggregated_context.cited_documents.extend(
+                    retrieved_docs
+                )
                 run_context.context.aggregated_context.global_iteration_responses.append(
                     IterationAnswer(
                         tool=SearchTool.__name__,

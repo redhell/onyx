@@ -5,6 +5,7 @@ from agents import StopAtTools
 
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.agents.agent_search.dr.utils import convert_inference_sections_to_search_docs
 from onyx.chat.chat_utils import llm_doc_from_inference_section
 from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.stop_signal_checker import reset_cancel_status
@@ -31,7 +32,9 @@ from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 def _fast_chat_turn_core(
     messages: list[dict],
     dependencies: ChatTurnDependencies,
-    global_iteration_responses: list[IterationAnswer] | None = None,
+    # Dependency injectable arguments for testing
+    starter_global_iteration_responses: list[IterationAnswer] | None = None,
+    starter_cited_documents: list[InferenceSection] | None = None,
 ) -> None:
     """Core fast chat turn logic that allows overriding global_iteration_responses for testing.
 
@@ -39,6 +42,7 @@ def _fast_chat_turn_core(
         messages: List of chat messages
         dependencies: Chat turn dependencies
         global_iteration_responses: Optional list of iteration answers to inject for testing
+        cited_documents: Optional list of cited documents to inject for testing
     """
     reset_cancel_status(
         dependencies.dependencies_to_maybe_remove.chat_session_id,
@@ -48,9 +52,9 @@ def _fast_chat_turn_core(
         run_dependencies=dependencies,
         aggregated_context=AggregatedDRContext(
             context="context",
-            cited_documents=[],
+            cited_documents=starter_cited_documents or [],
             is_internet_marker_dict={},
-            global_iteration_responses=global_iteration_responses or [],
+            global_iteration_responses=starter_global_iteration_responses or [],
         ),
         iteration_instructions=[],
     )
@@ -80,7 +84,7 @@ def _fast_chat_turn_core(
             agent_stream.cancel()
             break
         ctx.current_run_step
-        obj = _default_packet_translation(ev)
+        obj = _default_packet_translation(ev, ctx)
         if obj:
             dependencies.emitter.emit(Packet(ind=ctx.current_run_step, obj=obj))
     final_answer = extract_final_answer_from_packets(
@@ -120,7 +124,9 @@ def _fast_chat_turn_core(
 @unified_event_stream
 def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
     """Main fast chat turn function that calls the core logic with default parameters."""
-    _fast_chat_turn_core(messages, dependencies, global_iteration_responses=None)
+    _fast_chat_turn_core(
+        messages, dependencies, starter_global_iteration_responses=None
+    )
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
@@ -170,6 +176,7 @@ def _process_citations_for_final_answer(
     dependencies: ChatTurnDependencies,
     ctx: ChatTurnContext,
 ) -> None:
+    index = ctx.current_run_step + 1
     """Process citations in the final answer and emit citation events."""
     from onyx.chat.stream_processing.utils import DocumentIdOrderMapping
 
@@ -197,25 +204,29 @@ def _process_citations_for_final_answer(
 
     # Emit citation events if we found any citations
     if collected_citations:
-        dependencies.emitter.emit(Packet(ind=ctx.current_run_step, obj=CitationStart()))
+        dependencies.emitter.emit(Packet(ind=index, obj=CitationStart()))
         dependencies.emitter.emit(
             Packet(
-                ind=ctx.current_run_step,
+                ind=index,
                 obj=CitationDelta(citations=collected_citations),
             )
         )
-        dependencies.emitter.emit(
-            Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
-        )
+        dependencies.emitter.emit(Packet(ind=index, obj=SectionEnd(type="section_end")))
+    ctx.current_run_step = index
 
 
-def _default_packet_translation(ev: object) -> PacketObj | None:
+def _default_packet_translation(ev: object, ctx: ChatTurnContext) -> PacketObj | None:
     if isinstance(ev, RawResponsesStreamEvent):
         # TODO: might need some variation here for different types of models
         # OpenAI packet translator
         obj: PacketObj | None = None
         if ev.data.type == "response.content_part.added":
-            obj = MessageStart(type="message_start", content="", final_documents=None)
+            retrieved_search_docs = convert_inference_sections_to_search_docs(
+                ctx.aggregated_context.cited_documents
+            )
+            obj = MessageStart(
+                type="message_start", content="", final_documents=retrieved_search_docs
+            )
         elif ev.data.type == "response.output_text.delta":
             obj = MessageDelta(type="message_delta", content=ev.data.delta)
         elif ev.data.type == "response.content_part.done":

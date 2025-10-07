@@ -41,6 +41,7 @@ class FakeAggregatedContext:
 
     def __init__(self):
         self.global_iteration_responses = []
+        self.cited_documents = []
 
 
 class FakeRunDependencies:
@@ -460,6 +461,20 @@ def test_internal_search_core_basic_functionality(
     assert len(fake_run_context.context.iteration_instructions) == 1
     assert (
         len(fake_run_context.context.aggregated_context.global_iteration_responses) == 1
+    )
+    # Verify cited_documents were added to aggregated_context
+    assert len(fake_run_context.context.aggregated_context.cited_documents) == 2
+    assert (
+        fake_run_context.context.aggregated_context.cited_documents[
+            0
+        ].center_chunk.document_id
+        == "doc1"
+    )
+    assert (
+        fake_run_context.context.aggregated_context.cited_documents[
+            1
+        ].center_chunk.document_id
+        == "doc2"
     )
 
     # Check iteration instruction
