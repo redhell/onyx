@@ -197,8 +197,6 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await page.waitForTimeout(1000);
 
     // Verify we're at "1 / 2"
-    // let switcherSpan = page.locator('span:has-text("1 / 2")').first();
-    // await expect(switcherSpan).toBeVisible();
     let switcherSpan = page.getByTestId("MessageSwitcher/container").first();
     await expect(switcherSpan).toBeVisible({ timeout: 5000 });
     await expect(switcherSpan).toContainText("1/2");
