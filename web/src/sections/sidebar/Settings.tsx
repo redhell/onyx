@@ -101,13 +101,15 @@ function SettingsPopover({
             Curator Panel
           </NavigationTab>
         ),
-        <NavigationTab
-          key="user-settings"
-          icon={SvgUser}
-          onClick={onUserSettingsClick}
-        >
-          User Settings
-        </NavigationTab>,
+        <div data-testid="Settings/user-settings">
+          <NavigationTab
+            key="user-settings"
+            icon={SvgUser}
+            onClick={onUserSettingsClick}
+          >
+            User Settings
+          </NavigationTab>
+        </div>,
         <NavigationTab
           key="notifications"
           icon={SvgBell}

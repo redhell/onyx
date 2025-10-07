@@ -24,7 +24,7 @@ test("LLM Ordering and Model Switching", async ({ page }) => {
 
   // Configure user settings: Set default model to o3 Mini
   await page.locator("#onyx-user-dropdown").click();
-  await page.getByText("User Settings").first().click();
+  await page.getByTestId("Settings/user-settings").click();
   await page.getByRole("combobox").nth(1).click();
   await page.getByLabel("GPT 5", { exact: true }).click();
   await page.getByLabel("Close modal").click();
