@@ -24,8 +24,6 @@
       "@/*": ["./src/*"],
 
       "@app/*": ["./src/app/*"],
-      "@refresh/*": ["./src/refresh-components/*"],
-      "@sec/*": ["./src/sections/*"],
       "@tests/*": ["./tests/*"]
     }
   },
