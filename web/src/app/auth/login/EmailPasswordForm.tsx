@@ -136,6 +136,7 @@ export default function EmailPasswordForm({
               label="Email"
               type="email"
               placeholder="email@yourcompany.com"
+              data-testid="email"
             />
 
             <TextFormField
@@ -143,6 +144,7 @@ export default function EmailPasswordForm({
               label="Password"
               type="password"
               placeholder="**************"
+              data-testid="password"
             />
 
             <Button className="w-full" disabled={isSubmitting} type="submit">
