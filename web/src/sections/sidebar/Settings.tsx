@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import Modal from "@/refresh-components/modals/Modal";
 import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
 import SvgUser from "@/icons/user";
-import { UserSettings } from "@/app/chat/components/modal/UserSettingsModal";
+import UserSettings from "@/app/chat/components/modal/UserSettings";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/refresh-components/contexts/ChatContext";
 import { usePopup } from "@/components/admin/connectors/Popup";
