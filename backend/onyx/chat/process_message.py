@@ -35,7 +35,6 @@ from onyx.chat.prompt_builder.answer_prompt_builder import (
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.chat.turn import fast_chat_turn
 from onyx.chat.turn.models import ChatTurnDependencies
-from onyx.chat.turn.models import DependenciesToMaybeRemove
 from onyx.chat.user_files.parse_user_files import parse_user_files
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
 from onyx.configs.chat_configs import DISABLE_LLM_CHOOSE_SEARCH
@@ -883,12 +882,10 @@ def _fast_message_stream(
             okta_profile_tool=okta_profile_tool_instance,
             db_session=db_session,
             redis_client=redis_client,
-            dependencies_to_maybe_remove=DependenciesToMaybeRemove(
-                chat_session_id=chat_session_id,
-                message_id=reserved_message_id,
-                research_type=answer.graph_config.behavior.research_type,
-            ),
         ),
+        chat_session_id=chat_session_id,
+        message_id=reserved_message_id,
+        research_type=answer.graph_config.behavior.research_type,
     )
 
 

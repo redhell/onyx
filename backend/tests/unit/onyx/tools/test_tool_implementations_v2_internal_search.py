@@ -6,7 +6,6 @@ from agents import RunContextWrapper
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.chat.turn.models import ChatTurnContext
-from onyx.chat.turn.models import DependenciesToMaybeRemove
 from onyx.configs.constants import DocumentSource
 from onyx.context.search.models import InferenceChunk
 from onyx.context.search.models import InferenceSection
@@ -49,7 +48,6 @@ class FakeRunDependencies:
 
     def __init__(self):
         self.emitter = FakeEmitter()
-        self.dependencies_to_maybe_remove = None
         self.redis_client = None
         # Set up mock database session
         from unittest.mock import MagicMock
@@ -237,7 +235,9 @@ class FakeRedis:
 
 def create_fake_run_context(
     current_run_step: int = 0,
-    dependencies_to_maybe_remove: DependenciesToMaybeRemove = None,
+    chat_session_id=None,
+    message_id: int | None = None,
+    research_type=None,
     redis_client: FakeRedis = None,
 ) -> RunContextWrapper[ChatTurnContext]:
     """Create a real RunContextWrapper with fake dependencies"""
@@ -248,7 +248,6 @@ def create_fake_run_context(
 
     run_dependencies = FakeRunDependencies()
     run_dependencies.emitter = emitter
-    run_dependencies.dependencies_to_maybe_remove = dependencies_to_maybe_remove
     run_dependencies.redis_client = redis_client
 
     # Create the actual context object
@@ -257,21 +256,15 @@ def create_fake_run_context(
         iteration_instructions=[],
         aggregated_context=aggregated_context,
         run_dependencies=run_dependencies,
+        chat_session_id=chat_session_id or uuid4(),
+        message_id=message_id or 123,
+        research_type=research_type,
     )
 
     # Create the run context wrapper
     run_context = RunContextWrapper(context=context)
 
     return run_context
-
-
-def create_fake_dependencies_to_maybe_remove() -> DependenciesToMaybeRemove:
-    """Create fake dependencies to maybe remove"""
-    return DependenciesToMaybeRemove(
-        chat_session_id=uuid4(),
-        message_id=123,
-        research_type=None,  # Not needed for this test
-    )
 
 
 def create_fake_search_pipeline_with_results(
@@ -404,19 +397,35 @@ def fake_redis_client() -> FakeRedis:
 
 
 @pytest.fixture
-def fake_dependencies_to_maybe_remove() -> DependenciesToMaybeRemove:
-    """Fixture providing fake dependencies to maybe remove."""
-    return create_fake_dependencies_to_maybe_remove()
+def fake_chat_session_id():
+    """Fixture providing fake chat session ID."""
+    return uuid4()
+
+
+@pytest.fixture
+def fake_message_id():
+    """Fixture providing fake message ID."""
+    return 123
+
+
+@pytest.fixture
+def fake_research_type():
+    """Fixture providing fake research type."""
+    return None  # Not needed for this test
 
 
 @pytest.fixture
 def fake_run_context(
-    fake_dependencies_to_maybe_remove: DependenciesToMaybeRemove,
+    fake_chat_session_id,
+    fake_message_id,
+    fake_research_type,
     fake_redis_client: FakeRedis,
 ) -> RunContextWrapper[ChatTurnContext]:
     """Fixture providing a complete RunContextWrapper with fake implementations."""
     return create_fake_run_context(
-        dependencies_to_maybe_remove=fake_dependencies_to_maybe_remove,
+        chat_session_id=fake_chat_session_id,
+        message_id=fake_message_id,
+        research_type=fake_research_type,
         redis_client=fake_redis_client,
     )
 

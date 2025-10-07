@@ -15,23 +15,26 @@ from onyx.utils.threadpool_concurrency import wait_on_background
 
 
 def unified_event_stream(
-    turn_func: Callable[[List[Dict[str, Any]], ChatTurnDependencies], None],
-) -> Callable[[List[Dict[str, Any]], ChatTurnDependencies], Generator[Packet, None]]:
+    turn_func: Callable[..., None],
+) -> Callable[..., Generator[Packet, None]]:
     """
     Decorator that wraps a turn_func to provide event streaming capabilities.
 
     Usage:
     @unified_event_stream
-    def my_turn_func(messages, dependencies):
+    def my_turn_func(messages, dependencies, *args, **kwargs):
         # Your turn logic here
         pass
 
     Then call it like:
-    generator = my_turn_func(messages, dependencies)
+    generator = my_turn_func(messages, dependencies, *args, **kwargs)
     """
 
     def wrapper(
-        messages: List[Dict[str, Any]], dependencies: ChatTurnDependencies
+        messages: List[Dict[str, Any]],
+        dependencies: ChatTurnDependencies,
+        *args: Any,
+        **kwargs: Any
     ) -> Generator[Packet, None]:
         bus: Queue[Packet] = Queue()
         emitter = Emitter(bus)
@@ -39,7 +42,7 @@ def unified_event_stream(
 
         def run_with_exception_capture() -> None:
             try:
-                turn_func(messages, dependencies)
+                turn_func(messages, dependencies, *args, **kwargs)
             except Exception as e:
                 dependencies.emitter.emit(
                     Packet(ind=0, obj=PacketException(type="error", exception=e))

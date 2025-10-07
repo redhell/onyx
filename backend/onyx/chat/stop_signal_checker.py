@@ -20,7 +20,6 @@ def set_fence(chat_session_id: UUID, redis_client: Redis, value: bool) -> None:
     """
     tenant_id = get_current_tenant_id()
     fence_key = f"{FENCE_PREFIX}_{tenant_id}_{chat_session_id}"
-    # TODO: figure out dependency injection for redis client
     if not value:
         redis_client.delete(fence_key)
         return
@@ -41,8 +40,6 @@ def is_connected(chat_session_id: UUID, redis_client: Redis) -> bool:
     """
     tenant_id = get_current_tenant_id()
     fence_key = f"{FENCE_PREFIX}_{tenant_id}_{chat_session_id}"
-    # TODO: figure out dependency injection for redis client
-    # Return True if NOT fenced (i.e., no stop signal set)
     return not bool(redis_client.exists(fence_key))
 
 
@@ -56,5 +53,4 @@ def reset_cancel_status(chat_session_id: UUID, redis_client: Redis) -> None:
     """
     tenant_id = get_current_tenant_id()
     fence_key = f"{FENCE_PREFIX}_{tenant_id}_{chat_session_id}"
-    # TODO: figure out dependency injection for redis client
     redis_client.delete(fence_key)

@@ -1,8 +1,11 @@
+from uuid import UUID
+
 from agents import Agent
 from agents import ModelSettings
 from agents import RawResponsesStreamEvent
 from agents import StopAtTools
 
+from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.utils import convert_inference_sections_to_search_docs
@@ -32,6 +35,9 @@ from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 def _fast_chat_turn_core(
     messages: list[dict],
     dependencies: ChatTurnDependencies,
+    chat_session_id: UUID,
+    message_id: int,
+    research_type: ResearchType,
     # Dependency injectable arguments for testing
     starter_global_iteration_responses: list[IterationAnswer] | None = None,
     starter_cited_documents: list[InferenceSection] | None = None,
@@ -41,11 +47,14 @@ def _fast_chat_turn_core(
     Args:
         messages: List of chat messages
         dependencies: Chat turn dependencies
+        chat_session_id: Chat session ID
+        message_id: Message ID
+        research_type: Research type
         global_iteration_responses: Optional list of iteration answers to inject for testing
         cited_documents: Optional list of cited documents to inject for testing
     """
     reset_cancel_status(
-        dependencies.dependencies_to_maybe_remove.chat_session_id,
+        chat_session_id,
         dependencies.redis_client,
     )
     ctx = ChatTurnContext(
@@ -57,6 +66,9 @@ def _fast_chat_turn_core(
             global_iteration_responses=starter_global_iteration_responses or [],
         ),
         iteration_instructions=[],
+        chat_session_id=chat_session_id,
+        message_id=message_id,
+        research_type=research_type,
     )
     agent = Agent(
         name="Assistant",
@@ -76,7 +88,7 @@ def _fast_chat_turn_core(
     )
     for ev in agent_stream:
         connected = is_connected(
-            dependencies.dependencies_to_maybe_remove.chat_session_id,
+            chat_session_id,
             dependencies.redis_client,
         )
         if not connected:
@@ -109,9 +121,9 @@ def _fast_chat_turn_core(
 
     save_iteration(
         db_session=dependencies.db_session,
-        message_id=dependencies.dependencies_to_maybe_remove.message_id,
-        chat_session_id=dependencies.dependencies_to_maybe_remove.chat_session_id,
-        research_type=dependencies.dependencies_to_maybe_remove.research_type,
+        message_id=message_id,
+        chat_session_id=chat_session_id,
+        research_type=research_type,
         ctx=ctx,
         final_answer=final_answer,
         all_cited_documents=all_cited_documents,
@@ -122,10 +134,21 @@ def _fast_chat_turn_core(
 
 
 @unified_event_stream
-def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
+def fast_chat_turn(
+    messages: list[dict],
+    dependencies: ChatTurnDependencies,
+    chat_session_id: UUID,
+    message_id: int,
+    research_type: ResearchType,
+) -> None:
     """Main fast chat turn function that calls the core logic with default parameters."""
     _fast_chat_turn_core(
-        messages, dependencies, starter_global_iteration_responses=None
+        messages,
+        dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+        starter_global_iteration_responses=None,
     )
 
 

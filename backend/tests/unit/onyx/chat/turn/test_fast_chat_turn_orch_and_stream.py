@@ -36,7 +36,6 @@ from openai.types.responses.response_usage import ResponseUsage
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.chat.turn.models import ChatTurnDependencies
-from onyx.chat.turn.models import DependenciesToMaybeRemove
 from onyx.context.search.models import DocumentSource
 from onyx.context.search.models import InferenceChunk
 from onyx.context.search.models import InferenceSection
@@ -250,12 +249,22 @@ class CancellationMixin:
 
 
 def run_fast_chat_turn(
-    sample_messages: list[dict], chat_turn_dependencies: ChatTurnDependencies
+    sample_messages: list[dict],
+    chat_turn_dependencies: ChatTurnDependencies,
+    chat_session_id,
+    message_id,
+    research_type,
 ) -> list[Packet]:
     """Helper function to run fast_chat_turn and collect all packets."""
     from onyx.chat.turn.fast_chat_turn import fast_chat_turn
 
-    generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+    generator = fast_chat_turn(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
     return list(generator)
 
 
@@ -298,14 +307,14 @@ def assert_cancellation_packets(
 
 
 def create_cancellation_model(
-    model_class, chat_turn_dependencies: ChatTurnDependencies
+    model_class, chat_turn_dependencies: ChatTurnDependencies, chat_session_id
 ):
     """Helper to create a cancellation model with proper setup."""
     from onyx.chat.stop_signal_checker import set_fence
 
     return model_class(
         set_fence_func=set_fence,
-        chat_session_id=chat_turn_dependencies.dependencies_to_maybe_remove.chat_session_id,
+        chat_session_id=chat_session_id,
         redis_client=chat_turn_dependencies.redis_client,
     )
 
@@ -637,13 +646,21 @@ def fake_tools() -> list[FunctionTool]:
 
 
 @pytest.fixture
-def dependencies_to_maybe_remove() -> DependenciesToMaybeRemove:
-    """Fixture providing dependencies that should be passed in by test writer."""
-    return DependenciesToMaybeRemove(
-        chat_session_id=uuid4(),
-        message_id=123,
-        research_type=ResearchType.FAST,
-    )
+def chat_session_id():
+    """Fixture providing chat session ID."""
+    return uuid4()
+
+
+@pytest.fixture
+def message_id():
+    """Fixture providing message ID."""
+    return 123
+
+
+@pytest.fixture
+def research_type():
+    """Fixture providing research type."""
+    return ResearchType.FAST
 
 
 @pytest.fixture
@@ -653,7 +670,6 @@ def chat_turn_dependencies(
     fake_db_session: FakeSession,
     fake_tools: list[FunctionTool],
     fake_redis_client: FakeRedis,
-    dependencies_to_maybe_remove: DependenciesToMaybeRemove,
 ) -> ChatTurnDependencies:
     """Fixture providing a complete ChatTurnDependencies object with fake implementations.
 
@@ -666,7 +682,6 @@ def chat_turn_dependencies(
         tools=fake_tools,
         redis_client=fake_redis_client,
         emitter=None,
-        dependencies_to_maybe_remove=dependencies_to_maybe_remove,
     )
 
 
@@ -692,11 +707,20 @@ def sample_messages() -> list[dict]:
 def test_fast_chat_turn_basic(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
+    chat_session_id,
+    message_id,
+    research_type,
 ):
     """Test that makes sure basic end to end functionality of our
     fast agent chat turn works.
     """
-    packets = run_fast_chat_turn(sample_messages, chat_turn_dependencies)
+    packets = run_fast_chat_turn(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
     assert_packets_contain_stop(packets)
 
 
@@ -704,6 +728,9 @@ def test_fast_chat_turn_catch_exception(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
     fake_failing_model: Model,
+    chat_session_id,
+    message_id,
+    research_type,
 ):
     """Test that makes sure exceptions in our agent background thread are propagated properly.
     RuntimeWarning: coroutine 'FakeFailingModel.stream_response.<locals>._gen' was never awaited
@@ -713,7 +740,13 @@ def test_fast_chat_turn_catch_exception(
 
     chat_turn_dependencies.llm_model = fake_failing_model
 
-    generator = fast_chat_turn(sample_messages, chat_turn_dependencies)
+    generator = fast_chat_turn(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
     with pytest.raises(Exception):
         list(generator)
 
@@ -721,6 +754,9 @@ def test_fast_chat_turn_catch_exception(
 def test_fast_chat_turn_cancellation(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
+    chat_session_id,
+    message_id,
+    research_type,
 ):
     """Test that cancellation via set_fence works correctly.
 
@@ -733,11 +769,17 @@ def test_fast_chat_turn_cancellation(
     """
     # Replace the model with our cancellation model that triggers stop signal during streaming
     cancellation_model = create_cancellation_model(
-        FakeCancellationModel, chat_turn_dependencies
+        FakeCancellationModel, chat_turn_dependencies, chat_session_id
     )
     chat_turn_dependencies.llm_model = cancellation_model
 
-    packets = run_fast_chat_turn(sample_messages, chat_turn_dependencies)
+    packets = run_fast_chat_turn(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
 
     # After cancellation during message streaming, we should see SectionEnd, then OverallStop
     # The "Cancelled" MessageStart is only shown when cancelling during tool calls/reasoning
@@ -747,6 +789,9 @@ def test_fast_chat_turn_cancellation(
 def test_fast_chat_turn_tool_call_cancellation(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
+    chat_session_id,
+    message_id,
+    research_type,
 ):
     """Test that cancellation via set_fence works correctly during tool calls.
 
@@ -757,11 +802,17 @@ def test_fast_chat_turn_tool_call_cancellation(
     """
     # Replace the model with our tool call model
     cancellation_model = create_cancellation_model(
-        FakeToolCallModel, chat_turn_dependencies
+        FakeToolCallModel, chat_turn_dependencies, chat_session_id
     )
     chat_turn_dependencies.llm_model = cancellation_model
 
-    packets = run_fast_chat_turn(sample_messages, chat_turn_dependencies)
+    packets = run_fast_chat_turn(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
 
     # After cancellation during tool call, we should see MessageStart, SectionEnd, then OverallStop
     # The "Cancelled" MessageStart is shown when cancelling during tool calls/reasoning
@@ -900,6 +951,9 @@ class FakeCitationModelWithContext(StreamableFakeModel):
 def test_fast_chat_turn_citation_processing(
     chat_turn_dependencies: ChatTurnDependencies,
     sample_messages: list[dict],
+    chat_session_id,
+    message_id,
+    research_type,
 ):
     """Test that citation processing works correctly when iteration answers contain cited documents.
 
@@ -963,7 +1017,11 @@ def test_fast_chat_turn_citation_processing(
     # Create a decorated version of _fast_chat_turn_core for testing
     @unified_event_stream
     def test_fast_chat_turn_core(
-        messages: list[dict], dependencies: ChatTurnDependencies
+        messages: list[dict],
+        dependencies: ChatTurnDependencies,
+        session_id,
+        msg_id,
+        res_type,
     ) -> None:
         # Manually populate cited_documents from the iteration answer for this test
         # In real usage, cited_documents would be populated by the tool implementations
@@ -972,12 +1030,21 @@ def test_fast_chat_turn_citation_processing(
         _fast_chat_turn_core(
             messages,
             dependencies,
+            session_id,
+            msg_id,
+            res_type,
             starter_global_iteration_responses=[fake_iteration_answer],
             starter_cited_documents=context_docs,
         )
 
     # Run the test with the core function
-    generator = test_fast_chat_turn_core(sample_messages, chat_turn_dependencies)
+    generator = test_fast_chat_turn_core(
+        sample_messages,
+        chat_turn_dependencies,
+        chat_session_id,
+        message_id,
+        research_type,
+    )
     packets = list(generator)
 
     # Verify we get the expected packets including citation events

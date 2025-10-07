@@ -69,7 +69,7 @@ def _internal_search_core(
             ),
         ):
             if not is_connected(
-                run_context.context.run_dependencies.dependencies_to_maybe_remove.chat_session_id,
+                run_context.context.chat_session_id,
                 run_context.context.run_dependencies.redis_client,
             ):
                 break

@@ -12,7 +12,6 @@ def reasoning_tool(dependencies: RunContextWrapper[ChatTurnContext], query: str)
     generated to help you answer the query. Use this tool for complex reasoning and
     calculations.
     """
-    print("REASONING TOOL CALLED")
     answer = ""
     tokens = dependencies.context.run_dependencies.llm.stream(
         [

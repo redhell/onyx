@@ -21,13 +21,6 @@ from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
 @dataclass
-class DependenciesToMaybeRemove:
-    chat_session_id: UUID
-    message_id: int
-    research_type: ResearchType
-
-
-@dataclass
 class ChatTurnDependencies:
     llm_model: Model
     llm: LLM
@@ -38,7 +31,6 @@ class ChatTurnDependencies:
     search_pipeline: SearchTool | None = None
     image_generation_tool: ImageGenerationTool | None = None
     okta_profile_tool: OktaProfileTool | None = None
-    dependencies_to_maybe_remove: DependenciesToMaybeRemove | None = None
 
 
 @dataclass
@@ -52,3 +44,6 @@ class ChatTurnContext:
     aggregated_context: AggregatedDRContext | None = None
     iteration_instructions: list[IterationInstructions] | None = None
     web_fetch_results: list[dict] | None = None
+    chat_session_id: UUID | None = None
+    message_id: int | None = None
+    research_type: ResearchType | None = None
