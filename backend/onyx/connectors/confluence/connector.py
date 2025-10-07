@@ -459,6 +459,9 @@ class ConfluenceConnector(
                     self.wiki_base, page["_links"]["webui"], self.is_cloud
                 )
                 attachment_metadata["parent_page_id"] = page_url
+                attachment_id = build_confluence_document_id(
+                    self.wiki_base, attachment["_links"]["webui"], self.is_cloud
+                )
 
                 primary_owners: list[BasicExpertInfo] | None = None
                 if "version" in attachment and "by" in attachment["version"]:
@@ -470,7 +473,7 @@ class ConfluenceConnector(
                     ]
 
                 attachment_doc = Document(
-                    id=object_url,
+                    id=attachment_id,
                     sections=sections,
                     source=DocumentSource.CONFLUENCE,
                     semantic_identifier=attachment.get("title", object_url),
