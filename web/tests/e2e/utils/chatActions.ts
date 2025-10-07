@@ -62,6 +62,6 @@ export async function switchModel(page: Page, modelName: string) {
 }
 
 export async function startNewChat(page: Page) {
-  await page.getByRole("link", { name: "New Session" }).click();
-  await expect(page.locator('div[data-testid="chat-intro"]')).toBeVisible();
+  await page.getByTestId("AppSidebar/new-session").click();
+  await expect(page.getByTestId("chat-intro")).toBeVisible();
 }

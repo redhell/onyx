@@ -25,8 +25,10 @@ test("Chat workflow", async ({ page }) => {
   // Verify the presence of the expected text
   await verifyAssistantIsChosen(page, "Onyx");
 
+  await page.pause();
+
   // Test creation of a new assistant
-  await page.getByRole("button", { name: "Explore Assistants" }).click();
+  await page.getByTestId("AppSidebar/more-agents").click();
   await page.getByRole("button", { name: "Create", exact: true }).click();
   await page.getByTestId("name").click();
   await page.getByTestId("name").fill("Test Assistant");
