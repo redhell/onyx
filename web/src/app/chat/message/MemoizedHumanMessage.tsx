@@ -62,7 +62,7 @@ export const MemoizedHumanMessage = ({
 }: MemoizedHumanMessageProps) => {
   const onEdit = useCallback(
     (editedContent: string) => {
-      if (!messageId) {
+      if (messageId === null || messageId === undefined) {
         console.warn(
           "No message id specified; cannot edit an undefined message"
         );
