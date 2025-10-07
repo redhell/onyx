@@ -386,15 +386,17 @@ export default function AIMessage({
                           />
 
                           {chatState.regenerate && (
-                            <LLMPopover
-                              currentModelName={chatState.overriddenModel}
-                              onSelect={(modelName) => {
-                                const llmDescriptor =
-                                  parseLlmDescriptor(modelName);
-                                chatState.regenerate!(llmDescriptor);
-                              }}
-                              folded
-                            />
+                            <div data-testid="AIMessage/regenerate-button">
+                              <LLMPopover
+                                currentModelName={chatState.overriddenModel}
+                                onSelect={(modelName) => {
+                                  const llmDescriptor =
+                                    parseLlmDescriptor(modelName);
+                                  chatState.regenerate!(llmDescriptor);
+                                }}
+                                folded
+                              />
+                            </div>
                           )}
 
                           {nodeId &&

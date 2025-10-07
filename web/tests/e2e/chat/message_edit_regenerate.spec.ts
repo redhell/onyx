@@ -70,9 +70,6 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await expect(messageSwitcher).toBeVisible();
     await expect(messageSwitcher).toContainText("2/2");
 
-    // // Get the parent div that contains the whole switcher
-    // messageSwitcher = messageSwitcher.locator("..").first();
-
     // Edit again to create a third version
     userMessage = page.locator("#onyx-human-message").first();
     await userMessage.hover();
@@ -164,8 +161,8 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await aiMessage.hover();
 
     // Click regenerate button using its data-testid
-    const regenerateButton = aiMessage.locator(
-      '[data-testid="regenerate-button"]'
+    const regenerateButton = aiMessage.getByTestId(
+      "AIMessage/regenerate-button"
     );
     await regenerateButton.click();
 
@@ -178,14 +175,17 @@ test.describe("Message Edit and Regenerate Tests", () => {
 
     // Wait for regeneration to complete by waiting for feedback buttons to appear
     // The feedback buttons (copy, like, dislike, regenerate) appear when streaming is complete
-    await page.waitForSelector('[data-testid="regenerate-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/regenerate-button"]', {
       state: "visible",
       timeout: 15000,
     });
 
     // Verify version switcher appears showing "2 / 2"
-    const messageSwitcher = page.locator('span:has-text("2 / 2")').first();
+    const messageSwitcher = page
+      .getByTestId("MessageSwitcher/container")
+      .first();
     await expect(messageSwitcher).toBeVisible({ timeout: 5000 });
+    await expect(messageSwitcher).toContainText("2/2");
 
     // Navigate to previous version
     await messageSwitcher
@@ -197,8 +197,11 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await page.waitForTimeout(1000);
 
     // Verify we're at "1 / 2"
-    let switcherSpan = page.locator('span:has-text("1 / 2")').first();
-    await expect(switcherSpan).toBeVisible();
+    // let switcherSpan = page.locator('span:has-text("1 / 2")').first();
+    // await expect(switcherSpan).toBeVisible();
+    let switcherSpan = page.getByTestId("MessageSwitcher/container").first();
+    await expect(switcherSpan).toBeVisible({ timeout: 5000 });
+    await expect(switcherSpan).toContainText("1/2");
 
     // Verify we're back to the original response
     const firstVersionText = await messageContent.textContent();
@@ -214,7 +217,8 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await page.waitForTimeout(1000);
 
     // Verify we're back at "2 / 2"
-    switcherSpan = page.locator('span:has-text("2 / 2")').first();
-    await expect(switcherSpan).toBeVisible();
+    switcherSpan = page.getByTestId("MessageSwitcher/container").first();
+    await expect(switcherSpan).toBeVisible({ timeout: 5000 });
+    await expect(switcherSpan).toContainText("2/2");
   });
 });
