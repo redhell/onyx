@@ -28,7 +28,7 @@ export function ClientLayout({
     (pathname && pathname.startsWith("/admin/connectors")) ||
     (pathname && pathname.startsWith("/admin/embeddings"))
   ) {
-    return children;
+    return <>{children}</>;
   }
 
   return (
