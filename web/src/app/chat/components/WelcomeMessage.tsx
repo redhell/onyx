@@ -26,8 +26,12 @@ export default function WelcomeMessage() {
     >
       <div className="flex items-center">
         {isDefaultAgent ? (
-          <div data-testid="onyx-logo">
+          <div
+            data-testid="onyx-logo"
+            className="flex flex-col items-center gap-spacing-paragraph"
+          >
             <Logo size="large" />
+            <Text headingH2>Let&apos;s get started</Text>
           </div>
         ) : (
           <div className="flex flex-row items-center justify-center gap-padding-button">
