@@ -364,7 +364,7 @@ CELERY_WORKER_BACKGROUND_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_BACKGROUND_CONCURRENCY") or 6
 )
 
-# Individual worker concurrency settings (used when USE_LIGHTWEIGHT_BACKGROUND_WORKER is False)
+# Individual worker concurrency settings (used when USE_LIGHTWEIGHT_BACKGROUND_WORKER is False or on Kuberenetes deployments)
 CELERY_WORKER_HEAVY_CONCURRENCY = int(
     os.environ.get("CELERY_WORKER_HEAVY_CONCURRENCY") or 4
 )

@@ -8,6 +8,7 @@ if [ -z "$USE_LIGHTWEIGHT_BACKGROUND_WORKER" ]; then
 fi
 
 # Set the complementary variable for supervisord
+# because it doesn't support %(not ENV_USE_LIGHTWEIGHT_BACKGROUND_WORKER) syntax
 if [ "$USE_LIGHTWEIGHT_BACKGROUND_WORKER" = "true" ]; then
     export USE_SEPARATE_BACKGROUND_WORKERS="false"
 else
