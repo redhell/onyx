@@ -18,6 +18,7 @@ import SvgExternalLink from "@/icons/external-link";
 import SvgFileText from "@/icons/file-text";
 import SvgImage from "@/icons/image";
 import SvgTrash from "@/icons/trash";
+import Truncated from "@/refresh-components/Truncated";
 
 interface UserFilesModalProps {
   title: string;
@@ -213,7 +214,7 @@ export default function UserFilesModalContent({
                 }
               }}
             >
-              <div className="flex items-center justify-between p-spacing-inline">
+              <div className="flex items-center p-spacing-inline flex-1 min-w-0">
                 <div className="flex h-9 w-9 items-center justify-center p-spacing-interline bg-background-tint-01 rounded-08">
                   {String((f as ProjectFile).status).toLowerCase() ===
                   "processing" ? (
@@ -240,11 +241,18 @@ export default function UserFilesModalContent({
                     </>
                   )}
                 </div>
-                <div className="p-spacing-inline-mini">
-                  <div className="flex items-center gap-2">
-                    <Text text04 secondaryAction nowrap className="truncate">
-                      {f.name}
-                    </Text>
+                <div className="p-spacing-inline-mini flex-1 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="max-w-[250px] min-w-0 flex-none">
+                      <Truncated
+                        text04
+                        secondaryAction
+                        nowrap
+                        className="truncate w-full"
+                      >
+                        {f.name}
+                      </Truncated>
+                    </div>
                     {onFileClick &&
                       String(f.status).toLowerCase() !== "processing" && (
                         <IconButton
@@ -278,6 +286,7 @@ export default function UserFilesModalContent({
                     {formatRelativeTime(f.last_accessed_at)}
                   </Text>
                 )}
+                {!showRemove && <div className="p-spacing-inline"></div>}
                 {showRemove &&
                   String(f.status).toLowerCase() !== "processing" && (
                     <IconButton
