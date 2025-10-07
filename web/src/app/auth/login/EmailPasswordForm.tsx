@@ -147,7 +147,7 @@ export default function EmailPasswordForm({
               data-testid="password"
             />
 
-            <Button className="w-full" disabled={isSubmitting} type="submit">
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isJoin ? "Join" : isSignup ? "Sign Up" : "Log In"}
             </Button>
             {user?.is_anonymous_user && (
