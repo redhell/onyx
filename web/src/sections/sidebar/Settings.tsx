@@ -216,7 +216,7 @@ export default function Settings({
         }
       >
         <PopoverTrigger asChild>
-          <div className="flex flex-col w-full h-full">
+          <div className="flex flex-col w-full h-full" id="onyx-user-dropdown">
             <NavigationTab
               className="!w-full"
               icon={({ className }) => (

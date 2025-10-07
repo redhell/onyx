@@ -296,7 +296,7 @@ export function UserSettings({
 
   return (
     <div className="flex flex-col p-padding-content">
-      {/* {(showPasswordSection || hasConnectors) && (
+      {(showPasswordSection || hasConnectors) && (
         <div className="w-1/4 pr-4 flex-shrink-0">
           <nav>
             <ul className="space-y-2">
@@ -343,7 +343,7 @@ export function UserSettings({
             </ul>
           </nav>
         </div>
-      )} */}
+      )}
       <div
         className={`${
           showPasswordSection || hasConnectors ? "w-3/4" : "w-full"
