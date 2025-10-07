@@ -1079,7 +1079,6 @@ def extract_text_from_confluence_html(
         # This extracts the text from inline attachments in the page so they can be
         # represented in the document text as plain text
         try:
-            logger.info(f"html_attachment: {html_attachment}")
             html_attachment.replaceWith(
                 f"<attachment>{sanitize_attachment_title(html_attachment.attrs['ri:filename'])}</attachment>"
             )  # to be replaced later

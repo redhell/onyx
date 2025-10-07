@@ -81,13 +81,12 @@ def _test_confluence_connector_basic(
         confluence_connector, 0, time.time()
     )
 
-    assert len(doc_batch) == 3 if expect_attachments else 2
+    assert len(doc_batch) == (3 if expect_attachments else 2)
 
     page_within_a_page_doc: Document | None = None
     page_doc: Document | None = None
     small_file_doc: Document | None = None
 
-    print(f"doc_batch: {len(doc_batch)}")
     for doc in doc_batch:
         if doc.semantic_identifier == "DailyConnectorTestSpace Home":
             page_doc = doc
@@ -124,7 +123,9 @@ def _test_confluence_connector_basic(
     assert page_doc.metadata["labels"] == ["testlabel"]
     assert page_doc.primary_owners
     assert page_doc.primary_owners[0].email == "hagen@danswer.ai"
-    assert len(page_doc.sections) == 1  # page text + attachment text
+    assert (
+        len(page_doc.sections) == 1
+    )  # just page text, attachment text is separate doc
 
     page_section = page_doc.sections[0]
     assert (

@@ -501,7 +501,7 @@ class ConfluenceConnector(
                             document_id=object_url,
                             document_link=object_url,
                         ),
-                        failure_message=f"Failed to extract/summarize attachment {attachment['title']} for doc {doc.id}",
+                        failure_message=f"Failed to extract/summarize attachment {attachment['title']} for doc {object_url}",
                         exception=e,
                     )
                 )
