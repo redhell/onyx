@@ -27,6 +27,7 @@ import SvgFileText from "@/icons/file-text";
 import SvgFolderOpen from "@/icons/folder-open";
 import SvgAddLines from "@/icons/add-lines";
 import SvgFiles from "@/icons/files";
+import Truncated from "@/refresh-components/Truncated";
 
 export function FileCard({
   file,
@@ -49,7 +50,6 @@ export function FileCard({
   }, [file.name]);
 
   const isActuallyProcessing =
-    String(file.status).toLowerCase() === "processing" ||
     String(file.status).toLowerCase() === "uploading";
 
   // When hideProcessingState is true, we treat processing files as completed for display purposes
@@ -98,13 +98,13 @@ export function FileCard({
         )}
       </div>
       <div className="flex flex-col overflow-hidden">
-        <span
+        <Truncated
           className={`font-secondary-action truncate
           ${isProcessing ? "text-text-03" : "text-text-04"}`}
           title={file.name}
         >
           {file.name}
-        </span>
+        </Truncated>
         <Text text03 secondaryBody nowrap className="truncate">
           {isProcessing
             ? file.status === UserFileStatus.UPLOADING
