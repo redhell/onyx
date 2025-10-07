@@ -137,6 +137,7 @@ def process_attachment(
         attachment_size = attachment["extensions"]["fileSize"]
 
         if media_type.startswith("image/"):
+            print(f"allow_images: {allow_images}")
             if not allow_images:
                 return AttachmentProcessingResult(
                     text=None,
