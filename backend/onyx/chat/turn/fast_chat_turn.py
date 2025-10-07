@@ -1,19 +1,23 @@
-from queue import Queue
-
 from agents import Agent
 from agents import ModelSettings
 from agents import RawResponsesStreamEvent
 from agents import StopAtTools
 
 from onyx.agents.agent_search.dr.models import AggregatedDRContext
+from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.chat.chat_utils import llm_doc_from_inference_section
 from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.stop_signal_checker import reset_cancel_status
+from onyx.chat.stream_processing.citation_processing import CitationProcessor
 from onyx.chat.turn.infra.chat_turn_event_stream import unified_event_stream
 from onyx.chat.turn.infra.session_sink import extract_final_answer_from_packets
 from onyx.chat.turn.infra.session_sink import save_iteration
 from onyx.chat.turn.infra.sync_agent_stream_adapter import SyncAgentStream
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.chat.turn.models import ChatTurnDependencies
+from onyx.context.search.models import InferenceSection
+from onyx.server.query_and_chat.streaming_models import CitationDelta
+from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import MessageDelta
 from onyx.server.query_and_chat.streaming_models import MessageStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
@@ -24,8 +28,18 @@ from onyx.tools.tool_implementations_v2.image_generation import image_generation
 from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 
 
-@unified_event_stream
-def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
+def _fast_chat_turn_core(
+    messages: list[dict],
+    dependencies: ChatTurnDependencies,
+    global_iteration_responses: list[IterationAnswer] | None = None,
+) -> None:
+    """Core fast chat turn logic that allows overriding global_iteration_responses for testing.
+
+    Args:
+        messages: List of chat messages
+        dependencies: Chat turn dependencies
+        global_iteration_responses: Optional list of iteration answers to inject for testing
+    """
     reset_cancel_status(
         dependencies.dependencies_to_maybe_remove.chat_session_id,
         dependencies.redis_client,
@@ -36,7 +50,7 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
             context="context",
             cited_documents=[],
             is_internet_marker_dict={},
-            global_iteration_responses=[],  # TODO: the only field that matters for now
+            global_iteration_responses=global_iteration_responses or [],
         ),
         iteration_instructions=[],
     )
@@ -66,23 +80,47 @@ def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> 
             agent_stream.cancel()
             break
         ctx.current_run_step
-        obj = default_packet_translation(ev)
+        obj = _default_packet_translation(ev)
         if obj:
             dependencies.emitter.emit(Packet(ind=ctx.current_run_step, obj=obj))
+    final_answer = extract_final_answer_from_packets(
+        dependencies.emitter.packet_history
+    )
+
+    # Process citations if we have context docs from iteration answers
+    all_cited_documents = []
+    if ctx.aggregated_context.global_iteration_responses:
+        context_docs = _gather_context_docs_from_iteration_answers(
+            ctx.aggregated_context.global_iteration_responses
+        )
+        all_cited_documents = context_docs  # Collect all cited documents
+
+        if context_docs and final_answer:
+            _process_citations_for_final_answer(
+                final_answer=final_answer,
+                context_docs=context_docs,
+                dependencies=dependencies,
+                ctx=ctx,
+            )
+
     save_iteration(
         db_session=dependencies.db_session,
         message_id=dependencies.dependencies_to_maybe_remove.message_id,
         chat_session_id=dependencies.dependencies_to_maybe_remove.chat_session_id,
         research_type=dependencies.dependencies_to_maybe_remove.research_type,
         ctx=ctx,
-        final_answer=extract_final_answer_from_packets(
-            dependencies.emitter.packet_history
-        ),
-        all_cited_documents=[],
+        final_answer=final_answer,
+        all_cited_documents=all_cited_documents,
     )
     dependencies.emitter.emit(
         Packet(ind=ctx.current_run_step, obj=OverallStop(type="stop"))
     )
+
+
+@unified_event_stream
+def fast_chat_turn(messages: list[dict], dependencies: ChatTurnDependencies) -> None:
+    """Main fast chat turn function that calls the core logic with default parameters."""
+    _fast_chat_turn_core(messages, dependencies, global_iteration_responses=None)
 
 
 # TODO: Maybe in general there's a cleaner way to handle cancellation in the middle of a tool call?
@@ -106,19 +144,72 @@ def _emit_clean_up_packets(
     )
 
 
-class Emitter:
-    """Use this inside tools to emit arbitrary UI progress."""
+def _gather_context_docs_from_iteration_answers(
+    iteration_answers: list[IterationAnswer],
+) -> list[InferenceSection]:
+    """Gather cited documents from iteration answers for citation processing."""
+    context_docs: list[InferenceSection] = []
 
-    def __init__(self, bus: Queue):
-        self.bus = bus
-        self.packet_history: list[Packet] = []
+    for iteration_answer in iteration_answers:
+        # Extract cited documents from this iteration
+        for inference_section in iteration_answer.cited_documents.values():
+            # Avoid duplicates by checking document_id
+            if not any(
+                doc.center_chunk.document_id
+                == inference_section.center_chunk.document_id
+                for doc in context_docs
+            ):
+                context_docs.append(inference_section)
 
-    def emit(self, packet: Packet) -> None:
-        self.bus.put(packet)
-        self.packet_history.append(packet)
+    return context_docs
 
 
-def default_packet_translation(ev: object) -> PacketObj | None:
+def _process_citations_for_final_answer(
+    final_answer: str,
+    context_docs: list[InferenceSection],
+    dependencies: ChatTurnDependencies,
+    ctx: ChatTurnContext,
+) -> None:
+    """Process citations in the final answer and emit citation events."""
+    from onyx.chat.stream_processing.utils import DocumentIdOrderMapping
+
+    # Convert InferenceSection objects to LlmDoc objects for citation processing
+    llm_docs = [llm_doc_from_inference_section(section) for section in context_docs]
+
+    # Create document ID to rank mappings (simple 1-based indexing)
+    final_doc_id_to_rank_map = DocumentIdOrderMapping(
+        order_mapping={doc.document_id: i + 1 for i, doc in enumerate(llm_docs)}
+    )
+    display_doc_id_to_rank_map = final_doc_id_to_rank_map  # Same mapping for display
+
+    # Initialize citation processor
+    citation_processor = CitationProcessor(
+        context_docs=llm_docs,
+        final_doc_id_to_rank_map=final_doc_id_to_rank_map,
+        display_doc_id_to_rank_map=display_doc_id_to_rank_map,
+    )
+
+    # Process the final answer through citation processor
+    collected_citations = []
+    for response_part in citation_processor.process_token(final_answer):
+        if hasattr(response_part, "citation_num"):  # It's a CitationInfo
+            collected_citations.append(response_part)
+
+    # Emit citation events if we found any citations
+    if collected_citations:
+        dependencies.emitter.emit(Packet(ind=ctx.current_run_step, obj=CitationStart()))
+        dependencies.emitter.emit(
+            Packet(
+                ind=ctx.current_run_step,
+                obj=CitationDelta(citations=collected_citations),
+            )
+        )
+        dependencies.emitter.emit(
+            Packet(ind=ctx.current_run_step, obj=SectionEnd(type="section_end"))
+        )
+
+
+def _default_packet_translation(ev: object) -> PacketObj | None:
     if isinstance(ev, RawResponsesStreamEvent):
         # TODO: might need some variation here for different types of models
         # OpenAI packet translator

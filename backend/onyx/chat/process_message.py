@@ -29,7 +29,9 @@ from onyx.chat.models import QADocsResponse
 from onyx.chat.models import StreamingError
 from onyx.chat.models import UserKnowledgeFilePacket
 from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
-from onyx.chat.prompt_builder.answer_prompt_builder import default_build_system_message
+from onyx.chat.prompt_builder.answer_prompt_builder import (
+    default_build_system_message_v2,
+)
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.chat.turn import fast_chat_turn
 from onyx.chat.turn.models import ChatTurnDependencies
@@ -741,7 +743,9 @@ def stream_chat_message_objects(
                 files=latest_query_files,
                 single_message_history=single_message_history,
             ),
-            system_message=default_build_system_message(prompt_config, llm.config),
+            # TODO: for backwards compatibility, we are using the V1
+            # system_message=default_build_system_message(prompt_config, llm.config),
+            system_message=default_build_system_message_v2(prompt_config, llm.config),
             message_history=message_history,
             llm_config=llm.config,
             raw_user_query=final_msg.message,

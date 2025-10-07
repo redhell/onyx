@@ -34,12 +34,19 @@ from openai.types.responses.response_usage import OutputTokensDetails
 from openai.types.responses.response_usage import ResponseUsage
 
 from onyx.agents.agent_search.dr.enums import ResearchType
+from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.chat.turn.models import DependenciesToMaybeRemove
+from onyx.context.search.models import DocumentSource
+from onyx.context.search.models import InferenceChunk
+from onyx.context.search.models import InferenceSection
 from onyx.llm.interfaces import LLM
 from onyx.llm.interfaces import LLMConfig
+from onyx.server.query_and_chat.streaming_models import CitationDelta
+from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.server.query_and_chat.streaming_models import SectionEnd
 
 
 # =============================================================================
@@ -761,3 +768,212 @@ def test_fast_chat_turn_tool_call_cancellation(
     # After cancellation during tool call, we should see MessageStart, SectionEnd, then OverallStop
     # The "Cancelled" MessageStart is shown when cancelling during tool calls/reasoning
     assert_cancellation_packets(packets, expect_cancelled_message=True)
+
+
+class FakeCitationModel(StreamableFakeModel):
+    """Fake model that simulates having iteration answers with cited documents."""
+
+    def __init__(self, iteration_answers: list[IterationAnswer] = None, **kwargs):
+        super().__init__(**kwargs)
+        self._iteration_answers = iteration_answers or []
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        """Override to create a response that includes citations."""
+        # Create a message with citations that reference our test documents
+        message = create_fake_message(
+            text="Based on the search results, here's the answer with citations [[1]]."
+        )
+        usage = create_fake_usage()
+        return ModelResponse(
+            output=[message], usage=usage, response_id="fake-response-id"
+        )
+
+
+class FakeCitationModelWithContext(StreamableFakeModel):
+    def __init__(self, iteration_answers: list[IterationAnswer] = None, **kwargs):
+        super().__init__(**kwargs)
+        self._iteration_answers = iteration_answers or []
+
+    async def get_response(
+        self,
+        system_instructions: str | None,
+        input: str | list,
+        model_settings: ModelSettings,
+        tools: List[Tool],
+        output_schema: AgentOutputSchemaBase | None,
+        handoffs: List[Handoff],
+        tracing: ModelTracing,
+        *,
+        previous_response_id: str | None = None,
+        conversation_id: str | None = None,
+        prompt=None,
+    ) -> ModelResponse:
+        """Override to create a response that includes citations."""
+        # Create a message with citations that reference our test documents
+        message = create_fake_message(
+            text="Based on the search results, here's the answer with citations [[1]]."
+        )
+        usage = create_fake_usage()
+        return ModelResponse(
+            output=[message], usage=usage, response_id="fake-response-id"
+        )
+
+    def _create_stream_events(
+        self,
+        message: ResponseOutputMessage = None,
+        response_id: str = "fake-response-id",
+    ) -> AsyncIterator[object]:
+        """Create stream events with citation text."""
+
+        async def _gen() -> AsyncIterator[object]:
+            # Create message with citation text
+            citation_text = "Based on the search results, here's the answer with citations [[1]](https://example.com)."
+            msg = create_fake_message(text=citation_text)
+
+            final_response = create_fake_response(response_id, msg)
+
+            # 1) created
+            yield ResponseCreatedEvent(
+                response=final_response, sequence_number=1, type="response.created"
+            )
+
+            # 2) stream the citation text in chunks
+            words = citation_text.split()
+            for word in words:
+                yield ResponseTextDeltaEvent(
+                    content_index=0,
+                    delta=word + " ",
+                    item_id="fake-item-id",
+                    logprobs=[],
+                    output_index=0,
+                    sequence_number=2,
+                    type="response.output_text.delta",
+                )
+
+            # 3) completed
+            yield ResponseCompletedEvent(
+                response=final_response, sequence_number=3, type="response.completed"
+            )
+
+        return _gen()
+
+
+def test_fast_chat_turn_citation_processing(
+    chat_turn_dependencies: ChatTurnDependencies,
+    sample_messages: list[dict],
+):
+    """Test that citation processing works correctly when iteration answers contain cited documents.
+
+    This test verifies that when the agent has access to context documents through
+    iteration answers, citations in the final answer are properly processed and
+    citation events are emitted. It uses the _fast_chat_turn_core function with
+    dependency injection instead of mocking.
+    """
+    from datetime import datetime
+    from onyx.chat.turn.fast_chat_turn import _fast_chat_turn_core
+    from onyx.chat.turn.infra.chat_turn_event_stream import unified_event_stream
+
+    # Create a fake inference section with cited documents
+    fake_chunk = InferenceChunk(
+        chunk_id=1,
+        document_id="test-doc-1",
+        source_type=DocumentSource.WEB,
+        semantic_identifier="Test Document",
+        title="Test Document Title",
+        content="This is test content for citation processing.",
+        blurb="Test blurb",
+        source_links={0: "https://example.com/test-doc"},
+        match_highlights=[],
+        updated_at=datetime.now(),
+        metadata={},
+        boost=1,
+        recency_bias=0.0,
+        score=0.9,
+        hidden=False,
+        doc_summary="Test document summary",
+        chunk_context="Test context",
+        section_continuation=False,
+        image_file_id=None,
+    )
+
+    fake_inference_section = InferenceSection(
+        center_chunk=fake_chunk,
+        chunks=[fake_chunk],
+        combined_content="This is test content for citation processing.",
+    )
+
+    # Create a fake iteration answer with cited documents
+    fake_iteration_answer = IterationAnswer(
+        tool="internal_search",
+        tool_id=1,
+        iteration_nr=1,
+        parallelization_nr=1,
+        question="What is test content?",
+        reasoning="Need to search for test content",
+        answer="The test content is about citation processing [[1]].",
+        cited_documents={1: fake_inference_section},
+    )
+
+    # Create a custom model that simulates having iteration answers
+    citation_model = FakeCitationModelWithContext(
+        iteration_answers=[fake_iteration_answer]
+    )
+    chat_turn_dependencies.llm_model = citation_model
+
+    # Create a decorated version of _fast_chat_turn_core for testing
+    @unified_event_stream
+    def test_fast_chat_turn_core(
+        messages: list[dict], dependencies: ChatTurnDependencies
+    ) -> None:
+        _fast_chat_turn_core(
+            messages, dependencies, global_iteration_responses=[fake_iteration_answer]
+        )
+
+    # Run the test with the core function
+    generator = test_fast_chat_turn_core(sample_messages, chat_turn_dependencies)
+    packets = list(generator)
+    print(packets)
+    # Verify we get the expected packets including citation events
+    assert_packets_contain_stop(packets)
+
+    # Look for citation events in the packets
+    citation_start_found = False
+    citation_delta_found = False
+    citation_section_end_found = False
+
+    for packet in packets:
+        if isinstance(packet.obj, CitationStart):
+            citation_start_found = True
+        elif isinstance(packet.obj, CitationDelta):
+            citation_delta_found = True
+            # Verify citation info is present
+            assert packet.obj.citations is not None
+            assert len(packet.obj.citations) > 0
+            # Verify citation points to our test document
+            citation = packet.obj.citations[0]
+            assert citation.document_id == "test-doc-1"
+            assert citation.citation_num == 1
+        elif (
+            isinstance(packet.obj, SectionEnd)
+            and citation_start_found
+            and citation_delta_found
+        ):
+            citation_section_end_found = True
+
+    # Verify citation events were emitted
+    assert citation_start_found, "CitationStart event should be emitted"
+    assert citation_delta_found, "CitationDelta event should be emitted"
+    assert citation_section_end_found, "Citation section should end with SectionEnd"

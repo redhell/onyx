@@ -54,7 +54,7 @@ class WebFetchResponse(BaseModel):
 
 
 def short_tag(link: str, i: int) -> str:
-    return f"S{i+1}"
+    return f"{i+1}"
 
 
 @tool_accounting
