@@ -358,6 +358,7 @@ export default function AIMessage({
                             onClick={() => copyAll(getTextContent(rawPackets))}
                             tertiary
                             tooltip="Copy"
+                            data-testid="AIMessage/copy-button"
                           />
                           <IconButton
                             icon={SvgThumbsUp}
@@ -369,6 +370,7 @@ export default function AIMessage({
                             }
                             tertiary
                             tooltip="Good Response"
+                            data-testid="AIMessage/like-button"
                           />
                           <IconButton
                             icon={SvgThumbsDown}
@@ -380,6 +382,7 @@ export default function AIMessage({
                             }
                             tertiary
                             tooltip="Bad Response"
+                            data-testid="AIMessage/dislike-button"
                           />
 
                           {chatState.regenerate && (

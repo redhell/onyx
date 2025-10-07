@@ -20,7 +20,9 @@ test.describe("Message Edit and Regenerate Tests", () => {
     // Test cancel editing
     let userMessage = page.locator("#onyx-human-message").first();
     await userMessage.hover();
-    let editButton = userMessage.locator('[data-testid="edit-button"]').first();
+    let editButton = userMessage
+      .locator('[data-testid="HumanMessage/edit-button"]')
+      .first();
     await editButton.click();
 
     let textarea = userMessage.locator("textarea");
@@ -36,7 +38,9 @@ test.describe("Message Edit and Regenerate Tests", () => {
 
     // Edit the message for real
     await userMessage.hover();
-    editButton = userMessage.locator('[data-testid="edit-button"]').first();
+    editButton = userMessage
+      .locator('[data-testid="HumanMessage/edit-button"]')
+      .first();
     await editButton.click();
 
     textarea = userMessage.locator("textarea");
@@ -46,10 +50,10 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await submitButton.click();
 
     // Wait for the new AI response to complete
-    await page.waitForSelector('[data-testid="copy-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/copy-button"]', {
       state: "detached",
     });
-    await page.waitForSelector('[data-testid="copy-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/copy-button"]', {
       state: "visible",
       timeout: 30000,
     });
@@ -62,16 +66,19 @@ test.describe("Message Edit and Regenerate Tests", () => {
     expect(messageContent).toContain("What is 3+3?");
 
     // Verify version switcher appears and shows 2/2
-    let messageSwitcher = page.locator('span:has-text("2 / 2")').first();
+    let messageSwitcher = page.getByTestId("MessageSwitcher/container").first();
     await expect(messageSwitcher).toBeVisible();
+    await expect(messageSwitcher).toContainText("2/2");
 
-    // Get the parent div that contains the whole switcher
-    messageSwitcher = messageSwitcher.locator("..").first();
+    // // Get the parent div that contains the whole switcher
+    // messageSwitcher = messageSwitcher.locator("..").first();
 
     // Edit again to create a third version
     userMessage = page.locator("#onyx-human-message").first();
     await userMessage.hover();
-    editButton = userMessage.locator('[data-testid="edit-button"]').first();
+    editButton = userMessage
+      .locator('[data-testid="HumanMessage/edit-button"]')
+      .first();
     await editButton.click();
 
     textarea = userMessage.locator("textarea");
@@ -81,18 +88,19 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await submitButton.click();
 
     // Wait for the new AI response to complete
-    await page.waitForSelector('[data-testid="copy-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/copy-button"]', {
       state: "detached",
     });
-    await page.waitForSelector('[data-testid="copy-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/copy-button"]', {
       state: "visible",
       timeout: 30000,
     });
 
     // Verify navigation between versions
     // Find the switcher showing "3 / 3"
-    let switcherSpan = page.locator('span:has-text("3 / 3")').first();
+    let switcherSpan = page.getByTestId("MessageSwitcher/container").first();
     await expect(switcherSpan).toBeVisible();
+    await expect(switcherSpan).toContainText("3/3");
 
     // Navigate to previous version - click the first svg icon's parent (left chevron)
     await switcherSpan
@@ -103,8 +111,9 @@ test.describe("Message Edit and Regenerate Tests", () => {
       .click();
 
     // Check we're now at "2 / 3"
-    switcherSpan = page.locator('span:has-text("2 / 3")').first();
+    switcherSpan = page.getByTestId("MessageSwitcher/container").first();
     await expect(switcherSpan).toBeVisible({ timeout: 5000 });
+    await expect(switcherSpan).toContainText("2/3");
 
     // Navigate to first version - re-find the button each time
     await switcherSpan
@@ -115,8 +124,9 @@ test.describe("Message Edit and Regenerate Tests", () => {
       .click();
 
     // Check we're now at "1 / 3"
-    switcherSpan = page.locator('span:has-text("1 / 3")').first();
+    switcherSpan = page.getByTestId("MessageSwitcher/container").first();
     await expect(switcherSpan).toBeVisible({ timeout: 5000 });
+    await expect(switcherSpan).toContainText("1/3");
 
     // Navigate forward using next button - click the last svg icon's parent (right chevron)
     await switcherSpan
@@ -127,8 +137,9 @@ test.describe("Message Edit and Regenerate Tests", () => {
       .click();
 
     // Check we're back at "2 / 3"
-    switcherSpan = page.locator('span:has-text("2 / 3")').first();
+    switcherSpan = page.getByTestId("MessageSwitcher/container").first();
     await expect(switcherSpan).toBeVisible({ timeout: 5000 });
+    await expect(switcherSpan).toContainText("2/3");
   });
 
   test("Message regeneration with model selection", async ({ page }) => {

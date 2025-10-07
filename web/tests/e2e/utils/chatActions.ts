@@ -33,7 +33,9 @@ export async function sendMessage(page: Page, message: string) {
   await page.locator("#onyx-chat-input-send-button").click();
   await page.waitForSelector('[data-testid="onyx-ai-message"]');
   // Wait for the copy button to appear, which indicates the message is fully rendered
-  await page.waitForSelector('[data-testid="copy-button"]', { timeout: 30000 });
+  await page.waitForSelector('[data-testid="AIMessage/copy-button"]', {
+    timeout: 30000,
+  });
 
   // Wait for up to 10 seconds for the URL to contain 'chatId='
   await page.waitForFunction(
