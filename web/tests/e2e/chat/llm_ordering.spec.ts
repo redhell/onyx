@@ -27,7 +27,7 @@ test("LLM Ordering and Model Switching", async ({ page }) => {
   await page.getByTestId("Settings/user-settings").click();
   await page.getByRole("combobox").nth(1).click();
   await page.getByLabel("GPT 5", { exact: true }).click();
-  await page.getByLabel("Close modal").click();
+  await page.getByTestId("Modal/close-modal").click();
   await page.waitForTimeout(5000);
   await verifyCurrentModel(page, "GPT 5");
 
@@ -37,7 +37,7 @@ test("LLM Ordering and Model Switching", async ({ page }) => {
   await verifyCurrentModel(page, "GPT 4o Mini");
 
   // Create a custom assistant with a specific model
-  await page.getByRole("button", { name: "Explore Assistants" }).click();
+  await page.getByTestId("AppSidebar/more-agents").click();
   await page.getByRole("button", { name: "Create", exact: true }).click();
   await page.waitForTimeout(2000);
   await page.getByTestId("name").fill("Sample Name");

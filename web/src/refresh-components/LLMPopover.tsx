@@ -117,7 +117,7 @@ export default function LLMPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div data-testid="llm-popover-trigger">{triggerContent}</div>
+        <div data-testid="LLMPopover/trigger">{triggerContent}</div>
       </PopoverTrigger>
       <PopoverContent
         side="top"
