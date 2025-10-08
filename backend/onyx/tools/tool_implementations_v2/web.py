@@ -14,7 +14,7 @@ from onyx.agents.agent_search.dr.sub_agents.web_search.providers import (
     WebSearchProvider,
 )
 from onyx.agents.agent_search.dr.sub_agents.web_search.utils import (
-    dummy_inference_section_from_internet_content,
+    dummy_inference_section_from_internet_search_result,
 )
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.db.tools import get_tool_by_name
@@ -122,6 +122,12 @@ def _web_search_core(
             )
         )
 
+    # Create inference sections from search results and add to cited documents
+    inference_sections = [
+        dummy_inference_section_from_internet_search_result(r) for r in all_hits
+    ]
+    run_context.context.aggregated_context.cited_documents.extend(inference_sections)
+
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
             tool=WebSearchTool.__name__,
@@ -133,7 +139,10 @@ def _web_search_core(
             question=queries_str,
             reasoning=f"I am now using Web Search to gather information on {queries_str}",
             answer="Cool",
-            cited_documents={},
+            cited_documents={
+                i: inference_section
+                for i, inference_section in enumerate(inference_sections)
+            },
             claims=["web_search"],
         )
     )
@@ -231,10 +240,6 @@ def _web_fetch_core(
         )
     )
 
-    inference_sections = [
-        dummy_inference_section_from_internet_content(d) for d in docs
-    ]
-    run_context.context.aggregated_context.cited_documents.extend(inference_sections)
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
             # TODO: For now, we're using the web_search_tool_name since the web_fetch_tool_name is not a built-in tool
@@ -246,12 +251,9 @@ def _web_fetch_core(
             parallelization_nr=0,
             question=f"Fetch content from URLs: {', '.join(urls)}",
             reasoning=f"I am now using Web Fetch to gather information on {', '.join(urls)}",
-            answer="Cool",
-            cited_documents={
-                i: inference_section
-                for i, inference_section in enumerate(inference_sections)
-            },
-            claims=["web_fetch"],
+            answer="",
+            cited_documents={},
+            claims=[],
         )
     )
 

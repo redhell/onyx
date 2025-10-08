@@ -195,6 +195,23 @@ def test_web_search_core_basic_functionality():
     assert answer.tool == WebSearchTool.__name__
     assert answer.iteration_nr == 1
     assert answer.question == queries[0]
+    assert len(answer.cited_documents) == 2
+
+    # Verify cited_documents were added to aggregated_context
+    assert len(test_run_context.context.aggregated_context.cited_documents) == 2
+    # Web documents have "INTERNET_SEARCH_DOC_" prefix added to the URL
+    assert (
+        test_run_context.context.aggregated_context.cited_documents[
+            0
+        ].center_chunk.document_id
+        == "INTERNET_SEARCH_DOC_https://example.com/1"
+    )
+    assert (
+        test_run_context.context.aggregated_context.cited_documents[
+            1
+        ].center_chunk.document_id
+        == "INTERNET_SEARCH_DOC_https://example.com/2"
+    )
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter
@@ -281,23 +298,10 @@ def test_web_fetch_core_basic_functionality():
         answer.question
         == "Fetch content from URLs: https://example.com/1, https://example.com/2"
     )
-    assert len(answer.cited_documents) == 2
+    assert len(answer.cited_documents) == 0
 
-    # Verify cited_documents were added to aggregated_context
-    assert len(test_run_context.context.aggregated_context.cited_documents) == 2
-    # Web documents have "INTERNET_SEARCH_DOC_" prefix added to the URL
-    assert (
-        test_run_context.context.aggregated_context.cited_documents[
-            0
-        ].center_chunk.document_id
-        == "INTERNET_SEARCH_DOC_https://example.com/1"
-    )
-    assert (
-        test_run_context.context.aggregated_context.cited_documents[
-            1
-        ].center_chunk.document_id
-        == "INTERNET_SEARCH_DOC_https://example.com/2"
-    )
+    # Verify cited_documents were NOT added to aggregated_context (they are added during search)
+    assert len(test_run_context.context.aggregated_context.cited_documents) == 0
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter
@@ -425,6 +429,23 @@ def test_web_search_core_multiple_queries():
     assert answer.iteration_nr == 1
     assert "first query" in answer.question
     assert "second query" in answer.question
+    assert len(answer.cited_documents) == 3
+
+    # Verify cited_documents were added to aggregated_context
+    assert len(test_run_context.context.aggregated_context.cited_documents) == 3
+    # Verify at least one of the cited documents has the correct format
+    document_ids = [
+        doc.center_chunk.document_id
+        for doc in test_run_context.context.aggregated_context.cited_documents
+    ]
+    assert any(
+        "INTERNET_SEARCH_DOC_https://example.com/first" in doc_id
+        for doc_id in document_ids
+    )
+    assert any(
+        "INTERNET_SEARCH_DOC_https://example.com/second" in doc_id
+        for doc_id in document_ids
+    )
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter
