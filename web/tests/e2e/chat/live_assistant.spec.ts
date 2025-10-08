@@ -10,6 +10,11 @@ import {
 test("Chat workflow", async ({ page }) => {
   // Clear cookies and log in as a random user
   await page.context().clearCookies();
+  // Use waitForSelector for robustness instead of expect().toBeVisible()
+  // await page.waitForSelector(
+  //   `//div[@aria-label="Agents Modal"]//*[contains(text(), "${assistantName}") and not(contains(@class, 'invisible'))]`,
+  //   { state: "visible", timeout: 10000 }
+  // );
   await loginAsRandomUser(page);
 
   // Navigate to the chat page
@@ -24,8 +29,6 @@ test("Chat workflow", async ({ page }) => {
 
   // Verify the presence of the expected text
   await verifyAssistantIsChosen(page, "Onyx");
-
-  await page.pause();
 
   // Test creation of a new assistant
   await page.getByTestId("AppSidebar/more-agents").click();
