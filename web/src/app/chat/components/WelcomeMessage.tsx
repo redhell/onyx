@@ -1,5 +1,6 @@
 // import { AssistantIcon } from "@/components/assistants/AssistantIcon";
 import { Logo } from "@/components/logo/Logo";
+import { WELCOME_MESSAGE } from "@/lib/chat/greetingMessages";
 import { cn } from "@/lib/utils";
 import { AgentIcon } from "@/refresh-components/AgentIcon";
 import Text from "@/refresh-components/Text";
@@ -31,10 +32,13 @@ export default function WelcomeMessage() {
             className="flex flex-col items-center gap-spacing-paragraph"
           >
             <Logo size="large" />
-            <Text headingH2>Let&apos;s get started</Text>
+            <Text headingH2>{WELCOME_MESSAGE}</Text>
           </div>
         ) : (
-          <div className="flex flex-row items-center justify-center gap-padding-button">
+          <div
+            data-testid="assistant-name-display"
+            className="flex flex-row items-center justify-center gap-padding-button"
+          >
             <AgentIcon agent={currentAgent} />
             <Text headingH2>{currentAgent.name}</Text>
           </div>

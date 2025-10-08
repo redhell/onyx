@@ -1,3 +1,4 @@
+import { WELCOME_MESSAGE } from "@/lib/chat/greetingMessages";
 import { test, expect } from "@chromatic-com/playwright";
 import { loginAsRandomUser } from "@tests/e2e/utils/auth";
 import {
@@ -5,7 +6,11 @@ import {
   startNewChat,
   verifyAssistantIsChosen,
 } from "@tests/e2e/utils/chatActions";
-import { TOOL_IDS, openActionManagement } from "@tests/e2e/utils/tools";
+import {
+  TOOL_IDS,
+  openActionManagement,
+  waitForUnifiedGreeting,
+} from "@tests/e2e/utils/tools";
 
 // Tool-related test selectors now imported from shared utils
 
@@ -18,6 +23,47 @@ test.describe("Default Assistant Tests", () => {
     // Navigate to the chat page
     await page.goto("http://localhost:3000/chat");
     await page.waitForLoadState("networkidle");
+  });
+
+  test.describe("Greeting Message Display", () => {
+    test("should display greeting message when opening new chat with default assistant", async ({
+      page,
+    }) => {
+      // Look for greeting message - should be one from the predefined list
+      const greeting = await waitForUnifiedGreeting(page);
+      expect(greeting.trim()).toStrictEqual(WELCOME_MESSAGE);
+    });
+
+    test("greeting should only appear for default assistant", async ({
+      page,
+    }) => {
+      // First verify greeting appears for default assistant
+      const greetingElement = await page.waitForSelector(
+        '[data-testid="onyx-logo"]',
+        { timeout: 5000 }
+      );
+      expect(greetingElement).toBeTruthy();
+
+      // Create a custom assistant to test non-default behavior
+      await page.getByTestId("AppSidebar/more-agents").click();
+      await page.getByRole("button", { name: "Create", exact: true }).click();
+      await page.waitForTimeout(2000);
+      await page.getByTestId("name").fill("Custom Test Assistant");
+      await page.getByTestId("description").fill("Test Description");
+      await page.getByTestId("system_prompt").fill("Test Instructions");
+      await page
+        .locator('button[role="combobox"] > span:has-text("User Default")')
+        .click();
+      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
+      await page.getByRole("button", { name: "Create" }).click();
+
+      // Wait for assistant to be created and selected
+      await verifyAssistantIsChosen(page, "Custom Test Assistant");
+
+      // Greeting should NOT appear for custom assistant
+      const customGreeting = await page.$('[data-testid="onyx-logo"]');
+      expect(customGreeting).toBeNull();
+    });
   });
 
   test.describe("Default Assistant Branding", () => {
@@ -40,11 +86,16 @@ test.describe("Default Assistant Tests", () => {
       page,
     }) => {
       // Create a custom assistant
-      await page.getByRole("button", { name: "Explore Assistants" }).click();
+      await page.getByTestId("AppSidebar/more-agents").click();
       await page.getByRole("button", { name: "Create", exact: true }).click();
+      await page.waitForTimeout(2000);
       await page.getByTestId("name").fill("Custom Assistant");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
+      await page
+        .locator('button[role="combobox"] > span:has-text("User Default")')
+        .click();
+      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
       await page.getByRole("button", { name: "Create" }).click();
 
       // Wait for assistant to be created and selected
@@ -83,11 +134,16 @@ test.describe("Default Assistant Tests", () => {
       page,
     }) => {
       // Create a custom assistant with starter messages
-      await page.getByRole("button", { name: "Explore Assistants" }).click();
+      await page.getByTestId("AppSidebar/more-agents").click();
       await page.getByRole("button", { name: "Create", exact: true }).click();
+      await page.waitForTimeout(2000);
       await page.getByTestId("name").fill("Test Assistant with Starters");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
+      await page
+        .locator('button[role="combobox"] > span:has-text("User Default")')
+        .click();
+      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
 
       // Add starter messages (if the UI supports it)
       // For now, we'll create without starter messages and check the behavior
@@ -126,7 +182,7 @@ test.describe("Default Assistant Tests", () => {
       page,
     }) => {
       // Open assistant selector
-      await page.getByRole("button", { name: "Explore Assistants" }).click();
+      await page.getByTestId("AppSidebar/more-agents").click();
 
       // Wait for modal or assistant list to appear
       // The selector might be in a modal or dropdown
@@ -155,11 +211,16 @@ test.describe("Default Assistant Tests", () => {
       page,
     }) => {
       // Create a custom assistant
-      await page.getByRole("button", { name: "Explore Assistants" }).click();
+      await page.getByTestId("AppSidebar/more-agents").click();
       await page.getByRole("button", { name: "Create", exact: true }).click();
+      await page.waitForTimeout(2000);
       await page.getByTestId("name").fill("Switch Test Assistant");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
+      await page
+        .locator('button[role="combobox"] > span:has-text("User Default")')
+        .click();
+      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
       await page.getByRole("button", { name: "Create" }).click();
 
       // Verify switched to custom assistant
@@ -294,7 +355,7 @@ test.describe("End-to-End Default Assistant Flow", () => {
 
     // Verify greeting message appears
     const greetingElement = await page.waitForSelector(
-      '[data-testid="greeting-message"]',
+      '[data-testid="onyx-logo"]',
       { timeout: 5000 }
     );
     expect(greetingElement).toBeTruthy();
@@ -327,7 +388,7 @@ test.describe("End-to-End Default Assistant Flow", () => {
 
     // Verify we're back to default assistant with greeting
     const newGreeting = await page.waitForSelector(
-      '[data-testid="greeting-message"]',
+      '[data-testid="onyx-logo"]',
       { timeout: 5000 }
     );
     expect(newGreeting).toBeTruthy();
