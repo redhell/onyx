@@ -27,7 +27,9 @@ test("LLM Ordering and Model Switching", async ({ page }) => {
   await page.getByTestId("Settings/user-settings").click();
   await page.getByRole("combobox").nth(1).click();
   await page.getByLabel("GPT 5", { exact: true }).click();
-  await page.getByTestId("Modal/close-modal").click();
+  // Click outside the modal at the very bottom right of the viewport
+  const { width, height } = page.viewportSize()!;
+  await page.mouse.click(width - 1, height - 1);
   await page.waitForTimeout(5000);
   await verifyCurrentModel(page, "GPT 5");
 

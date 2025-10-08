@@ -545,7 +545,9 @@ function ChatInputBarInner({
           </div>
 
           <div className="flex flex-row items-center gap-spacing-inline">
-            <LLMPopover llmManager={llmManager} requiresImageGeneration />
+            <div data-testid="ChatInputBar/llm-popover-trigger">
+              <LLMPopover llmManager={llmManager} requiresImageGeneration />
+            </div>
             <IconButton
               id="onyx-chat-input-send-button"
               icon={chatState === "input" ? SvgArrowUp : SvgStop}

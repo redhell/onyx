@@ -46,13 +46,15 @@ export async function sendMessage(page: Page, message: string) {
 }
 
 export async function verifyCurrentModel(page: Page, modelName: string) {
-  const text = await page.getByTestId("LLMPopover/trigger").textContent();
+  const text = await page
+    .getByTestId("ChatInputBar/llm-popover-trigger")
+    .textContent();
   expect(text).toContain(modelName);
 }
 
 // Start of Selection
 export async function switchModel(page: Page, modelName: string) {
-  await page.getByTestId("LLMPopover/trigger").click();
+  await page.getByTestId("ChatInputBar/llm-popover-trigger").click();
   // Target the button inside the popover content specifically
   await page
     .locator('[role="dialog"]')
