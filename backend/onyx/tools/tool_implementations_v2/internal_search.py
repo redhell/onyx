@@ -5,12 +5,12 @@ from agents import RunContextWrapper
 
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
+from onyx.agents.agent_search.dr.utils import convert_inference_sections_to_search_docs
 from onyx.chat.stop_signal_checker import is_connected
 from onyx.chat.turn.models import ChatTurnContext
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.db.tools import get_tool_by_name
 from onyx.server.query_and_chat.streaming_models import Packet
-from onyx.server.query_and_chat.streaming_models import SavedSearchDoc
 from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
 from onyx.tools.models import SearchToolOverrideKwargs
@@ -83,29 +83,9 @@ def _internal_search_core(
                         obj=SearchToolDelta(
                             type="internal_search_tool_delta",
                             queries=None,
-                            documents=[
-                                SavedSearchDoc(
-                                    db_doc_id=0,
-                                    document_id=doc.center_chunk.document_id,
-                                    chunk_ind=0,
-                                    semantic_identifier=doc.center_chunk.semantic_identifier,
-                                    link=doc.center_chunk.semantic_identifier,
-                                    blurb=doc.center_chunk.blurb,
-                                    source_type=doc.center_chunk.source_type,
-                                    boost=doc.center_chunk.boost,
-                                    hidden=doc.center_chunk.hidden,
-                                    metadata=doc.center_chunk.metadata,
-                                    score=doc.center_chunk.score,
-                                    is_relevant=doc.center_chunk.is_relevant,
-                                    relevance_explanation=doc.center_chunk.relevance_explanation,
-                                    match_highlights=doc.center_chunk.match_highlights,
-                                    updated_at=doc.center_chunk.updated_at,
-                                    primary_owners=doc.center_chunk.primary_owners,
-                                    secondary_owners=doc.center_chunk.secondary_owners,
-                                    is_internet=False,
-                                )
-                                for doc in retrieved_docs
-                            ],
+                            documents=convert_inference_sections_to_search_docs(
+                                retrieved_docs, is_internet=False
+                            ),
                         ),
                     )
                 )

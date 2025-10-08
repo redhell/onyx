@@ -1,11 +1,9 @@
 from collections.abc import Callable
 from collections.abc import Generator
-from queue import Queue
 from typing import Any
 from typing import Dict
 from typing import List
 
-from onyx.chat.turn.infra.emitter import Emitter
 from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
@@ -36,10 +34,6 @@ def unified_event_stream(
         *args: Any,
         **kwargs: Any
     ) -> Generator[Packet, None]:
-        bus: Queue[Packet] = Queue()
-        emitter = Emitter(bus)
-        dependencies.emitter = emitter
-
         def run_with_exception_capture() -> None:
             try:
                 turn_func(messages, dependencies, *args, **kwargs)

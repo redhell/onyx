@@ -97,7 +97,7 @@ def _web_search_core(
                 tag=short_tag(r.link, i),
                 title=r.title,
                 link=r.link,
-                snippet=r.snippet,
+                snippet=r.snippet or "",
                 author=r.author,
                 published_date=(
                     r.published_date.isoformat() if r.published_date else None
@@ -162,6 +162,8 @@ def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str)
     }
     """
     search_provider = get_default_provider()
+    if search_provider is None:
+        raise ValueError("No search provider found")
     response = _web_search_core(run_context, query, search_provider)
     return response.model_dump_json()
 
@@ -275,5 +277,7 @@ def web_fetch_tool(
     }
     """
     search_provider = get_default_provider()
+    if search_provider is None:
+        raise ValueError("No search provider found")
     response = _web_fetch_core(run_context, urls, search_provider)
     return response.model_dump_json()

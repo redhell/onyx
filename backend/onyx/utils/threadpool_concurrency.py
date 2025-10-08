@@ -290,7 +290,9 @@ def run_async_sync_no_cancel(coro: Awaitable[T]) -> T:
     """
     context = contextvars.copy_context()
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(context.run, asyncio.run, coro)
+        future: concurrent.futures.Future[T] = executor.submit(
+            context.run, asyncio.run, coro
+        )
         return future.result()
 
 

@@ -34,6 +34,7 @@ from onyx.chat.prompt_builder.answer_prompt_builder import (
 )
 from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
 from onyx.chat.turn import fast_chat_turn
+from onyx.chat.turn.infra.emitter import get_default_emitter
 from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.chat.user_files.parse_user_files import parse_user_files
 from onyx.configs.chat_configs import CHAT_TARGET_CHUNK_PERCENTAGE
@@ -866,10 +867,11 @@ def _fast_message_stream(
         PreviousMessage.from_langchain_msg(message, 0).to_agent_sdk_msg()
         for message in answer.graph_inputs.prompt_builder.build()
     ]
+    emitter = get_default_emitter()
     return fast_chat_turn.fast_chat_turn(
         messages=converted_message_history,
+        # TODO: Maybe we can use some DI framework here?
         dependencies=ChatTurnDependencies(
-            # TODO: Dependency inject this higher up?
             llm_model=LitellmModel(
                 model=answer.graph_tooling.primary_llm.config.model_name,
                 base_url=answer.graph_tooling.primary_llm.config.api_base,
@@ -882,6 +884,7 @@ def _fast_message_stream(
             okta_profile_tool=okta_profile_tool_instance,
             db_session=db_session,
             redis_client=redis_client,
+            emitter=emitter,
         ),
         chat_session_id=chat_session_id,
         message_id=reserved_message_id,

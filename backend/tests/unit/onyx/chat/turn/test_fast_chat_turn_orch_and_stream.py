@@ -10,6 +10,7 @@ injection with simple fake versions of all dependencies except for the emitter
 
 from collections.abc import AsyncIterator
 from typing import List
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -35,6 +36,7 @@ from openai.types.responses.response_usage import ResponseUsage
 
 from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import IterationAnswer
+from onyx.chat.turn.infra.emitter import get_default_emitter
 from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.context.search.models import DocumentSource
 from onyx.context.search.models import InferenceChunk
@@ -46,6 +48,13 @@ from onyx.server.query_and_chat.streaming_models import CitationStart
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
+from onyx.tools.tool_implementations.images.image_generation_tool import (
+    ImageGenerationTool,
+)
+from onyx.tools.tool_implementations.okta_profile.okta_profile_tool import (
+    OktaProfileTool,
+)
+from onyx.tools.tool_implementations.search.search_tool import SearchTool
 
 
 # =============================================================================
@@ -671,17 +680,18 @@ def chat_turn_dependencies(
     fake_tools: list[FunctionTool],
     fake_redis_client: FakeRedis,
 ) -> ChatTurnDependencies:
-    """Fixture providing a complete ChatTurnDependencies object with fake implementations.
-
-    Note: The emitter field is left as None - it will be set by the unified_event_stream decorator.
-    """
+    """Fixture providing a complete ChatTurnDependencies object with fake implementations."""
+    emitter = get_default_emitter()
     return ChatTurnDependencies(
         llm_model=fake_model,
         llm=fake_llm,
         db_session=fake_db_session,
         tools=fake_tools,
         redis_client=fake_redis_client,
-        emitter=None,
+        emitter=emitter,
+        search_pipeline=Mock(SearchTool),
+        image_generation_tool=Mock(ImageGenerationTool),
+        okta_profile_tool=Mock(OktaProfileTool),
     )
 
 

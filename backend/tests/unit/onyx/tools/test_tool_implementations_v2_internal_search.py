@@ -1,11 +1,15 @@
+from queue import Queue
 from uuid import uuid4
 
 import pytest
 from agents import RunContextWrapper
 
+from onyx.agents.agent_search.dr.models import AggregatedDRContext
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
+from onyx.chat.turn.infra.emitter import Emitter
 from onyx.chat.turn.models import ChatTurnContext
+from onyx.chat.turn.models import ChatTurnDependencies
 from onyx.configs.constants import DocumentSource
 from onyx.context.search.models import InferenceChunk
 from onyx.context.search.models import InferenceSection
@@ -25,37 +29,41 @@ from onyx.tools.tool_implementations.search.search_tool import SearchTool
 # =============================================================================
 
 
-class FakeEmitter:
-    """Fake emitter for dependency injection"""
-
-    def __init__(self):
-        self.emitted_events = []
-
-    def emit(self, packet: Packet):
-        self.emitted_events.append(packet)
-
-
-class FakeAggregatedContext:
-    """Fake aggregated context for dependency injection"""
-
-    def __init__(self):
-        self.global_iteration_responses = []
-        self.cited_documents = []
+def create_fake_aggregated_context() -> AggregatedDRContext:
+    """Create a fake aggregated context for testing"""
+    return AggregatedDRContext(
+        context="",
+        global_iteration_responses=[],
+        cited_documents=[],
+        is_internet_marker_dict={},
+    )
 
 
-class FakeRunDependencies:
-    """Fake run dependencies for dependency injection"""
+def create_fake_run_dependencies(redis_client=None) -> ChatTurnDependencies:
+    """Create fake run dependencies for testing"""
+    from unittest.mock import MagicMock
 
-    def __init__(self):
-        self.emitter = FakeEmitter()
-        self.redis_client = None
-        # Set up mock database session
-        from unittest.mock import MagicMock
+    bus: Queue[Packet] = Queue()
+    emitter = Emitter(bus)
 
-        self.db_session = MagicMock()
-        # Configure the scalar method to return our mock tool
-        mock_tool = FakeTool()
-        self.db_session.scalar.return_value = mock_tool
+    # Set up mock database session
+    db_session = MagicMock()
+    # Configure the scalar method to return our mock tool
+    mock_tool = FakeTool()
+    db_session.scalar.return_value = mock_tool
+
+    # Create minimal ChatTurnDependencies
+    return ChatTurnDependencies(
+        llm_model=MagicMock(),  # Mock Model
+        llm=MagicMock(),  # Mock LLM
+        db_session=db_session,
+        tools=[],  # Empty tools list for testing
+        redis_client=redis_client or MagicMock(),
+        emitter=emitter,
+        search_pipeline=None,
+        image_generation_tool=None,
+        okta_profile_tool=None,
+    )
 
 
 class FakeTool:
@@ -238,17 +246,14 @@ def create_fake_run_context(
     chat_session_id=None,
     message_id: int | None = None,
     research_type=None,
-    redis_client: FakeRedis = None,
+    redis_client: FakeRedis | None = None,
 ) -> RunContextWrapper[ChatTurnContext]:
     """Create a real RunContextWrapper with fake dependencies"""
 
     # Create fake dependencies
-    emitter = FakeEmitter()
-    aggregated_context = FakeAggregatedContext()
+    aggregated_context = create_fake_aggregated_context()
 
-    run_dependencies = FakeRunDependencies()
-    run_dependencies.emitter = emitter
-    run_dependencies.redis_client = redis_client
+    run_dependencies = create_fake_run_dependencies(redis_client=redis_client)
 
     # Create the actual context object
     context = ChatTurnContext(
@@ -320,8 +325,8 @@ def run_internal_search_core_with_dependencies(
     run_context: RunContextWrapper[ChatTurnContext],
     query: str,
     search_pipeline: FakeSearchPipeline,
-    session_context_manager: FakeSessionContextManager = None,
-    redis_client: FakeRedis = None,
+    session_context_manager: FakeSessionContextManager | None = None,
+    redis_client: FakeRedis | None = None,
 ) -> list:
     """Helper function to run the real _internal_search_core with injected dependencies"""
     from unittest.mock import patch
@@ -345,7 +350,7 @@ def run_internal_search_core_with_dependencies(
 
         # Set up the Redis client in the run context if provided
         if redis_client:
-            run_context.context.run_dependencies.redis_client = redis_client
+            run_context.context.run_dependencies.redis_client = redis_client  # type: ignore
 
         # Call the real _internal_search_core function
         return _internal_search_core(run_context, query, search_pipeline)
@@ -373,21 +378,15 @@ class FakeSearchToolOverrideKwargs:
 
 
 @pytest.fixture
-def fake_emitter() -> FakeEmitter:
-    """Fixture providing a fake emitter implementation."""
-    return FakeEmitter()
-
-
-@pytest.fixture
-def fake_aggregated_context() -> FakeAggregatedContext:
+def fake_aggregated_context() -> AggregatedDRContext:
     """Fixture providing a fake aggregated context implementation."""
-    return FakeAggregatedContext()
+    return create_fake_aggregated_context()
 
 
 @pytest.fixture
-def fake_run_dependencies() -> FakeRunDependencies:
+def fake_run_dependencies() -> ChatTurnDependencies:
     """Fixture providing a fake run dependencies implementation."""
-    return FakeRunDependencies()
+    return create_fake_run_dependencies()
 
 
 @pytest.fixture
@@ -512,21 +511,21 @@ def test_internal_search_core_basic_functionality(
 
     # Verify emitter events were captured
     emitter = fake_run_context.context.run_dependencies.emitter
-    assert len(emitter.emitted_events) == 4
+    assert len(emitter.packet_history) == 4
 
     # Check the types of emitted events
-    assert isinstance(emitter.emitted_events[0].obj, SearchToolStart)
-    assert isinstance(emitter.emitted_events[1].obj, SearchToolDelta)
-    assert isinstance(emitter.emitted_events[2].obj, SearchToolDelta)
-    assert isinstance(emitter.emitted_events[3].obj, SectionEnd)
+    assert isinstance(emitter.packet_history[0].obj, SearchToolStart)
+    assert isinstance(emitter.packet_history[1].obj, SearchToolDelta)
+    assert isinstance(emitter.packet_history[2].obj, SearchToolDelta)
+    assert isinstance(emitter.packet_history[3].obj, SectionEnd)
 
     # Check the first SearchToolDelta (query)
-    first_delta = emitter.emitted_events[1].obj
+    first_delta = emitter.packet_history[1].obj
     assert first_delta.queries == [query]
     assert first_delta.documents is None
 
     # Check the second SearchToolDelta (documents)
-    second_delta = emitter.emitted_events[2].obj
+    second_delta = emitter.packet_history[2].obj
     assert second_delta.queries is None
     assert second_delta.documents is not None
     assert len(second_delta.documents) == 2

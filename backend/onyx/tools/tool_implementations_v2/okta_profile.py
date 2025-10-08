@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from agents import function_tool
 from agents import RunContextWrapper
@@ -16,17 +17,17 @@ logger = setup_logger()
 @tool_accounting
 def _okta_profile_core(
     run_context: RunContextWrapper[ChatTurnContext],
-    okta_profile_tool_instance,
-) -> dict:
+    okta_profile_tool_instance: Any,
+) -> dict[str, Any]:
     """Core Okta profile logic that can be tested with dependency injection"""
     if okta_profile_tool_instance is None:
         raise RuntimeError("Okta profile tool not available in context")
 
     index = run_context.context.current_run_step
-    emitter = run_context.context.run_dependencies.emitter
+    emitter = run_context.context.run_dependencies.emitter  # type: ignore[union-attr]
 
     # Emit start event
-    emitter.emit(
+    emitter.emit(  # type: ignore[union-attr]
         Packet(
             ind=index,
             obj=CustomToolStart(type="custom_tool_start", tool_name="Okta Profile"),
@@ -34,7 +35,7 @@ def _okta_profile_core(
     )
 
     # Emit delta event for fetching profile
-    emitter.emit(
+    emitter.emit(  # type: ignore[union-attr]
         Packet(
             ind=index,
             obj=CustomToolDelta(
@@ -57,7 +58,7 @@ def _okta_profile_core(
         raise RuntimeError("No profile data was retrieved from Okta")
 
     # Emit final result
-    emitter.emit(
+    emitter.emit(  # type: ignore[union-attr]
         Packet(
             ind=index,
             obj=CustomToolDelta(

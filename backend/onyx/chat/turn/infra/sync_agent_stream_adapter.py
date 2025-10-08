@@ -6,8 +6,10 @@ from typing import Generic
 from typing import Optional
 from typing import TypeVar
 
+from agents import Agent
 from agents.run import Runner
 
+from onyx.chat.turn.models import ChatTurnContext
 from onyx.utils.threadpool_concurrency import run_in_background
 
 T = TypeVar("T")
@@ -37,12 +39,12 @@ class SyncAgentStream(Generic[T]):
     def __init__(
         self,
         *,
-        agent,
-        input,
-        context=None,
+        agent: Agent,
+        input: list[dict],
+        context: ChatTurnContext,
         max_turns: int = 100,
         queue_maxsize: int = 0,
-    ):
+    ) -> None:
         self._agent = agent
         self._input = input
         self._context = context
@@ -71,7 +73,7 @@ class SyncAgentStream(Generic[T]):
                         raise self._exc
                     # Normal completion
                     return
-                yield item  # type: ignore[return-value]
+                yield item  # type: ignore[misc,return-value]
         finally:
             # Ensure we fully clean up whether we exited due to exception,
             # StopIteration, or external cancel.
@@ -117,7 +119,7 @@ class SyncAgentStream(Generic[T]):
         # Optionally wait until the loop/worker is started so .cancel() is safe soon after init
         self._started.wait(timeout=1.0)
 
-    def _thread_main(self) -> None:
+    def _thread_main(self) -> None:  # type: ignore[no-untyped-def]
         loop = asyncio.new_event_loop()
         self._loop = loop
         asyncio.set_event_loop(loop)

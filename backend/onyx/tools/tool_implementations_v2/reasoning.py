@@ -16,7 +16,7 @@ def reasoning_tool(dependencies: RunContextWrapper[ChatTurnContext], query: str)
     tokens = dependencies.context.run_dependencies.llm.stream(
         [
             SystemMessage(
-                content="""
+                content=f"""
                 You are a private scratchpad to reason about the query and use the result generated to help you answer the query.
                 Use this tool for complex reasoning and calculations. The following is your question.
                 Please reason about the query and use the result generated to help you answer the query.
@@ -29,5 +29,9 @@ def reasoning_tool(dependencies: RunContextWrapper[ChatTurnContext], query: str)
     )
     for token in tokens:
         print(token.content)
-        answer += token.content
+        content = token.content
+        if isinstance(content, str):
+            answer += content
+        elif isinstance(content, list):
+            answer += "".join(str(item) for item in content)
     return answer

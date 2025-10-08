@@ -13,3 +13,9 @@ class Emitter:
     def emit(self, packet: Packet) -> None:
         self.bus.put(packet)
         self.packet_history.append(packet)
+
+
+def get_default_emitter() -> Emitter:
+    bus: Queue[Packet] = Queue()
+    emitter = Emitter(bus)
+    return emitter

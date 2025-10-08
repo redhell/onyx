@@ -1,3 +1,4 @@
+import dataclasses
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -26,8 +27,8 @@ class ChatTurnDependencies:
     llm: LLM
     db_session: Session
     tools: list[FunctionTool]
-    redis_client: Redis | None = None
-    emitter: Emitter | None = None
+    redis_client: Redis
+    emitter: Emitter
     search_pipeline: SearchTool | None = None
     image_generation_tool: ImageGenerationTool | None = None
     okta_profile_tool: OktaProfileTool | None = None
@@ -37,13 +38,13 @@ class ChatTurnDependencies:
 class ChatTurnContext:
     """Context class to hold search tool and other dependencies"""
 
-    run_dependencies: ChatTurnDependencies | None = None
-    needs_compaction: bool = False
+    chat_session_id: UUID
+    message_id: int
+    research_type: ResearchType
+    run_dependencies: ChatTurnDependencies
+    aggregated_context: AggregatedDRContext
     current_run_step: int = 0
-    # TODO: Figure out a cleaner way to persist information.
-    aggregated_context: AggregatedDRContext | None = None
-    iteration_instructions: list[IterationInstructions] | None = None
-    web_fetch_results: list[dict] | None = None
-    chat_session_id: UUID | None = None
-    message_id: int | None = None
-    research_type: ResearchType | None = None
+    iteration_instructions: list[IterationInstructions] = dataclasses.field(
+        default_factory=list
+    )
+    web_fetch_results: list[dict] = dataclasses.field(default_factory=list)

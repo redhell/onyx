@@ -2,6 +2,7 @@ import functools
 import inspect
 from collections.abc import Callable
 from typing import Any
+from typing import cast
 from typing import TypeVar
 
 from agents import RunContextWrapper
@@ -10,7 +11,7 @@ from onyx.chat.turn.models import ChatTurnContext
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import SectionEnd
 
-F = TypeVar("F", bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable)
 
 
 def tool_accounting(func: F) -> F:
@@ -31,7 +32,9 @@ def tool_accounting(func: F) -> F:
     """
 
     @functools.wraps(func)
-    def wrapper(run_context: RunContextWrapper[ChatTurnContext], *args, **kwargs):
+    def wrapper(
+        run_context: RunContextWrapper[ChatTurnContext], *args: Any, **kwargs: Any
+    ) -> Any:
         # Increment current_run_step at the beginning
         run_context.context.current_run_step += 1
 
@@ -59,7 +62,7 @@ def tool_accounting(func: F) -> F:
             _emit_section_end(run_context)
             raise
 
-    return wrapper
+    return cast(F, wrapper)
 
 
 def _emit_section_end(run_context: RunContextWrapper[ChatTurnContext]) -> None:
