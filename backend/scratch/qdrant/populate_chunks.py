@@ -57,7 +57,7 @@ def main():
 
     # Generate and insert chunks in batches
     total_chunks = 1_000_000
-    batch_size = 1_000
+    batch_size = 1_854
     num_batches = total_chunks // batch_size
 
     print(
