@@ -7,3 +7,7 @@ class DeleteCollectionResult(BaseModel):
 
 class CreateCollectionResult(BaseModel):
     success: bool
+
+
+class UpdateCollectionResult(BaseModel):
+    success: bool

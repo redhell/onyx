@@ -92,10 +92,15 @@ def main():
     query = "What is the biggest nation?"
     print(f"\nTesting hybrid search (RRF fusion)... with query: '{query}'")
 
-    search_result = service.hybrid_search_rrf(
-        query_text=query,
-        dense_embedding_model=dense_embedding_model,
-        sparse_embedding_model=sparse_embedding_model,
+    # Generate query embeddings
+    dense_query_vector, sparse_query_vector = service.generate_query_embeddings(
+        query, dense_embedding_model, sparse_embedding_model
+    )
+
+    # Perform search with pre-computed embeddings
+    search_result = service.hybrid_search(
+        dense_query_vector=dense_query_vector,
+        sparse_query_vector=sparse_query_vector,
         collection_name=collection_name,
         limit=3,
     )
