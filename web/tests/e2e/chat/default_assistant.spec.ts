@@ -235,7 +235,6 @@ test.describe("Default Assistant Tests", () => {
     }) => {
       await openActionManagement(page);
       expect(await page.$(TOOL_IDS.searchOption)).toBeTruthy();
-      expect(await page.$(TOOL_IDS.webSearchOption)).toBeTruthy();
       expect(await page.$(TOOL_IDS.imageGenerationOption)).toBeTruthy();
     });
 
@@ -287,18 +286,18 @@ test.describe("Default Assistant Tests", () => {
       });
 
       // Find the internet search tool option and its toggle
-      const webSearchOption = await page.$(TOOL_IDS.webSearchOption);
-      expect(webSearchOption).toBeTruthy();
+      const searchOption = await page.$(TOOL_IDS.searchOption);
+      expect(searchOption).toBeTruthy();
 
-      const webSearchToggle = await webSearchOption?.$(TOOL_IDS.toggleInput);
+      const searchToggle = await searchOption?.$(TOOL_IDS.toggleInput);
 
       let toggledState = false;
-      if (webSearchToggle) {
-        await webSearchToggle.click();
-        toggledState = await webSearchToggle.isChecked();
+      if (searchToggle) {
+        await searchToggle.click();
+        toggledState = await searchToggle.isChecked();
       } else {
         // Click the option itself if no toggle found
-        await webSearchOption?.click();
+        await searchOption?.click();
         // Assume toggled if clicked
         toggledState = true;
       }
@@ -314,13 +313,13 @@ test.describe("Default Assistant Tests", () => {
       });
 
       // Check if state persisted
-      const webSearchOptionAfterReload = await page.$(TOOL_IDS.webSearchOption);
-      const webSearchToggleAfterReload = await webSearchOptionAfterReload?.$(
+      const searchOptionAfterReload = await page.$(TOOL_IDS.searchOption);
+      const searchToggleAfterReload = await searchOptionAfterReload?.$(
         TOOL_IDS.toggleInput
       );
 
-      if (webSearchToggleAfterReload) {
-        const stateAfterReload = await webSearchToggleAfterReload.isChecked();
+      if (searchToggleAfterReload) {
+        const stateAfterReload = await searchToggleAfterReload.isChecked();
         expect(stateAfterReload).toBe(toggledState);
       }
     });

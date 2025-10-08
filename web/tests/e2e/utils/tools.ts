@@ -7,7 +7,6 @@ export const TOOL_IDS = {
   options: '[data-testid="tool-options"]',
   // These IDs are derived from tool.name in the app
   searchOption: '[data-testid="tool-option-SearchTool"]',
-  webSearchOption: '[data-testid="tool-option-WebSearchTool"]',
   imageGenerationOption: '[data-testid="tool-option-ImageGenerationTool"]',
   // Generic toggle selector used inside tool options
   toggleInput: 'input[type="checkbox"], input[type="radio"], [role="switch"]',
