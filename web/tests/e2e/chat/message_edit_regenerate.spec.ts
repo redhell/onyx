@@ -161,9 +161,7 @@ test.describe("Message Edit and Regenerate Tests", () => {
     await aiMessage.hover();
 
     // Click regenerate button using its data-testid
-    const regenerateButton = aiMessage.getByTestId(
-      "AIMessage/regenerate-button"
-    );
+    const regenerateButton = aiMessage.getByTestId("AIMessage/regenerate");
     await regenerateButton.click();
 
     // Wait for dropdown to appear and select GPT-4o-mini
@@ -175,7 +173,7 @@ test.describe("Message Edit and Regenerate Tests", () => {
 
     // Wait for regeneration to complete by waiting for feedback buttons to appear
     // The feedback buttons (copy, like, dislike, regenerate) appear when streaming is complete
-    await page.waitForSelector('[data-testid="AIMessage/regenerate-button"]', {
+    await page.waitForSelector('[data-testid="AIMessage/regenerate"]', {
       state: "visible",
       timeout: 15000,
     });
