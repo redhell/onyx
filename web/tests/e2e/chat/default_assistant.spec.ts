@@ -51,10 +51,6 @@ test.describe("Default Assistant Tests", () => {
       await page.getByTestId("name").fill("Custom Test Assistant");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
-      await page
-        .locator('button[role="combobox"] > span:has-text("User Default")')
-        .click();
-      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
       await page.getByRole("button", { name: "Create" }).click();
 
       // Wait for assistant to be created and selected
@@ -92,10 +88,6 @@ test.describe("Default Assistant Tests", () => {
       await page.getByTestId("name").fill("Custom Assistant");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
-      await page
-        .locator('button[role="combobox"] > span:has-text("User Default")')
-        .click();
-      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
       await page.getByRole("button", { name: "Create" }).click();
 
       // Wait for assistant to be created and selected
@@ -140,10 +132,6 @@ test.describe("Default Assistant Tests", () => {
       await page.getByTestId("name").fill("Test Assistant with Starters");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
-      await page
-        .locator('button[role="combobox"] > span:has-text("User Default")')
-        .click();
-      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
 
       // Add starter messages (if the UI supports it)
       // For now, we'll create without starter messages and check the behavior
@@ -217,10 +205,6 @@ test.describe("Default Assistant Tests", () => {
       await page.getByTestId("name").fill("Switch Test Assistant");
       await page.getByTestId("description").fill("Test Description");
       await page.getByTestId("system_prompt").fill("Test Instructions");
-      await page
-        .locator('button[role="combobox"] > span:has-text("User Default")')
-        .click();
-      await page.getByLabel("GPT 4o Mini").getByText("GPT 4o Mini").click();
       await page.getByRole("button", { name: "Create" }).click();
 
       // Verify switched to custom assistant
