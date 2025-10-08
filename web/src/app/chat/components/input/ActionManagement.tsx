@@ -95,7 +95,7 @@ interface ActionItemProps {
   onSourceManagementOpen?: () => void;
 }
 
-export function ActionItem({
+function ActionItem({
   tool,
   Icon: ProvidedIcon,
   label: providedLabel,
