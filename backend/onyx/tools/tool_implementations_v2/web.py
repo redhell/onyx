@@ -25,6 +25,7 @@ from onyx.server.query_and_chat.streaming_models import SearchToolDelta
 from onyx.server.query_and_chat.streaming_models import SearchToolStart
 from onyx.tools.tool_implementations.web_search.web_search_tool import WebSearchTool
 from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
+from onyx.utils.threadpool_concurrency import run_functions_in_parallel
 
 
 class WebSearchResult(BaseModel):
@@ -59,11 +60,11 @@ def short_tag(link: str, i: int) -> str:
 @tool_accounting
 def _web_search_core(
     run_context: RunContextWrapper[ChatTurnContext],
-    query: str,
+    queries: list[str],
     search_provider: WebSearchProvider,
 ) -> WebSearchResponse:
-    # TODO: Find better way to track index that isn't so implicit
-    # based on number of tool calls
+    from onyx.utils.threadpool_concurrency import FunctionCall
+
     index = run_context.context.current_run_step
     run_context.context.run_dependencies.emitter.emit(
         Packet(
@@ -77,21 +78,37 @@ def _web_search_core(
         Packet(
             ind=index,
             obj=SearchToolDelta(
-                type="internal_search_tool_delta", queries=[query], documents=None
+                type="internal_search_tool_delta", queries=queries, documents=None
             ),
         )
     )
+
+    queries_str = ", ".join(queries)
     run_context.context.iteration_instructions.append(
         IterationInstructions(
             iteration_nr=index,
             plan="plan",
             purpose="Searching the web for information",
-            reasoning=f"I am now using Web Search to gather information on {query}",
+            reasoning=f"I am now using Web Search to gather information on {queries_str}",
         )
     )
-    hits = search_provider.search(query)
+
+    # Search all queries in parallel
+    function_calls = [
+        FunctionCall(func=search_provider.search, args=(query,)) for query in queries
+    ]
+    search_results_dict = run_functions_in_parallel(function_calls)
+
+    # Aggregate all results from all queries
+    all_hits = []
+    for result_id in search_results_dict:
+        hits = search_results_dict[result_id]
+        if hits:
+            all_hits.extend(hits)
+
+    # Convert hits to WebSearchResult objects
     results = []
-    for i, r in enumerate(hits):
+    for i, r in enumerate(all_hits):
         results.append(
             WebSearchResult(
                 tag=short_tag(r.link, i),
@@ -104,6 +121,7 @@ def _web_search_core(
                 ),
             )
         )
+
     run_context.context.aggregated_context.global_iteration_responses.append(
         IterationAnswer(
             tool=WebSearchTool.__name__,
@@ -112,8 +130,8 @@ def _web_search_core(
             ).id,
             iteration_nr=index,
             parallelization_nr=0,
-            question=query,
-            reasoning=f"I am now using Web Search to gather information on {query}",
+            question=queries_str,
+            reasoning=f"I am now using Web Search to gather information on {queries_str}",
             answer="Cool",
             cited_documents={},
             claims=["web_search"],
@@ -123,7 +141,9 @@ def _web_search_core(
 
 
 @function_tool
-def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str) -> str:
+def web_search_tool(
+    run_context: RunContextWrapper[ChatTurnContext], queries: list[str]
+) -> str:
     """
     Tool for searching the public internet. Useful for up to date information on PUBLIC knowledge.
     ---
@@ -141,11 +161,11 @@ def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str)
 
     ## Usage hints
     - Use ONE focused natural-language `query` per call.
-    - Prefer 1–3 searches for distinct intents; then batch-fetch 3–8 best URLs.
+    - Prefer 3-5 searches for distinct intents; then batch-fetch 10-15 best URLs.
     - Deduplicate domains/near-duplicates. Prefer recent, authoritative sources.
 
     ## Args
-    - query (str): The search query.
+    - queries (list[str]): The search queries.
 
     ## Returns (JSON string)
     {
@@ -164,7 +184,7 @@ def web_search_tool(run_context: RunContextWrapper[ChatTurnContext], query: str)
     search_provider = get_default_provider()
     if search_provider is None:
         raise ValueError("No search provider found")
-    response = _web_search_core(run_context, query, search_provider)
+    response = _web_search_core(run_context, queries, search_provider)
     return response.model_dump_json()
 
 
@@ -253,10 +273,10 @@ def web_fetch_tool(
 
     ## When NOT to use
     - If you do not yet have URLs (search first).
-    - Avoid many tiny calls; batch URLs (1–20) in one request.
 
     ## Usage hints
-    - Batch 3–8 high-quality, deduplicated URLs per topic.
+    - Avoid many tiny calls; batch URLs (1–20) in one request.
+    - Batch 10–15 high-quality, deduplicated URLs per topic.
     - Prefer primary, recent, and reputable sources.
     - If PDFs/long docs appear, still fetch; you may summarize sections explicitly.
 

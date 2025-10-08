@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import List
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from agents import RunContextWrapper
 
+from onyx.agents.agent_search.dr.enums import ResearchType
 from onyx.agents.agent_search.dr.models import IterationAnswer
 from onyx.agents.agent_search.dr.models import IterationInstructions
 from onyx.agents.agent_search.dr.sub_agents.web_search.models import WebContent
@@ -107,6 +109,9 @@ def create_test_run_context(
 
     # Create the actual context object
     context = ChatTurnContext(
+        chat_session_id=uuid4(),
+        message_id=1,
+        research_type=ResearchType.THOUGHTFUL,
         current_run_step=current_run_step,
         iteration_instructions=iteration_instructions or [],
         aggregated_context=aggregated_context,
@@ -120,10 +125,10 @@ def create_test_run_context(
 
 
 def test_web_search_core_basic_functionality():
-    """Test basic functionality of _web_search_core function"""
+    """Test basic functionality of _web_search_core function with a single query"""
     # Arrange
     test_run_context = create_test_run_context()
-    query = "test search query"
+    queries = ["test search query"]
 
     # Create test search results
     test_search_results = [
@@ -146,7 +151,7 @@ def test_web_search_core_basic_functionality():
     test_provider = MockWebSearchProvider(search_results=test_search_results)
 
     # Act
-    result = _web_search_core(test_run_context, query, test_provider)
+    result = _web_search_core(test_run_context, queries, test_provider)
 
     # Assert
     assert isinstance(result, WebSearchResponse)
@@ -189,7 +194,7 @@ def test_web_search_core_basic_functionality():
     assert isinstance(answer, IterationAnswer)
     assert answer.tool == WebSearchTool.__name__
     assert answer.iteration_nr == 1
-    assert answer.question == query
+    assert answer.question == queries[0]
 
     # Verify emitter events were captured
     emitter = test_run_context.context.run_dependencies.emitter
@@ -314,14 +319,14 @@ def test_web_search_core_exception_handling():
     """Test that _web_search_core handles exceptions properly - should still emit section end and update current_run_step"""
     # Arrange
     test_run_context = create_test_run_context()
-    query = "test search query"
+    queries = ["test search query"]
 
     # Create a provider that will raise an exception
     test_provider = MockWebSearchProvider(should_raise_exception=True)
 
     # Act & Assert
     with pytest.raises(Exception, match="Test exception from search provider"):
-        _web_search_core(test_run_context, query, test_provider)
+        _web_search_core(test_run_context, queries, test_provider)
 
     # Verify that even though an exception was raised, we still emitted the initial events
     # and the SectionEnd packet was emitted by the decorator
@@ -339,6 +344,102 @@ def test_web_search_core_exception_handling():
     assert (
         test_run_context.context.current_run_step == 2
     )  # Should be 2 after proper handling
+
+
+def test_web_search_core_multiple_queries():
+    """Test _web_search_core function with multiple queries searched in parallel"""
+    # Arrange
+    test_run_context = create_test_run_context()
+    queries = ["first query", "second query"]
+
+    # Create a mock provider that returns different results based on the query
+    class MultiQueryMockProvider(WebSearchProvider):
+        def search(self, query: str) -> List[WebSearchResult]:
+            if query == "first query":
+                return [
+                    WebSearchResult(
+                        title="First Result 1",
+                        link="https://example.com/first1",
+                        author="Author 1",
+                        published_date=datetime(2024, 1, 1, 12, 0, 0),
+                        snippet="Snippet for first query result 1",
+                    ),
+                    WebSearchResult(
+                        title="First Result 2",
+                        link="https://example.com/first2",
+                        author=None,
+                        published_date=None,
+                        snippet="Snippet for first query result 2",
+                    ),
+                ]
+            elif query == "second query":
+                return [
+                    WebSearchResult(
+                        title="Second Result 1",
+                        link="https://example.com/second1",
+                        author="Author 2",
+                        published_date=datetime(2024, 2, 1, 12, 0, 0),
+                        snippet="Snippet for second query result 1",
+                    ),
+                ]
+            return []
+
+        def contents(self, urls: List[str]) -> List[WebContent]:
+            return []
+
+    test_provider = MultiQueryMockProvider()
+
+    # Act
+    result = _web_search_core(test_run_context, queries, test_provider)
+
+    # Assert
+    assert isinstance(result, WebSearchResponse)
+    # Should have 3 total results (2 from first query + 1 from second query)
+    assert len(result.results) == 3
+
+    # Verify all results are present (order may vary due to parallel execution)
+    titles = {r.title for r in result.results}
+    assert "First Result 1" in titles
+    assert "First Result 2" in titles
+    assert "Second Result 1" in titles
+
+    # Verify context was updated
+    assert test_run_context.context.current_run_step == 2
+    assert len(test_run_context.context.iteration_instructions) == 1
+    assert (
+        len(test_run_context.context.aggregated_context.global_iteration_responses) == 1
+    )
+
+    # Check iteration instruction contains both queries
+    instruction = test_run_context.context.iteration_instructions[0]
+    assert isinstance(instruction, IterationInstructions)
+    assert instruction.iteration_nr == 1
+    assert instruction.purpose == "Searching the web for information"
+    assert "first query" in instruction.reasoning
+    assert "second query" in instruction.reasoning
+
+    # Check iteration answer
+    answer = test_run_context.context.aggregated_context.global_iteration_responses[0]
+    assert isinstance(answer, IterationAnswer)
+    assert answer.tool == WebSearchTool.__name__
+    assert answer.iteration_nr == 1
+    assert "first query" in answer.question
+    assert "second query" in answer.question
+
+    # Verify emitter events were captured
+    emitter = test_run_context.context.run_dependencies.emitter
+    assert len(emitter.emitted_events) == 3
+
+    # Check the types of emitted events
+    assert isinstance(emitter.emitted_events[0].obj, SearchToolStart)
+    assert isinstance(emitter.emitted_events[1].obj, SearchToolDelta)
+    assert isinstance(emitter.emitted_events[2].obj, SectionEnd)
+
+    # Check that SearchToolDelta contains both queries
+    search_delta = emitter.emitted_events[1].obj
+    assert len(search_delta.queries) == 2
+    assert "first query" in search_delta.queries
+    assert "second query" in search_delta.queries
 
 
 def test_web_fetch_core_exception_handling():
