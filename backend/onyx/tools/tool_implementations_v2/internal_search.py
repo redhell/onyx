@@ -26,10 +26,10 @@ from onyx.tools.tool_implementations_v2.tool_accounting import tool_accounting
 def _internal_search_core(
     run_context: RunContextWrapper[ChatTurnContext],
     query: str,
-    search_pipeline_instance,
+    search_tool: SearchTool,
 ) -> list:
     """Core internal search logic that can be tested with dependency injection"""
-    if search_pipeline_instance is None:
+    if search_tool is None:
         raise RuntimeError("Search tool not available in context")
 
     index = run_context.context.current_run_step
@@ -59,7 +59,7 @@ def _internal_search_core(
     )
 
     with get_session_with_current_tenant() as search_db_session:
-        for tool_response in search_pipeline_instance.run(
+        for tool_response in search_tool.run(
             query=query,
             override_kwargs=SearchToolOverrideKwargs(
                 force_no_rerank=True,

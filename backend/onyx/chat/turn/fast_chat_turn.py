@@ -80,11 +80,13 @@ def _fast_chat_turn_core(
         ),
         tool_use_behavior=StopAtTools(stop_at_tool_names=[image_generation_tool.name]),
     )
+    # By default, the agent can only take 10 turns. For our use case, it should be higher.
+    max_turns = 100
     agent_stream = SyncAgentStream(
         agent=agent,
         input=messages,
         context=ctx,
-        max_turns=100,  # TODO: magic number
+        max_turns=max_turns,
     )
     for ev in agent_stream:
         connected = is_connected(
@@ -103,14 +105,12 @@ def _fast_chat_turn_core(
         dependencies.emitter.packet_history
     )
 
-    # Process citations if we have context docs from iteration answers
     all_cited_documents = []
     if ctx.aggregated_context.global_iteration_responses:
         context_docs = _gather_context_docs_from_iteration_answers(
             ctx.aggregated_context.global_iteration_responses
         )
-        all_cited_documents = context_docs  # Collect all cited documents
-
+        all_cited_documents = context_docs
         if context_docs and final_answer:
             _process_citations_for_final_answer(
                 final_answer=final_answer,
