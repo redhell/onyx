@@ -106,6 +106,6 @@ sendgrid==6.11.0
 voyageai==0.2.3
 cohere==5.6.1
 exa_py==1.15.4
-braintrust==0.2.6
+braintrust[openai-agents]==0.2.6
 braintrust-langchain==0.0.4
 openai-agents==0.3.3
