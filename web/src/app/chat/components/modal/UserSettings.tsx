@@ -1,10 +1,9 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { getDisplayNameForModel, LlmDescriptor } from "@/lib/hooks";
-import { LLMProviderDescriptor } from "@/app/admin/configuration/llm/interfaces";
+import { getDisplayNameForModel } from "@/lib/hooks";
 import { parseLlmDescriptor, structureValue } from "@/lib/llm/utils";
 import { setUserDefaultModel } from "@/lib/users/UserSettings";
 import { usePathname, useRouter } from "next/navigation";
-import { PopupSpec } from "@/components/admin/connectors/Popup";
+import { usePopup } from "@/components/admin/connectors/Popup";
 import { useUser } from "@/components/user/UserProvider";
 import { Switch } from "@/components/ui/switch";
 import { SubLabel } from "@/components/Field";
@@ -17,42 +16,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Loader2, Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Button from "@/refresh-components/buttons/Button";
 import { Input } from "@/components/ui/input";
 import { deleteAllChatSessions } from "@/app/chat/services/lib";
-import { useChatContext } from "@/refresh-components/contexts/ChatContext";
-import { FederatedConnectorOAuthStatus } from "@/components/chat/FederatedOAuthModal";
 import { SourceIcon } from "@/components/SourceIcon";
-import { ValidSources, CCPairBasicInfo } from "@/lib/types";
+import { ValidSources } from "@/lib/types";
 import { getSourceMetadata } from "@/lib/sources";
 import SvgTrash from "@/icons/trash";
 import SvgExternalLink from "@/icons/external-link";
+import { useFederatedOAuthStatus } from "@/lib/hooks/useFederatedOAuthStatus";
+import { useCCPairs } from "@/lib/hooks/useCCPairs";
+import { useLLMProviders } from "@/lib/hooks/useLLMProviders";
 
 type SettingsSection = "settings" | "password" | "connectors";
 
 interface UserSettingsProps {
-  setPopup: (popupSpec: PopupSpec | null) => void;
-  llmProviders: LLMProviderDescriptor[];
-  updateCurrentLlm?: (newOverride: LlmDescriptor) => void;
   onClose: () => void;
-  defaultModel: string | null;
-  ccPairs: CCPairBasicInfo[];
-  federatedConnectors: FederatedConnectorOAuthStatus[];
-  refetchFederatedConnectors: () => void;
 }
 
-export default function UserSettings({
-  setPopup,
-  llmProviders,
-  onClose,
-  updateCurrentLlm,
-  defaultModel,
-  ccPairs,
-  federatedConnectors,
-  refetchFederatedConnectors,
-}: UserSettingsProps) {
+export function UserSettings({ onClose }: UserSettingsProps) {
   const {
     refreshUser,
     user,
@@ -60,7 +44,7 @@ export default function UserSettings({
     updateUserShortcuts,
     updateUserTemperatureOverrideEnabled,
   } = useUser();
-  const { refreshChatSessions } = useChatContext();
+  const { llmProviders } = useLLMProviders();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
@@ -70,11 +54,38 @@ export default function UserSettings({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isModelUpdating, setIsModelUpdating] = useState(false);
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("settings");
+  // show updates in the UI instantly without waiting for an API call to finish
+  const [currentDefaultModel, setCurrentDefaultModel] = useState<string | null>(
+    null
+  );
   const [isDeleteAllLoading, setIsDeleteAllLoading] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState<number | null>(null);
+
+  const { popup, setPopup } = usePopup();
+
+  // Fetch federated-connector info so the modal can list/refresh them
+  const {
+    connectors: federatedConnectors,
+    refetch: refetchFederatedConnectors,
+  } = useFederatedOAuthStatus();
+
+  const { ccPairs } = useCCPairs();
+
+  const defaultModel = user?.preferences?.default_model;
+
+  // Initialize currentDefaultModel from user preferences
+  useEffect(() => {
+    if (currentDefaultModel === null && defaultModel) {
+      setCurrentDefaultModel(defaultModel);
+    }
+  }, [defaultModel, currentDefaultModel]);
+
+  // Use currentDefaultModel for display, falling back to defaultModel
+  const displayModel = currentDefaultModel ?? defaultModel;
 
   const hasConnectors =
     (ccPairs && ccPairs.length > 0) ||
@@ -156,27 +167,36 @@ export default function UserSettings({
   });
 
   const handleChangedefaultModel = async (defaultModel: string | null) => {
+    // Update UI instantly
+    setCurrentDefaultModel(defaultModel);
+    setIsModelUpdating(true);
+
     try {
       const response = await setUserDefaultModel(defaultModel);
 
       if (response.ok) {
-        if (defaultModel && updateCurrentLlm) {
-          updateCurrentLlm(parseLlmDescriptor(defaultModel));
-        }
         setPopup({
           message: "Default model updated successfully",
           type: "success",
         });
         refreshUser();
+        // refresh so that the new default model is reflected in the
+        // LLMManager / the UI
         router.refresh();
       } else {
+        // Revert on failure
+        setCurrentDefaultModel(user?.preferences?.default_model ?? null);
         throw new Error("Failed to update default model");
       }
     } catch (error) {
+      // Revert on error
+      setCurrentDefaultModel(user?.preferences?.default_model ?? null);
       setPopup({
         message: "Failed to update default model",
         type: "error",
       });
+    } finally {
+      setIsModelUpdating(false);
     }
   };
 
@@ -271,7 +291,7 @@ export default function UserSettings({
           message: "All your chat sessions have been deleted.",
           type: "success",
         });
-        refreshChatSessions();
+        // refreshChatSessions();
         if (pathname.includes("/chat")) {
           router.push("/chat");
         }
@@ -290,60 +310,48 @@ export default function UserSettings({
   };
 
   return (
-    <div className="flex flex-col p-padding-content">
+    <div className="flex flex-col gap-padding-content p-padding-content">
       {(showPasswordSection || hasConnectors) && (
-        <div className="w-1/4 pr-4 flex-shrink-0">
-          <nav>
-            <ul className="space-y-2">
+        <nav>
+          <ul className="flex space-x-2">
+            <li>
+              <Button
+                tertiary
+                active={activeSection === "settings"}
+                onClick={() => setActiveSection("settings")}
+              >
+                Settings
+              </Button>
+            </li>
+            {showPasswordSection && (
               <li>
-                <button
-                  className={`w-full text-base text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                    activeSection === "settings"
-                      ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                      : ""
-                  }`}
-                  onClick={() => setActiveSection("settings")}
+                <Button
+                  tertiary
+                  active={activeSection === "password"}
+                  onClick={() => setActiveSection("password")}
                 >
-                  Settings
-                </button>
+                  Password
+                </Button>
               </li>
-              {showPasswordSection && (
-                <li>
-                  <button
-                    className={`w-full text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                      activeSection === "password"
-                        ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                        : ""
-                    }`}
-                    onClick={() => setActiveSection("password")}
-                  >
-                    Password
-                  </button>
-                </li>
-              )}
-              {hasConnectors && (
-                <li>
-                  <button
-                    className={`w-full text-base text-left py-2 px-4 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                      activeSection === "connectors"
-                        ? "bg-neutral-100 dark:bg-neutral-700 font-semibold"
-                        : ""
-                    }`}
-                    onClick={() => setActiveSection("connectors")}
-                  >
-                    Connectors
-                  </button>
-                </li>
-              )}
-            </ul>
-          </nav>
-        </div>
+            )}
+            {hasConnectors && (
+              <li>
+                <Button
+                  tertiary
+                  active={activeSection === "connectors"}
+                  onClick={() => setActiveSection("connectors")}
+                >
+                  Connectors
+                </Button>
+              </li>
+            )}
+          </ul>
+        </nav>
       )}
-      <div
-        className={`${
-          showPasswordSection || hasConnectors ? "w-3/4" : "w-full"
-        } overflow-y-scroll default-scrollbar !w-full`}
-      >
+
+      {popup}
+
+      <div className="w-full overflow-y-scroll">
         {activeSection === "settings" && (
           <div className="space-y-6">
             <div>
@@ -411,16 +419,21 @@ export default function UserSettings({
               />
             </div>
             <div>
-              <h3 className="text-lg font-medium">Default Model</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-medium">Default Model</h3>
+                {isModelUpdating && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
               <LLMSelector
                 userSettings
                 llmProviders={llmProviders}
                 currentLlm={
-                  defaultModel
+                  displayModel
                     ? structureValue(
-                        parseLlmDescriptor(defaultModel).provider,
-                        parseLlmDescriptor(defaultModel).name,
-                        parseLlmDescriptor(defaultModel).modelName
+                        parseLlmDescriptor(displayModel).provider,
+                        parseLlmDescriptor(displayModel).name,
+                        parseLlmDescriptor(displayModel).modelName
                       )
                     : null
                 }

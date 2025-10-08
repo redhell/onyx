@@ -33,14 +33,19 @@ import IconButton from "@/refresh-components/buttons/IconButton";
 import SvgCopy from "@/icons/copy";
 import SvgThumbsUp from "@/icons/thumbs-up";
 import SvgThumbsDown from "@/icons/thumbs-down";
-import { ModalIds, useModal } from "@/refresh-components/contexts/ModalContext";
+import {
+  ModalIds,
+  useChatModal,
+} from "@/refresh-components/contexts/ChatModalContext";
 import LLMPopover from "@/refresh-components/LLMPopover";
 import { parseLlmDescriptor } from "@/lib/llm/utils";
+import { LlmManager } from "@/lib/hooks";
 
 export interface AIMessageProps {
   rawPackets: Packet[];
   chatState: FullChatState;
   nodeId: number;
+  llmManager: LlmManager | null;
   otherMessagesCanSwitchTo?: number[];
   onMessageSelection?: (nodeId: number) => void;
 }
@@ -49,12 +54,13 @@ export default function AIMessage({
   rawPackets,
   chatState,
   nodeId,
+  llmManager,
   otherMessagesCanSwitchTo,
   onMessageSelection,
 }: AIMessageProps) {
   const markdownRef = useRef<HTMLDivElement>(null);
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useChatModal();
 
   const [finalAnswerComing, _setFinalAnswerComing] = useState(
     isFinalAnswerComing(rawPackets) || isStreamingComplete(rawPackets)
@@ -385,18 +391,17 @@ export default function AIMessage({
                             data-testid="AIMessage/dislike-button"
                           />
 
-                          {chatState.regenerate && (
-                            <div data-testid="AIMessage/regenerate-button">
-                              <LLMPopover
-                                currentModelName={chatState.overriddenModel}
-                                onSelect={(modelName) => {
-                                  const llmDescriptor =
-                                    parseLlmDescriptor(modelName);
-                                  chatState.regenerate!(llmDescriptor);
-                                }}
-                                folded
-                              />
-                            </div>
+                          {chatState.regenerate && llmManager && (
+                            <LLMPopover
+                              llmManager={llmManager}
+                              currentModelName={chatState.overriddenModel}
+                              onSelect={(modelName) => {
+                                const llmDescriptor =
+                                  parseLlmDescriptor(modelName);
+                                chatState.regenerate!(llmDescriptor);
+                              }}
+                              folded
+                            />
                           )}
 
                           {nodeId &&
