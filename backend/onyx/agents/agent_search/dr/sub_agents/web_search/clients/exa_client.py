@@ -1,5 +1,4 @@
 from exa_py import Exa
-from exa_py.api import HighlightsContentsOptions
 
 from onyx.agents.agent_search.dr.sub_agents.web_search.models import (
     WebContent,
@@ -22,22 +21,17 @@ class ExaClient(WebSearchProvider):
 
     @retry_builder(tries=3, delay=1, backoff=2)
     def search(self, query: str) -> list[WebSearchResult]:
-        response = self.exa.search_and_contents(
+        response = self.exa.search(
             query,
-            type="fast",
-            livecrawl="never",
-            highlights=HighlightsContentsOptions(
-                num_sentences=2,
-                highlights_per_url=1,
-            ),
-            num_results=10,
+            text=True,
+            type="auto",
         )
 
         return [
             WebSearchResult(
                 title=result.title or "",
                 link=result.url,
-                snippet=result.highlights[0] if result.highlights else "",
+                snippet="",
                 author=result.author,
                 published_date=(
                     time_str_to_utc(result.published_date)
