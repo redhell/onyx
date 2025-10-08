@@ -32,7 +32,7 @@ from onyx.chat.prompt_builder.answer_prompt_builder import AnswerPromptBuilder
 from onyx.chat.prompt_builder.answer_prompt_builder import (
     default_build_system_message_v2,
 )
-from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message
+from onyx.chat.prompt_builder.answer_prompt_builder import default_build_user_message_v2
 from onyx.chat.turn import fast_chat_turn
 from onyx.chat.turn.infra.emitter import get_default_emitter
 from onyx.chat.turn.models import ChatTurnDependencies
@@ -737,11 +737,18 @@ def stream_chat_message_objects(
             )
 
         prompt_builder = AnswerPromptBuilder(
-            user_message=default_build_user_message(
+            # TODO: for backwards compatibility, we are using the V1
+            # system_message=default_build_system_message(prompt_config, llm.config),
+            # user_message=default_build_user_message(
+            #     user_query=final_msg.message,
+            #     prompt_config=prompt_config,
+            #     files=latest_query_files,
+            #     single_message_history=single_message_history,
+            # ),
+            user_message=default_build_user_message_v2(
                 user_query=final_msg.message,
                 prompt_config=prompt_config,
                 files=latest_query_files,
-                single_message_history=single_message_history,
             ),
             # TODO: for backwards compatibility, we are using the V1
             # system_message=default_build_system_message(prompt_config, llm.config),

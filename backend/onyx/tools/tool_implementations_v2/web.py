@@ -169,8 +169,8 @@ def web_search_tool(
     - When the user already provided URLs (go straight to `web_fetch_tool`).
 
     ## Usage hints
-    - Use ONE focused natural-language `query` per call.
-    - Prefer 3-5 searches for distinct intents; then batch-fetch 10-15 best URLs.
+    - Batch a list of natural-language queries per call.
+    - Prefer searches for distinct intents; then batch-fetch best URLs.
     - Deduplicate domains/near-duplicates. Prefer recent, authoritative sources.
 
     ## Args
@@ -278,7 +278,6 @@ def web_fetch_tool(
 
     ## Usage hints
     - Avoid many tiny calls; batch URLs (1–20) in one request.
-    - Batch 10–15 high-quality, deduplicated URLs per topic.
     - Prefer primary, recent, and reputable sources.
     - If PDFs/long docs appear, still fetch; you may summarize sections explicitly.
 
