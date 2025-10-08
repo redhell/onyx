@@ -21,7 +21,7 @@ class QdrantClient:
     def __init__(self):
         self.client = ThirdPartyQdrantClient(
             url=QdrantConfig.url,
-            timeout=300,  # 5 minutes - to test stalling
+            timeout=300,
         )
 
     def create_collection(
@@ -68,6 +68,31 @@ class QdrantClient:
     def override_points(
         self, points: list[PointStruct], collection_name: CollectionName
     ) -> UpdateResult:
+        import sys
+        import json
+
+        # Calculate approximate request size
+        try:
+            # Convert points to dicts for size calculation
+            points_dicts = [
+                {"id": p.id, "vector": p.vector, "payload": p.payload} for p in points
+            ]
+            json_str = json.dumps(points_dicts)
+            request_size_bytes = len(json_str.encode("utf-8"))
+        except Exception:
+            # Fallback to sys.getsizeof if serialization fails
+            request_size_bytes = sys.getsizeof(points)
+
+        request_size_mb = request_size_bytes / (1024 * 1024)
+        max_size_mb = 32
+
+        print(
+            f"    Request size: {request_size_mb:.2f} MB / {max_size_mb} MB ({request_size_mb/max_size_mb*100:.1f}%)"
+        )
+
+        if request_size_mb > max_size_mb * 0.9:
+            print(f"    WARNING: Request size is close to {max_size_mb}MB limit!")
+
         result = self.client.upsert(points=points, collection_name=collection_name)
         return result
 

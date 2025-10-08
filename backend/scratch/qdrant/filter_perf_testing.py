@@ -65,6 +65,33 @@ def main():
     # Test different limits
     test_limits = [1, 10, 100, 1000, 10000]
 
+    # Baseline: No filters
+    print("\n" + "=" * 60)
+    print("BENCHMARK: No Filters (Baseline)")
+    print("=" * 60)
+    print("Filter: None")
+    print(f"{'Limit':<10} {'Results':<10} {'Latency (ms)':<15}")
+    print("-" * 60)
+
+    for test_limit in test_limits:
+        start = time.time()
+
+        search_result = service.hybrid_search(
+            dense_query_vector=dense_query_vector,
+            sparse_query_vector=sparse_query_vector,
+            collection_name=collection_name,
+            limit=test_limit,
+            query_filter=None,  # No filter
+        )
+
+        latency = time.time() - start
+
+        print(
+            f"{test_limit:<10} {len(search_result.points):<10} {latency * 1000:<15.2f}"
+        )
+
+    print("=" * 60)
+
     print("\n" + "=" * 60)
     print("BENCHMARK: Source Type Filter (One-to-Many)")
     print("=" * 60)
