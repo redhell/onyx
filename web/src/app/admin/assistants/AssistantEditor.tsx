@@ -1824,7 +1824,10 @@ export function AssistantEditor({
                     )}
                   </div>
                   <div className="flex gap-x-2 items-center">
-                    <Button disabled={isSubmitting || isRequestSuccessful}>
+                    <Button
+                      disabled={isSubmitting || isRequestSuccessful}
+                      type="submit"
+                    >
                       {isUpdate ? "Update" : "Create"}
                     </Button>
                     <Button secondary onClick={() => router.back()}>

@@ -139,68 +139,70 @@ export default function AgentsModal() {
   );
 
   return (
-    <Modal id={ModalIds.AgentsModal} icon={SvgOnyxOctagon} title="Agents" sm>
-      <div className="flex flex-col sticky top-[0rem] z-10 bg-background-tint-01 p-spacing-paragraph">
-        <div className="flex flex-row items-center gap-spacing-interline">
-          <InputTypeIn
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
-          <Button
-            href="/assistants/new"
-            onClick={() => toggleModal(ModalIds.AgentsModal, false)}
-          >
-            Create
-          </Button>
+    <div data-testid="AgentsModal/container" aria-label="Agents Modal">
+      <Modal id={ModalIds.AgentsModal} icon={SvgOnyxOctagon} title="Agents" sm>
+        <div className="flex flex-col sticky top-[0rem] z-10 bg-background-tint-01 p-spacing-paragraph">
+          <div className="flex flex-row items-center gap-spacing-interline">
+            <InputTypeIn
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <Button
+              href="/assistants/new"
+              onClick={() => toggleModal(ModalIds.AgentsModal, false)}
+            >
+              Create
+            </Button>
+          </div>
+
+          <div className="py-padding-content flex items-center gap-spacing-interline flex-wrap">
+            <SvgFilter className="w-[1.2rem] h-[1.2rem] stroke-text-05" />
+            <AgentBadgeSelector
+              text="Pinned"
+              selected={agentFilters[AgentFilter.Pinned]}
+              toggleFilter={() => toggleAgentFilter(AgentFilter.Pinned)}
+            />
+
+            <AgentBadgeSelector
+              text="Mine"
+              selected={agentFilters[AgentFilter.Mine]}
+              toggleFilter={() => toggleAgentFilter(AgentFilter.Mine)}
+            />
+            <AgentBadgeSelector
+              text="Private"
+              selected={agentFilters[AgentFilter.Private]}
+              toggleFilter={() => toggleAgentFilter(AgentFilter.Private)}
+            />
+            <AgentBadgeSelector
+              text="Public"
+              selected={agentFilters[AgentFilter.Public]}
+              toggleFilter={() => toggleAgentFilter(AgentFilter.Public)}
+            />
+          </div>
         </div>
 
-        <div className="py-padding-content flex items-center gap-spacing-interline flex-wrap">
-          <SvgFilter className="w-[1.2rem] h-[1.2rem] stroke-text-05" />
-          <AgentBadgeSelector
-            text="Pinned"
-            selected={agentFilters[AgentFilter.Pinned]}
-            toggleFilter={() => toggleAgentFilter(AgentFilter.Pinned)}
-          />
-
-          <AgentBadgeSelector
-            text="Mine"
-            selected={agentFilters[AgentFilter.Mine]}
-            toggleFilter={() => toggleAgentFilter(AgentFilter.Mine)}
-          />
-          <AgentBadgeSelector
-            text="Private"
-            selected={agentFilters[AgentFilter.Private]}
-            toggleFilter={() => toggleAgentFilter(AgentFilter.Private)}
-          />
-          <AgentBadgeSelector
-            text="Public"
-            selected={agentFilters[AgentFilter.Public]}
-            toggleFilter={() => toggleAgentFilter(AgentFilter.Public)}
-          />
+        <div className="flex-1 w-full p-spacing-paragraph overflow-y-auto">
+          {featuredAgents.length === 0 && allAgents.length === 0 ? (
+            <Text className="w-full h-full flex flex-col items-center justify-center">
+              No Agents configured yet...
+            </Text>
+          ) : (
+            <>
+              <AgentsSection
+                title="Featured Agents"
+                agents={featuredAgents}
+                pinnedAgents={pinnedAgents}
+              />
+              <AgentsSection
+                title="All Agents"
+                agents={allAgents}
+                pinnedAgents={pinnedAgents}
+              />
+            </>
+          )}
         </div>
-      </div>
-
-      <div className="flex-1 w-full p-spacing-paragraph overflow-y-auto">
-        {featuredAgents.length === 0 && allAgents.length === 0 ? (
-          <Text className="w-full h-full flex flex-col items-center justify-center">
-            No Agents configured yet...
-          </Text>
-        ) : (
-          <>
-            <AgentsSection
-              title="Featured Agents"
-              agents={featuredAgents}
-              pinnedAgents={pinnedAgents}
-            />
-            <AgentsSection
-              title="All Agents"
-              agents={allAgents}
-              pinnedAgents={pinnedAgents}
-            />
-          </>
-        )}
-      </div>
-    </Modal>
+      </Modal>
+    </div>
   );
 }

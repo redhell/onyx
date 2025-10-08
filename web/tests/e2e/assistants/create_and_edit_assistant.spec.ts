@@ -101,11 +101,10 @@ test("Assistant Creation and Edit Verification", async ({ page }) => {
 
   // --- Navigate to Edit Page and Verify Initial Values ---
   // Navigate through the Assistant Explorer modal
-  await page.locator('button[aria-label="Explore Assistants"]').click();
-  await page.waitForSelector('div[aria-label="Assistant Modal"]'); // Wait for modal to appear
+  await page.getByTestId("AppSidebar/more-agents").click();
 
   // Find the assistant card in the modal and scroll to it
-  const modalContent = page.locator('div[aria-label="Assistant Modal"]');
+  const modalContent = page.getByTestId("AgentsModal/container");
   const modalBox = await modalContent.boundingBox();
   if (modalBox) {
     await page.mouse.move(
@@ -116,34 +115,11 @@ test("Assistant Creation and Edit Verification", async ({ page }) => {
     await page.mouse.wheel(0, 1000);
     await page.waitForTimeout(500); // Add a small wait after scroll
   }
-  const assistantCard = page.locator(
-    `//div[@aria-label="Assistant Modal"]//*[contains(text(), "${assistantName}") and 
-not(contains(@class, 'invisible'))]`
-  );
-  // Use waitForSelector for robustness instead of expect().toBeVisible()
-  await page.waitForSelector(
-    `//div[@aria-label="Assistant Modal"]//*[contains(text(), "${assistantName}") and 
-not(contains(@class, 'invisible'))]`,
-    { state: "visible", timeout: 10000 }
-  );
 
-  // Try to get any button with "More Options" aria-label or SVG dots in the card
-  const xpath =
-    `//div[contains(.//text(), "${assistantName}")]` +
-    `//button[contains(@aria-label, "More") or ` +
-    `.//svg[contains(@viewBox, "0 0 24 24")]]`;
-  // Wait for the button to be clickable and then click
-  await page
-    .locator(xpath)
-    .first()
-    .waitFor({ state: "visible", timeout: 5000 });
-  await page.locator(xpath).first().click({ force: true }); // force: true might still be needed if overlays exist
+  await page.getByTestId("AgentCard/more").first().click();
 
   // Wait for the popover to appear and click the "Edit" button
-  await page.waitForSelector('button:has-text("Edit"):visible', {
-    timeout: 5000,
-  });
-  const editButton = page.locator('button:has-text("Edit")').first();
+  const editButton = page.getByTestId("AgentCard/edit").first();
   await editButton.click();
 
   // Verify we are on the edit page
