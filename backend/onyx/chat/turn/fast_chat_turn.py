@@ -29,7 +29,6 @@ from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.streaming_models import PacketObj
 from onyx.server.query_and_chat.streaming_models import SectionEnd
 from onyx.tools.tool_implementations_v2.image_generation import image_generation_tool
-from onyx.tools.tool_implementations_v2.reasoning import reasoning_tool
 
 
 def _fast_chat_turn_core(
@@ -73,7 +72,7 @@ def _fast_chat_turn_core(
     agent = Agent(
         name="Assistant",
         model=dependencies.llm_model,
-        tools=dependencies.tools + [reasoning_tool],
+        tools=dependencies.tools,
         model_settings=ModelSettings(
             temperature=0.0,
             include_usage=True,
