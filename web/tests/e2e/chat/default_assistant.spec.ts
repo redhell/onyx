@@ -230,11 +230,10 @@ test.describe("Default Assistant Tests", () => {
       expect(actionToggle).toBeTruthy();
     });
 
-    test("should show all three tool options when clicked", async ({
+    test("should show just the image generation tool options when clicked", async ({
       page,
     }) => {
       await openActionManagement(page);
-      expect(await page.$(TOOL_IDS.searchOption)).toBeTruthy();
       expect(await page.$(TOOL_IDS.imageGenerationOption)).toBeTruthy();
     });
 
@@ -247,28 +246,32 @@ test.describe("Default Assistant Tests", () => {
         timeout: 5000,
       });
 
-      // Find a checkbox/toggle within the search tool option
-      const searchToolOption = await page.$(TOOL_IDS.searchOption);
-      expect(searchToolOption).toBeTruthy();
+      // Find a checkbox/toggle within the image-generation tool option
+      const imageGenerationToolOption = await page.$(
+        TOOL_IDS.imageGenerationOption
+      );
+      expect(imageGenerationToolOption).toBeTruthy();
 
       // Look for a checkbox or switch within the tool option
-      const searchToggle = await searchToolOption?.$(TOOL_IDS.toggleInput);
+      const imageGenerationToggle = await imageGenerationToolOption?.$(
+        TOOL_IDS.toggleInput
+      );
 
-      if (searchToggle) {
-        const initialState = await searchToggle.isChecked();
-        await searchToggle.click();
+      if (imageGenerationToggle) {
+        const initialState = await imageGenerationToggle.isChecked();
+        await imageGenerationToggle.click();
 
         // Verify state changed
-        const newState = await searchToggle.isChecked();
+        const newState = await imageGenerationToggle.isChecked();
         expect(newState).toBe(!initialState);
 
         // Toggle it back
-        await searchToggle.click();
-        const finalState = await searchToggle.isChecked();
+        await imageGenerationToggle.click();
+        const finalState = await imageGenerationToggle.isChecked();
         expect(finalState).toBe(initialState);
       } else {
         // If no toggle found, just click the option itself
-        await searchToolOption?.click();
+        await imageGenerationToolOption?.click();
         // Check if the option has some visual state change
         // This is a fallback behavior if toggles work differently
       }
@@ -285,19 +288,23 @@ test.describe("Default Assistant Tests", () => {
         timeout: 5000,
       });
 
-      // Find the internet search tool option and its toggle
-      const searchOption = await page.$(TOOL_IDS.searchOption);
-      expect(searchOption).toBeTruthy();
+      // Find the internet image-generation tool option and its toggle
+      const imageGenerationToolOption = await page.$(
+        TOOL_IDS.imageGenerationOption
+      );
+      expect(imageGenerationToolOption).toBeTruthy();
 
-      const searchToggle = await searchOption?.$(TOOL_IDS.toggleInput);
+      const imageGenerationToggle = await imageGenerationToolOption?.$(
+        TOOL_IDS.toggleInput
+      );
 
       let toggledState = false;
-      if (searchToggle) {
-        await searchToggle.click();
-        toggledState = await searchToggle.isChecked();
+      if (imageGenerationToggle) {
+        await imageGenerationToggle.click();
+        toggledState = await imageGenerationToggle.isChecked();
       } else {
         // Click the option itself if no toggle found
-        await searchOption?.click();
+        await imageGenerationToolOption?.click();
         // Assume toggled if clicked
         toggledState = true;
       }
@@ -313,13 +320,15 @@ test.describe("Default Assistant Tests", () => {
       });
 
       // Check if state persisted
-      const searchOptionAfterReload = await page.$(TOOL_IDS.searchOption);
-      const searchToggleAfterReload = await searchOptionAfterReload?.$(
-        TOOL_IDS.toggleInput
+      const imageGenerationToolOptionAfterReload = await page.$(
+        TOOL_IDS.imageGenerationOption
       );
+      const imageGenerationToggleAfterReload =
+        await imageGenerationToolOptionAfterReload?.$(TOOL_IDS.toggleInput);
 
-      if (searchToggleAfterReload) {
-        const stateAfterReload = await searchToggleAfterReload.isChecked();
+      if (imageGenerationToggleAfterReload) {
+        const stateAfterReload =
+          await imageGenerationToggleAfterReload.isChecked();
         expect(stateAfterReload).toBe(toggledState);
       }
     });
