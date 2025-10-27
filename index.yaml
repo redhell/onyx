@@ -13,6 +13,52 @@ entries:
       licenses: MIT
     apiVersion: v2
     appVersion: latest
+    created: "2025-10-27T09:09:00.294963211Z"
+    dependencies:
+    - alias: postgresql
+      condition: postgresql.enabled
+      name: cloudnative-pg
+      repository: https://cloudnative-pg.github.io/charts
+      version: 0.26.0
+    - condition: vespa.enabled
+      name: vespa
+      repository: https://onyx-dot-app.github.io/vespa-helm-charts
+      version: 0.2.24
+    - alias: nginx
+      condition: nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.13.3
+    - condition: redis.enabled
+      name: redis
+      repository: https://ot-container-kit.github.io/helm-charts
+      version: 0.16.6
+    - condition: minio.enabled
+      name: minio
+      repository: https://charts.min.io/
+      version: 5.4.0
+    description: A Helm chart for Kubernetes
+    digest: 823b005bfe7ae1f238d4ffbe265fddd8ca118ebda8dbd65f97428701871a4ec7
+    home: https://www.onyx.app/
+    name: onyx
+    sources:
+    - https://github.com/onyx-dot-app/onyx
+    type: application
+    urls:
+    - https://redhell.github.io/onyx/onyx-0.4.4.tgz
+    version: 0.4.4
+  - annotations:
+      category: Productivity
+      images: |
+        - name: webserver
+          image: docker.io/onyxdotapp/onyx-web-server:latest
+        - name: background
+          image: docker.io/onyxdotapp/onyx-backend:latest
+        - name: vespa
+          image: vespaengine/vespa:8.526.15
+      licenses: MIT
+    apiVersion: v2
+    appVersion: latest
     created: "2025-10-09T02:03:37.293559497Z"
     dependencies:
     - alias: postgresql
@@ -806,4 +852,4 @@ entries:
     urls:
     - https://github.com/onyx-dot-app/onyx/releases/download/onyx-stack-0.2.4/onyx-stack-0.2.4.tgz
     version: 0.2.4
-generated: "2025-10-09T02:03:37.276841279Z"
+generated: "2025-10-27T09:09:00.280178333Z"
